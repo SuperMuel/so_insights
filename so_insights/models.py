@@ -1,10 +1,13 @@
 from datetime import datetime, UTC
+from typing import Any, Dict, Literal
 
 from pymongo import IndexModel
 from enum import Enum
 from pydantic import HttpUrl
 from pydantic import BaseModel, Field, PastDatetime, field_validator
 from beanie import Document, Link, PydanticObjectId
+import pymongo
+from so_insights.settings import AppSettings
 
 
 def utc_datetime_factory():
@@ -104,9 +107,82 @@ class Article(Document):
         return v[:1000] if len(v) > 1000 else v
 
     class Settings:
-        name = "ai_news"  # TODO : use settings
+        name = AppSettings().mongodb_articles_collection
         indexes = [
             IndexModel("url", unique=True),
             IndexModel("vector_indexed"),
             IndexModel("date"),
         ]
+
+
+class ClusteringSession(Document):
+    session_start: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    session_end: datetime | None = None
+
+    data_start: datetime
+    data_end: datetime
+
+    metadata: Dict[str, Any]
+
+    articles_count: int = Field(
+        ...,
+        description="Number of articles on which the clustering was performed, including noise.",
+    )
+    clusters_count: int
+
+    noise_articles_ids: list[PydanticObjectId]
+    noise_articles_count: int
+    clustered_articles_count: int = Field(
+        ...,
+        description="Number of articles in clusters, excluding noise.",
+    )
+
+    class Settings:
+        name = AppSettings().mongodb_clustering_sessions_collection
+
+    async def get_included_sorted_clusters(self) -> list["Cluster"]:
+        return await (
+            Cluster.find_many(
+                Cluster.session.ref.id == self.id,
+                ClusterEvaluation.decision == "include",
+            )
+            .sort(-Cluster.articles_count)  # type: ignore
+            .to_list()
+        )  # TODO test this
+
+
+class ClusterEvaluation(BaseModel):
+    justification: str
+    decision: Literal["include", "exclude"]
+    exclusion_reason: str | None = None
+
+
+class Cluster(Document):
+    session: Link[ClusteringSession]
+    articles_count: int = Field(
+        ...,
+        description="Number of articles in the cluster.",
+    )
+    articles_ids: list[PydanticObjectId] = Field(
+        ...,
+        description="IDs of articles in the cluster, sorted by their distance to the cluster center",
+    )
+
+    title: str | None = Field(
+        default=None, description="AI generated title of the cluster"
+    )
+    summary: str | None = Field(
+        default=None, description="AI generated summary of the cluster"
+    )
+
+    overview_generation_error: str | None = Field(
+        default=None, description="Error message if the overview generation failed"
+    )
+
+    evaluation: ClusterEvaluation | None = None
+
+    class Settings:
+        name = AppSettings().mongodb_clusters_collection
+
+    async def get_articles(self) -> list[Article]:
+        return await Article.find_many({"_id": {"$in": self.articles_ids}}).to_list()
