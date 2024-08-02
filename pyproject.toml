@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "so-insights"
+version = "0.1.0"
+description = ""
+authors = ["Samuel Mallet  <69467005+SuperMuel@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+beanie = "^1.26.0"
+pymongo = "^4.8.0"
+
+
+[tool.poetry.group.dev.dependencies]
+make-it-sync = "^2.0.0"
+pytest = "^8.3.2"
+mongomock-motor = "^0.0.31"
+setuptools = "^72.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
