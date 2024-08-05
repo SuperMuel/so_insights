@@ -1,5 +1,6 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
 
 
 class AppSettings(BaseSettings):
@@ -10,7 +11,9 @@ class AppSettings(BaseSettings):
         extra="ignore",
     )
 
-    mongodb_uri: str = Field(default=...)
+    mongodb_uri: str = Field(
+        default="mock://localhost:27017" if os.getenv("GITHUB_ACTIONS") else ...
+    )
     mongodb_database: str = "so_insights"
     mongodb_workspaces_collection: str = "workspaces"
     mongodb_search_queries_collection: str = "search_queries"
