@@ -152,11 +152,9 @@ class SetOfUniqueArticles:
         Returns:
             SetOfUniqueArticles: A new SetOfUniqueArticles instance with the limited number of articles.
         """
-        if n is None:
-            # create a copy for safety
-            return SetOfUniqueArticles(list(self.get_articles()))
+        articles = self.get_articles() if n is None else self.get_articles()[:n]
 
-        return SetOfUniqueArticles(list(self.get_articles())[:n])
+        return SetOfUniqueArticles(list(articles))
 
     def __len__(self) -> int:
         return len(self.articles_by_title_date)
