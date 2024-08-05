@@ -5,8 +5,8 @@ from beanie import Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
-from so_insights.region import Region
-from so_insights.settings import AppSettings
+from src.region import Region
+from src.settings import AppSettings
 
 
 def utc_datetime_factory():

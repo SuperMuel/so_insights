@@ -9,7 +9,6 @@ from sdk.so_insights_client.api.default import (
 )
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 
-
 st.set_page_config(page_title="SO Insights Dashboard", layout="wide")
 
 

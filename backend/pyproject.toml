@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "so-insights"
+name = "so-insights-back"
 version = "0.1.0"
 description = ""
 authors = ["Samuel Mallet  <69467005+SuperMuel@users.noreply.github.com>"]

@@ -3,7 +3,7 @@ from typing import Annotated
 from beanie import PydanticObjectId
 from fastapi import Depends, HTTPException
 
-from so_insights.models import Workspace
+from src.models import Workspace
 
 
 async def get_workspace(workspace_id: str | PydanticObjectId) -> Workspace:

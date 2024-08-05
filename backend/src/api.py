@@ -6,10 +6,10 @@ from beanie import init_beanie
 from fastapi import FastAPI, status
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from so_insights.dependencies import ExistingWorkspace
-from so_insights.models import Workspace, utc_datetime_factory
-from so_insights.schemas import WorkspaceUpdate
-from so_insights.settings import AppSettings
+from src.dependencies import ExistingWorkspace
+from src.models import Workspace, utc_datetime_factory
+from src.schemas import WorkspaceUpdate
+from src.settings import AppSettings
 
 # Configure logging
 logging.basicConfig(

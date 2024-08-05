@@ -4,8 +4,8 @@ import pytest
 from beanie import PydanticObjectId, init_beanie
 from mongomock_motor import AsyncMongoMockClient
 from make_it_sync import make_sync
-from so_insights.models import Article
-from so_insights.set_of_unique_articles import SetOfUniqueArticles
+from src.models import Article
+from src.set_of_unique_articles import SetOfUniqueArticles
 
 
 @pytest.fixture(autouse=True)
