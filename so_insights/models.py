@@ -1,12 +1,11 @@
-from datetime import datetime, UTC
-from typing import Any, Dict, Literal
+from datetime import UTC, datetime
+from typing import Annotated, Any, Dict, Literal
 
+from beanie import Document, Indexed, Link, PydanticObjectId
+from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
-from enum import Enum
-from pydantic import HttpUrl
-from pydantic import BaseModel, Field, PastDatetime, field_validator
-from beanie import Document, Link, PydanticObjectId
-import pymongo
+
+from so_insights.region import Region
 from so_insights.settings import AppSettings
 
 
@@ -14,78 +13,56 @@ def utc_datetime_factory():
     return datetime.now(UTC)
 
 
-class Region(str, Enum):
-    ARABIA = "xa-ar"
-    ARABIA_EN = "xa-en"
-    ARGENTINA = "ar-es"
-    AUSTRALIA = "au-en"
-    AUSTRIA = "at-de"
-    BELGIUM_FR = "be-fr"
-    BELGIUM_NL = "be-nl"
-    BRAZIL = "br-pt"
-    BULGARIA = "bg-bg"
-    CANADA = "ca-en"
-    CANADA_FR = "ca-fr"
-    CATALAN = "ct-ca"
-    CHILE = "cl-es"
-    CHINA = "cn-zh"
-    COLOMBIA = "co-es"
-    CROATIA = "hr-hr"
-    CZECH_REPUBLIC = "cz-cs"
-    DENMARK = "dk-da"
-    ESTONIA = "ee-et"
-    FINLAND = "fi-fi"
-    FRANCE = "fr-fr"
-    GERMANY = "de-de"
-    GREECE = "gr-el"
-    HONG_KONG = "hk-tzh"
-    HUNGARY = "hu-hu"
-    INDIA = "in-en"
-    INDONESIA = "id-id"
-    INDONESIA_EN = "id-en"
-    IRELAND = "ie-en"
-    ISRAEL = "il-he"
-    ITALY = "it-it"
-    JAPAN = "jp-jp"
-    KOREA = "kr-kr"
-    LATVIA = "lv-lv"
-    LITHUANIA = "lt-lt"
-    LATIN_AMERICA = "xl-es"
-    MALAYSIA = "my-ms"
-    MALAYSIA_EN = "my-en"
-    MEXICO = "mx-es"
-    NETHERLANDS = "nl-nl"
-    NEW_ZEALAND = "nz-en"
-    NORWAY = "no-no"
-    PERU = "pe-es"
-    PHILIPPINES = "ph-en"
-    PHILIPPINES_TL = "ph-tl"
-    POLAND = "pl-pl"
-    PORTUGAL = "pt-pt"
-    ROMANIA = "ro-ro"
-    RUSSIA = "ru-ru"
-    SINGAPORE = "sg-en"
-    SLOVAK_REPUBLIC = "sk-sk"
-    SLOVENIA = "sl-sl"
-    SOUTH_AFRICA = "za-en"
-    SPAIN = "es-es"
-    SWEDEN = "se-sv"
-    SWITZERLAND_DE = "ch-de"
-    SWITZERLAND_FR = "ch-fr"
-    SWITZERLAND_IT = "ch-it"
-    TAIWAN = "tw-tzh"
-    THAILAND = "th-th"
-    TURKEY = "tr-tr"
-    UKRAINE = "ua-uk"
-    UNITED_KINGDOM = "uk-en"
-    UNITED_STATES = "us-en"
-    UNITED_STATES_ES = "ue-es"
-    VENEZUELA = "ve-es"
-    VIETNAM = "vn-vi"
-    NO_REGION = "wt-wt"
+class Workspace(Document):
+    name: str
+    description: str = ""
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+
+    class Settings:
+        name: str = AppSettings().mongodb_workspaces_collection
+
+
+class SearchQueries(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+    queries: list[str]
+    title: str
+    region: Region
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+
+    class Settings:
+        name: str = AppSettings().mongodb_search_queries_collection
+
+
+class IngestionRun(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+    time_limit: Literal["d", "w", "m", "y"]
+    max_results: int = Field(..., ge=1, le=100)
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    trigger: str = "manual"
+    status: Literal["running", "completed", "failed"]
+    error: str | None = None
+    # TODO : search result
+
+    class Settings:
+        name = AppSettings().mongodb_ingestion_runs_collection
+
+
+# TODO class ScheduledIngestion(Document):
+#     workspace_id: Annotated[PydanticObjectId, Indexed()]
+#     cron_expression: str
+#     timezone: str
+#     next_run_time: PastDatetime
+#     last_run_time: PastDatetime | None = None
+#     enabled: bool = True
+
+#     class Settings:
+#         name = AppSettings().mongodb_scheduled_ingestion_collection
 
 
 class Article(Document):
+    workspace_id: PydanticObjectId
     title: str = Field(..., min_length=1, max_length=200)
     url: HttpUrl
     body: str = Field(default="", max_length=1000)
@@ -109,13 +86,20 @@ class Article(Document):
     class Settings:
         name = AppSettings().mongodb_articles_collection
         indexes = [
-            IndexModel("url", unique=True),
+            IndexModel(
+                [
+                    ("workspace_id", 1),
+                    ("url", 1),
+                ],
+                unique=True,
+            ),
             IndexModel("vector_indexed"),
             IndexModel("date"),
         ]
 
 
 class ClusteringSession(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
     session_start: datetime = Field(default_factory=lambda: datetime.now(UTC))
     session_end: datetime | None = None
 
@@ -158,7 +142,10 @@ class ClusterEvaluation(BaseModel):
 
 
 class Cluster(Document):
-    session: Link[ClusteringSession]
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+    session: Link[
+        ClusteringSession
+    ]  # TODO : change to simple session_id for consistency
     articles_count: int = Field(
         ...,
         description="Number of articles in the cluster.",

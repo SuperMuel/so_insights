@@ -34,6 +34,7 @@ def create_article(
         id = PydanticObjectId(id)
 
     return Article(
+        workspace_id=PydanticObjectId("60f1d1b3d4f3b3b3b3b3b3b3"),
         id=id if id else None,
         title=title,
         body=body,
