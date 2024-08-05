@@ -11,6 +11,9 @@ from src.models import Workspace, utc_datetime_factory
 from src.schemas import WorkspaceUpdate
 from src.settings import AppSettings
 
+# TODO : API KEY AUTHENTICATION
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
