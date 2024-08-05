@@ -1,0 +1,31 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Generate SDK",
+            "type": "shell",
+            "command": "poetry",
+            "args": [
+                "run",
+                "python",
+                "generate_client_sdk.py",
+                "-o",
+                "${workspaceFolder}/frontend/src/sdk"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
