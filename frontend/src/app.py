@@ -1,4 +1,6 @@
+import os
 import arrow
+from frontend.app_settings import AppSettings
 import streamlit as st
 
 from sdk.so_insights_client import Client
@@ -15,7 +17,7 @@ st.set_page_config(page_title="SO Insights Dashboard", layout="wide")
 # Initialize the API client
 @st.cache_resource
 def get_client():
-    return Client(base_url="http://localhost:8000")  # Adjust the URL as needed
+    return Client(base_url=AppSettings().so_insights_api_url)
 
 
 client = get_client()

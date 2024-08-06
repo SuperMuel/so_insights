@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from src.dependencies import ExistingWorkspace
 from src.models import Workspace, utc_datetime_factory
 from src.schemas import WorkspaceUpdate
-from src.settings import AppSettings
+from backend.src.api_settings import ApiSettings
 
 # TODO : API KEY AUTHENTICATION
 
@@ -23,7 +23,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-settings = AppSettings()
+settings = ApiSettings()
 
 
 @asynccontextmanager

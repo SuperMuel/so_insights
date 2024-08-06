@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
 from src.region import Region
-from src.settings import AppSettings
+from backend.src.api_settings import ApiSettings
 
 
 def utc_datetime_factory():
@@ -20,7 +20,7 @@ class Workspace(Document):
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
     class Settings:
-        name: str = AppSettings().mongodb_workspaces_collection
+        name: str = ApiSettings().mongodb_workspaces_collection
 
 
 class SearchQueries(Document):
@@ -32,7 +32,7 @@ class SearchQueries(Document):
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
     class Settings:
-        name: str = AppSettings().mongodb_search_queries_collection
+        name: str = ApiSettings().mongodb_search_queries_collection
 
 
 class IngestionRun(Document):
@@ -46,7 +46,7 @@ class IngestionRun(Document):
     # TODO : search result
 
     class Settings:
-        name = AppSettings().mongodb_ingestion_runs_collection
+        name = ApiSettings().mongodb_ingestion_runs_collection
 
 
 # TODO class ScheduledIngestion(Document):
@@ -84,7 +84,7 @@ class Article(Document):
         return v[:1000] if len(v) > 1000 else v
 
     class Settings:
-        name = AppSettings().mongodb_articles_collection
+        name = ApiSettings().mongodb_articles_collection
         indexes = [
             IndexModel(
                 [
@@ -122,7 +122,7 @@ class ClusteringSession(Document):
     )
 
     class Settings:
-        name = AppSettings().mongodb_clustering_sessions_collection
+        name = ApiSettings().mongodb_clustering_sessions_collection
 
     async def get_included_sorted_clusters(self) -> list["Cluster"]:
         return await (
@@ -169,7 +169,7 @@ class Cluster(Document):
     evaluation: ClusterEvaluation | None = None
 
     class Settings:
-        name = AppSettings().mongodb_clusters_collection
+        name = ApiSettings().mongodb_clusters_collection
 
     async def get_articles(self) -> list[Article]:
         return await Article.find_many({"_id": {"$in": self.articles_ids}}).to_list()
