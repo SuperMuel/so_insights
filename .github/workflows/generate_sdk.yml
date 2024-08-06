@@ -34,11 +34,11 @@ jobs:
       - name: Generate SDK
         run: |
           cd backend
-          poetry run python generate_client_sdk.py -o ../frontend/src/sdk
+          poetry run python generate_client_sdk.py -o ../frontend/sdk
 
       - name: Commit and push SDK
         run: |
-          cd frontend/src/sdk
+          cd frontend/sdk
           if [ -n "$(git status --porcelain)" ]; then
             git config --local user.name "github-actions[bot]"
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
