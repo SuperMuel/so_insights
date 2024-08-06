@@ -1,47 +1,14 @@
 import arrow
-from src.app_settings import AppSettings
 import streamlit as st
 
-from sdk.so_insights_client import Client
+from src.shared import get_client, select_workspace
 from sdk.so_insights_client.api.default import (
     create_workspace,
-    list_workspaces,
     update_workspace,
 )
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 
-st.set_page_config(
-    page_title="Workspaces",
-    layout="wide",
-)
-
-
-# Initialize the API client
-@st.cache_resource
-def get_client():
-    return Client(base_url=AppSettings().so_insights_api_url)
-
-
 client = get_client()
-
-
-def select_workspace(show_description: bool = False) -> Workspace | None:
-    workspaces = list_workspaces.sync(client=client)
-    if workspaces is None:
-        st.error("Workspaces not found")
-        st.stop()
-
-    def format_workspace(w: Workspace):
-        description = (
-            "" if not w.description or not show_description else f" - {w.description}"
-        )
-        return f"{w.name}{description}"
-
-    return st.selectbox(
-        "Select Workspace",
-        options=workspaces,
-        format_func=format_workspace,
-    )
 
 
 def create_new_worspace_form():
@@ -92,7 +59,7 @@ with st.sidebar:
     create_new_worspace_form()
 
 
-workspace = select_workspace(show_description=True)
+workspace = select_workspace(client, show_description=True)
 if not workspace:
     st.warning("Please select a workspace from the sidebar or create a new one.")
     st.stop()
