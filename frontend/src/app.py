@@ -1,6 +1,5 @@
-import os
 import arrow
-from frontend.app_settings import AppSettings
+from app_settings import AppSettings
 import streamlit as st
 
 from sdk.so_insights_client import Client
