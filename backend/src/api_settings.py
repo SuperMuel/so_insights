@@ -16,7 +16,7 @@ class ApiSettings(BaseSettings):
     )
     mongodb_database: str = "so_insights"
     mongodb_workspaces_collection: str = "workspaces"
-    mongodb_search_queries_collection: str = "search_queries"
+    mongodb_search_query_sets_collection: str = "search_query_sets"
     mongodb_ingestion_runs_collection: str = "ingestion_runs"
     mongodb_articles_collection: str = "articles"
     mongodb_clusters_collection: str = "clusters"

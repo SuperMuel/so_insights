@@ -3,13 +3,18 @@ import sys
 from contextlib import asynccontextmanager
 
 from beanie import init_beanie
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from src.dependencies import ExistingWorkspace
-from src.models import Workspace, utc_datetime_factory
-from src.schemas import WorkspaceUpdate
 from src.api_settings import ApiSettings
+from src.models import (
+    Article,
+    ClusteringSession,
+    IngestionRun,
+    SearchQuerySet,
+    Workspace,
+)
+from src.routers import search_query_sets, workspaces
 
 # TODO : API KEY AUTHENTICATION
 
@@ -32,7 +37,13 @@ async def lifespan(app: FastAPI):
 
     await init_beanie(
         database=client[settings.mongodb_database],
-        document_models=[Workspace],
+        document_models=[
+            Workspace,
+            SearchQuerySet,
+            IngestionRun,
+            ClusteringSession,
+            Article,
+        ],
     )
     logger.info("Connected to MongoDB")
 
@@ -54,57 +65,14 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Welcome to so_insights API"}
 
 
-# Workspace routes
-@app.post(
-    "/workspaces/",
-    response_model=Workspace,
-    status_code=status.HTTP_201_CREATED,
-    operation_id="create_workspace",
+app.include_router(workspaces.router, prefix="/workspaces")
+app.include_router(
+    search_query_sets.router,
+    prefix="/workspaces/{workspace_id}/search-query-sets",
 )
-async def create_workspace(workspace: Workspace):
-    await workspace.insert()
-    return workspace
-
-
-@app.get("/workspaces/", response_model=list[Workspace], operation_id="list_workspaces")
-async def list_workspaces():
-    return await Workspace.find_all().to_list()
-
-
-@app.get(
-    "/workspaces/{workspace_id}", response_model=Workspace, operation_id="get_workspace"
-)
-async def get_workspace(workspace: ExistingWorkspace):
-    return workspace
-
-
-@app.put(
-    "/workspaces/{workspace_id}",
-    response_model=Workspace,
-    operation_id="update_workspace",
-)
-async def update_workspace(
-    workspace: ExistingWorkspace, workspace_update: WorkspaceUpdate
-):
-    print(workspace_update)
-    req = {
-        k: v
-        for k, v in workspace_update.model_dump(
-            exclude_none=True,
-            # exclude_unset=True,
-        ).items()
-    }
-
-    req["updated_at"] = utc_datetime_factory()
-
-    print(f"{req=}")
-
-    update_query = {"$set": req}
-
-    return await workspace.update(update_query)
 
 
 if __name__ == "__main__":

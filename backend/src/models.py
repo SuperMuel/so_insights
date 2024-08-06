@@ -30,16 +30,18 @@ class Workspace(Document):
         name: str = ApiSettings().mongodb_workspaces_collection
 
 
-class SearchQueries(Document):
+class SearchQuerySet(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     queries: list[str]
-    title: str
+    title: Annotated[
+        str, StringConstraints(min_length=3, max_length=30, strip_whitespace=True)
+    ]
     region: Region
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
     class Settings:
-        name: str = ApiSettings().mongodb_search_queries_collection
+        name: str = ApiSettings().mongodb_search_query_sets_collection
 
 
 class IngestionRun(Document):
