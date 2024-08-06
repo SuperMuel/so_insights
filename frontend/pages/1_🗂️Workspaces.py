@@ -1,11 +1,11 @@
 import arrow
 import streamlit as st
 
-from src.shared import get_client, select_workspace
-from sdk.so_insights_client.api.default import (
+from sdk.so_insights_client.api.workspaces import (
     create_workspace,
     update_workspace,
 )
+from src.shared import get_client, select_workspace
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 
 client = get_client()

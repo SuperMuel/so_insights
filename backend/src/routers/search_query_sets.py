@@ -33,12 +33,20 @@ async def list_search_query_sets(workspace: ExistingWorkspace):
     ).to_list()
 
 
-@router.get("/{search_query_set_id}", response_model=SearchQuerySet)
+@router.get(
+    "/{search_query_set_id}",
+    response_model=SearchQuerySet,
+    operation_id="get_search_query_set",
+)
 async def get_search_query_set(search_query_set: ExistingSearchQuerySet):
     return search_query_set
 
 
-@router.put("/{search_query_set_id}", response_model=SearchQuerySet)
+@router.put(
+    "/{search_query_set_id}",
+    response_model=SearchQuerySet,
+    operation_id="update_search_query_set",
+)
 async def update_search_query_set(
     search_query_set_update: SearchQuerySetUpdate,
     search_query_set: ExistingSearchQuerySet,

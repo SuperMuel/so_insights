@@ -1,6 +1,6 @@
 import streamlit as st
 
-from sdk.so_insights_client.api.default import list_workspaces
+from sdk.so_insights_client.api.workspaces import list_workspaces
 from sdk.so_insights_client.client import Client
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import AppSettings

@@ -10,6 +10,7 @@ router = APIRouter(tags=["workspaces"])
     "/",
     response_model=Workspace,
     status_code=status.HTTP_201_CREATED,
+    operation_id="create_workspace",
 )
 async def create_workspace(workspace: Workspace):
     await workspace.insert()
