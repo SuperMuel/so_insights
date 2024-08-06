@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
 from src.region import Region
-from backend.src.api_settings import ApiSettings
+from src.api_settings import ApiSettings
 
 
 def utc_datetime_factory():
