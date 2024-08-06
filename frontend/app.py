@@ -1,14 +1,14 @@
 import arrow
-from app_settings import AppSettings
+from src.app_settings import AppSettings
 import streamlit as st
 
-from sdk.so_insights_client import Client
-from sdk.so_insights_client.api.default import (
+from src.sdk.so_insights_client import Client
+from src.sdk.so_insights_client.api.default import (
     create_workspace,
     list_workspaces,
     update_workspace,
 )
-from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
+from src.sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 
 st.set_page_config(page_title="SO Insights Dashboard", layout="wide")
 
