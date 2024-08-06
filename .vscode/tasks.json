@@ -10,7 +10,7 @@
                 "python",
                 "generate_client_sdk.py",
                 "-o",
-                "${workspaceFolder}/frontend/src/sdk"
+                "${workspaceFolder}/frontend/sdk"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/backend"

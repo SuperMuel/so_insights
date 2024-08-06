@@ -9,13 +9,20 @@ from src.region import Region
 from src.api_settings import ApiSettings
 
 
+from pydantic import StringConstraints
+
+
 def utc_datetime_factory():
     return datetime.now(UTC)
 
 
 class Workspace(Document):
-    name: str
-    description: str = ""
+    name: Annotated[
+        str, StringConstraints(min_length=3, max_length=30, strip_whitespace=True)
+    ]
+    description: Annotated[
+        str, StringConstraints(max_length=500, strip_whitespace=True)
+    ] = Field(default="")
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
