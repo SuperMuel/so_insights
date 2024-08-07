@@ -28,7 +28,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd backend
           poetry install
 
       - name: Generate SDK
