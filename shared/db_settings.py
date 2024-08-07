@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 
 
-class ApiSettings(BaseSettings):
+class DBSettings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=False,
         env_file=".env",

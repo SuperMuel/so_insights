@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from src.region import Region
+from shared.region import Region
 
 
 class WorkspaceUpdate(BaseModel):

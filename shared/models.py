@@ -5,9 +5,8 @@ from beanie import Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
-from src.region import Region
-from src.api_settings import ApiSettings
-
+from region import Region
+from db_settings import DBSettings
 
 from pydantic import StringConstraints
 
@@ -27,7 +26,7 @@ class Workspace(Document):
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
     class Settings:
-        name: str = ApiSettings().mongodb_workspaces_collection
+        name: str = DBSettings().mongodb_workspaces_collection
 
 
 class SearchQuerySet(Document):
@@ -43,7 +42,7 @@ class SearchQuerySet(Document):
     deleted_at: PastDatetime | None = None
 
     class Settings:
-        name: str = ApiSettings().mongodb_search_query_sets_collection
+        name: str = DBSettings().mongodb_search_query_sets_collection
 
 
 class IngestionRun(Document):
@@ -59,19 +58,7 @@ class IngestionRun(Document):
     # TODO : search result
 
     class Settings:
-        name = ApiSettings().mongodb_ingestion_runs_collection
-
-
-# TODO class ScheduledIngestion(Document):
-#     workspace_id: Annotated[PydanticObjectId, Indexed()]
-#     cron_expression: str
-#     timezone: str
-#     next_run_time: PastDatetime
-#     last_run_time: PastDatetime | None = None
-#     enabled: bool = True
-
-#     class Settings:
-#         name = AppSettings().mongodb_scheduled_ingestion_collection
+        name = DBSettings().mongodb_ingestion_runs_collection
 
 
 class Article(Document):
@@ -97,7 +84,7 @@ class Article(Document):
         return v[:1000] if len(v) > 1000 else v
 
     class Settings:
-        name = ApiSettings().mongodb_articles_collection
+        name = DBSettings().mongodb_articles_collection
         indexes = [
             IndexModel(
                 [
@@ -135,7 +122,7 @@ class ClusteringSession(Document):
     )
 
     class Settings:
-        name = ApiSettings().mongodb_clustering_sessions_collection
+        name = DBSettings().mongodb_clustering_sessions_collection
 
     async def get_included_sorted_clusters(self) -> list["Cluster"]:
         return await (
@@ -182,7 +169,7 @@ class Cluster(Document):
     evaluation: ClusterEvaluation | None = None
 
     class Settings:
-        name = ApiSettings().mongodb_clusters_collection
+        name = DBSettings().mongodb_clusters_collection
 
     async def get_articles(self) -> list[Article]:
         return await Article.find_many({"_id": {"$in": self.articles_ids}}).to_list()

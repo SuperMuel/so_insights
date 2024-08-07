@@ -4,7 +4,7 @@ import pytest
 from beanie import PydanticObjectId, init_beanie
 from mongomock_motor import AsyncMongoMockClient
 from make_it_sync import make_sync
-from src.models import Article
+from shared.models import Article
 from src.set_of_unique_articles import SetOfUniqueArticles
 
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 from src.dependencies import ExistingWorkspace, ExistingSearchQuerySet
-from src.models import SearchQuerySet, utc_datetime_factory
+from shared.models import SearchQuerySet, utc_datetime_factory
 from src.schemas import SearchQuerySetCreate, SearchQuerySetUpdate
 
 router = APIRouter(tags=["search-query-sets"])

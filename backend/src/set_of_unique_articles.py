@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from math import floor
 from typing import Dict, Iterator, Tuple, overload
-from src.models import Article
+from shared.models import Article
 from pydantic import HttpUrl
 
 

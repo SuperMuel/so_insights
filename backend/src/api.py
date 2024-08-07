@@ -2,18 +2,10 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 
-from beanie import init_beanie
 from fastapi import FastAPI
-from motor.motor_asyncio import AsyncIOMotorClient
 
-from src.api_settings import ApiSettings
-from src.models import (
-    Article,
-    ClusteringSession,
-    IngestionRun,
-    SearchQuerySet,
-    Workspace,
-)
+from shared.db import get_client, my_init_beanie
+
 from src.routers import search_query_sets, workspaces
 
 # TODO : API KEY AUTHENTICATION
@@ -28,23 +20,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-settings = ApiSettings()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = AsyncIOMotorClient(settings.mongodb_uri)
+    client = get_client()
 
-    await init_beanie(
-        database=client[settings.mongodb_database],
-        document_models=[
-            Workspace,
-            SearchQuerySet,
-            IngestionRun,
-            ClusteringSession,
-            Article,
-        ],
-    )
+    await my_init_beanie(client)
+
     logger.info("Connected to MongoDB")
 
     yield
