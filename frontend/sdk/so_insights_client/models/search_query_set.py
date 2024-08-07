@@ -22,6 +22,8 @@ class SearchQuerySet:
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         created_at (Union[Unset, datetime.datetime]):
         updated_at (Union[Unset, datetime.datetime]):
+        deleted (Union[Unset, bool]):  Default: False.
+        deleted_at (Union[None, Unset, datetime.datetime]):
     """
 
     workspace_id: str
@@ -31,6 +33,8 @@ class SearchQuerySet:
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
+    deleted: Union[Unset, bool] = False
+    deleted_at: Union[None, Unset, datetime.datetime] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -56,6 +60,16 @@ class SearchQuerySet:
         if not isinstance(self.updated_at, Unset):
             updated_at = self.updated_at.isoformat()
 
+        deleted = self.deleted
+
+        deleted_at: Union[None, Unset, str]
+        if isinstance(self.deleted_at, Unset):
+            deleted_at = UNSET
+        elif isinstance(self.deleted_at, datetime.datetime):
+            deleted_at = self.deleted_at.isoformat()
+        else:
+            deleted_at = self.deleted_at
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -72,6 +86,10 @@ class SearchQuerySet:
             field_dict["created_at"] = created_at
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
+        if deleted is not UNSET:
+            field_dict["deleted"] = deleted
+        if deleted_at is not UNSET:
+            field_dict["deleted_at"] = deleted_at
 
         return field_dict
 
@@ -109,6 +127,25 @@ class SearchQuerySet:
         else:
             updated_at = isoparse(_updated_at)
 
+        deleted = d.pop("deleted", UNSET)
+
+        def _parse_deleted_at(data: object) -> Union[None, Unset, datetime.datetime]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                deleted_at_type_0 = isoparse(data)
+
+                return deleted_at_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union[None, Unset, datetime.datetime], data)
+
+        deleted_at = _parse_deleted_at(d.pop("deleted_at", UNSET))
+
         search_query_set = cls(
             workspace_id=workspace_id,
             queries=queries,
@@ -117,6 +154,8 @@ class SearchQuerySet:
             field_id=field_id,
             created_at=created_at,
             updated_at=updated_at,
+            deleted=deleted,
+            deleted_at=deleted_at,
         )
 
         search_query_set.additional_properties = d

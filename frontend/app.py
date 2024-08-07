@@ -1,10 +1,12 @@
 import streamlit as st
 
-from src.shared import get_client
+from src.shared import get_client, show_all_toasts
 
 
 client = get_client()
 
+
+show_all_toasts()
 
 pg = st.navigation(
     [

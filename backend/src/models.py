@@ -39,6 +39,8 @@ class SearchQuerySet(Document):
     region: Region
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    deleted: bool = False
+    deleted_at: PastDatetime | None = None
 
     class Settings:
         name: str = ApiSettings().mongodb_search_query_sets_collection
@@ -51,7 +53,9 @@ class IngestionRun(Document):
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     trigger: str = "manual"
     status: Literal["running", "completed", "failed"]
-    error: str | None = None
+    error: str | None = (
+        None  # can be timeout (we should check for long duration ingestion and mark it as failed)
+    )
     # TODO : search result
 
     class Settings:

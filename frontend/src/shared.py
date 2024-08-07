@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import streamlit as st
 
 from sdk.so_insights_client.api.workspaces import list_workspaces
@@ -28,3 +29,25 @@ def select_workspace(client, show_description: bool = False) -> Workspace | None
         options=workspaces,
         format_func=format_workspace,
     )
+
+
+def create_toast(text: str, icon: str = "🚀") -> None:
+    """Workaround for showing toasts where you have to use st.rerun() just after."""
+    created_at = datetime.now()
+    st.session_state.toasts = st.session_state.get("toasts", []) + [
+        {"text": text, "icon": icon, "created_at": created_at}
+    ]
+
+
+def show_all_toasts():
+    toasts = st.session_state.get("toasts", [])
+    TOAST_DURATION = timedelta(seconds=5)
+    to_delete = []
+    for toast in toasts:
+        if datetime.now() - toast["created_at"] > TOAST_DURATION:
+            to_delete.append(toast)
+            continue
+        text, icon = toast["text"], toast["icon"]
+        st.toast(text, icon=icon)
+    for toast in to_delete:
+        toasts.remove(toast)

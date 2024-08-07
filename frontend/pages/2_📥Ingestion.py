@@ -3,9 +3,10 @@ from sdk.so_insights_client.models.search_query_set import SearchQuerySet
 from sdk.so_insights_client.api.search_query_sets import (
     create_search_query_set,
     list_search_query_sets,
+    delete_search_query_set,
 )
 from sdk.so_insights_client.models import SearchQuerySetCreate, Region
-from src.shared import get_client, select_workspace
+from src.shared import create_toast, get_client, select_workspace
 
 client = get_client()
 
@@ -87,8 +88,21 @@ else:
 
             # "Trigger a Search" button
             if st.button(
-                "Trigger a Search",
+                "🔍 Trigger a Search",
                 key=f"trigger_search_{query_set.field_id}",
                 type="primary",
             ):
                 st.warning("This is not implemented yet :(")
+
+            # delete button
+            if st.button(
+                "❌ Delete",
+                key=f"delete_search_query_set_{query_set.field_id}",
+            ):
+                delete_search_query_set.sync(
+                    client=client,
+                    workspace_id=str(workspace.field_id),
+                    search_query_set_id=str(query_set.field_id),
+                )
+                create_toast(f"**{query_set.title}** deleted successfully!", icon="🗑️")
+                st.rerun()

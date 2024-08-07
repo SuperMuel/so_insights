@@ -22,7 +22,11 @@ async def get_search_query_set(
 ) -> SearchQuerySet:
     search_query_set = await SearchQuerySet.get(search_query_set_id)
 
-    if not search_query_set or search_query_set.workspace_id != workspace.id:
+    if (
+        not search_query_set
+        or search_query_set.workspace_id != workspace.id
+        or search_query_set.deleted
+    ):
         raise HTTPException(status_code=404, detail="Search query set not found")
 
     return search_query_set

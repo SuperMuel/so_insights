@@ -29,7 +29,8 @@ async def create_search_query_set(
 )
 async def list_search_query_sets(workspace: ExistingWorkspace):
     return await SearchQuerySet.find(
-        SearchQuerySet.workspace_id == workspace.id
+        SearchQuerySet.workspace_id == workspace.id,
+        SearchQuerySet.deleted == False,  # noqa
     ).to_list()
 
 
@@ -55,3 +56,15 @@ async def update_search_query_set(
     update_data["updated_at"] = utc_datetime_factory()
     await search_query_set.update({"$set": update_data})
     return search_query_set
+
+
+@router.delete(
+    "/{search_query_set_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="delete_search_query_set",
+)
+async def delete_search_query_set(search_query_set: ExistingSearchQuerySet):
+    search_query_set.deleted = True
+    search_query_set.deleted_at = utc_datetime_factory()
+    await search_query_set.replace()
+    return None
