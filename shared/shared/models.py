@@ -5,8 +5,8 @@ from beanie import Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
-from shared.shared.region import Region
-from db_settings import DBSettings
+from shared.region import Region
+from shared.db_settings import DBSettings
 
 from pydantic import StringConstraints
 

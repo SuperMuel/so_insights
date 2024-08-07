@@ -1114,7 +1114,7 @@ description = ""
 optional = false
 python-versions = "^3.12"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 beanie = "^1.26.0"
@@ -1465,4 +1465,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b70e3131e436c6f5d2df9c91a97aa52981aebe2652c7cf11a93416e0fcc58dc5"
+content-hash = "8c8a3ce2459900820f0eebbc9a7db5c0b017e69fba4f0f1abc5b178bd934aeae"

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from shared.shared.db import get_client, my_init_beanie
+from shared.db import get_client, my_init_beanie
 
 from src.routers import search_query_sets, workspaces
 
