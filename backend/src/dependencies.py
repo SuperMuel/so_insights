@@ -3,7 +3,7 @@ from typing import Annotated
 from beanie import PydanticObjectId
 from fastapi import Depends, HTTPException
 
-from shared.models import SearchQuerySet, Workspace
+from shared.shared.models import SearchQuerySet, Workspace
 
 
 async def get_workspace(workspace_id: str | PydanticObjectId) -> Workspace:

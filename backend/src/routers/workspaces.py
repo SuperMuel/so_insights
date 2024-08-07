@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 from src.dependencies import ExistingWorkspace
-from shared.models import Workspace, utc_datetime_factory
+from shared.shared.models import Workspace, utc_datetime_factory
 from src.schemas import WorkspaceUpdate
 
 router = APIRouter(tags=["workspaces"])
