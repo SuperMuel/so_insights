@@ -10,8 +10,8 @@ from shared.models import (
 from motor.motor_asyncio import AsyncIOMotorClient
 
 
-def get_client():
-    return AsyncIOMotorClient(DBSettings().mongodb_uri)
+def get_client(mongodb_uri):
+    return AsyncIOMotorClient(mongodb_uri)
 
 
 async def my_init_beanie(client):

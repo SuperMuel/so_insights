@@ -12,6 +12,12 @@ pydantic-settings = "^2.4.0"
 pymongo = "^4.8.0"
 
 
+[tool.poetry.group.dev.dependencies]
+setuptools = "^72.1.0"
+pytest = "^8.3.2"
+make-it-sync = "^2.0.0"
+mongomock-motor = "^0.0.31"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

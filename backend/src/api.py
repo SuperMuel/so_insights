@@ -1,6 +1,8 @@
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 
 from fastapi import FastAPI
 
@@ -23,7 +25,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = get_client()
+    load_dotenv()
+
+    client = get_client(os.environ["MONGODB_URI"])
 
     await my_init_beanie(client)
 

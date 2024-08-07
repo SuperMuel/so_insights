@@ -1,34 +1,36 @@
-# SoInsights API
+# SO Insights Backend
 
-## Heroku Deploy 
-`cd backend`
+This is the backend service for the SO Insights project. It's built with FastAPI and uses MongoDB for data storage.
 
-### Install the Heroku CLI
-https://devcenter.heroku.com/articles/heroku-cli
-
-
-### Create a new app on Heroku
+## Building the Docker Image
 ```bash
-heroku create --buildpack https://github.com/moneymeets/python-poetry-buildpack.git so-insights-api
+docker build -t so-insights-backend -f backend/Dockerfile .
 ```
+   
+Note: The build command is run from the root directory of the project, not from the backend directory. This is because the Dockerfile needs access to the `shared` package located in the parent directory.
 
-### Set the environment variables on Heroku
-```bash
-heroku config:set MONGODB_URI=mongodb://your-uri
-heroku config:set MONGODB_DATABASE=the_name_of_the_db
-```
+## Running the Docker Container
 
-### Deploy the app
-```bash
-git push heroku main
-```
+Create a `.env` file in the `backend` directory if it doesn't exist already. Add your environment variables.
 
-### Scale the app
+2. Run the Docker container:
 ```bash
-heroku ps:scale web=1
+docker run -p 8000:8000 --e MONGODB_URI="..." -e MONGODB_DATABSE="actual_db_name" so-insights-backend
 ```
+3. The API should now be accessible at `http://localhost:8000`.
 
-### Open the app
-```bash
-heroku open
-```
+## API Documentation
+
+Once the server is running, you can access the API documentation:
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+## Development
+For development purposes, you might want to run the application outside of Docker. To do this:
+
+1. Ensure you have Python 3.12 installed.
+2. Install Poetry: `pip install poetry`
+3. Navigate to the backend directory: `cd backend`
+4. Install dependencies: `poetry install`
+5. Run the application: `poetry run uvicorn src.api:app --reload`
