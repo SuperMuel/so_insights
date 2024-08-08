@@ -13,6 +13,9 @@ so-insights-back = { path = "backend", develop = true }
 so-insights-front = { path = "frontend", develop = true }
 
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.5.6"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -1,7 +1,10 @@
 from fastapi import APIRouter, status
 from src.dependencies import ExistingWorkspace
 from shared.models import Workspace, utc_datetime_factory
-from src.schemas import WorkspaceUpdate
+from src.schemas import WorkspaceUpdate, WorkspaceCreate
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 router = APIRouter(tags=["workspaces"])
 
@@ -12,9 +15,8 @@ router = APIRouter(tags=["workspaces"])
     status_code=status.HTTP_201_CREATED,
     operation_id="create_workspace",
 )
-async def create_workspace(workspace: Workspace):
-    await workspace.insert()
-    return workspace
+async def create_workspace(workspace: WorkspaceCreate):
+    return await Workspace(**workspace.model_dump()).insert()
 
 
 @router.get(
@@ -43,6 +45,7 @@ async def get_workspace(workspace: ExistingWorkspace):
 async def update_workspace(
     workspace_update: WorkspaceUpdate, workspace: ExistingWorkspace
 ):
+    # TODO : this code does not inherit from the Workspace validations
     update_data = workspace_update.model_dump(exclude_unset=True)
     update_data["updated_at"] = utc_datetime_factory()
     return await workspace.update({"$set": update_data})

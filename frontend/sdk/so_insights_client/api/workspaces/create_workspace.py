@@ -7,12 +7,13 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.http_validation_error import HTTPValidationError
 from ...models.workspace import Workspace
+from ...models.workspace_create import WorkspaceCreate
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    body: Workspace,
+    body: WorkspaceCreate,
 ) -> Dict[str, Any]:
     headers: Dict[str, Any] = {}
 
@@ -61,12 +62,12 @@ def _build_response(
 def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Workspace,
+    body: WorkspaceCreate,
 ) -> Response[Union[HTTPValidationError, Workspace]]:
     """Create Workspace
 
     Args:
-        body (Workspace):
+        body (WorkspaceCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -90,12 +91,12 @@ def sync_detailed(
 def sync(
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Workspace,
+    body: WorkspaceCreate,
 ) -> Optional[Union[HTTPValidationError, Workspace]]:
     """Create Workspace
 
     Args:
-        body (Workspace):
+        body (WorkspaceCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -114,12 +115,12 @@ def sync(
 async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Workspace,
+    body: WorkspaceCreate,
 ) -> Response[Union[HTTPValidationError, Workspace]]:
     """Create Workspace
 
     Args:
-        body (Workspace):
+        body (WorkspaceCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -141,12 +142,12 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Workspace,
+    body: WorkspaceCreate,
 ) -> Optional[Union[HTTPValidationError, Workspace]]:
     """Create Workspace
 
     Args:
-        body (Workspace):
+        body (WorkspaceCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

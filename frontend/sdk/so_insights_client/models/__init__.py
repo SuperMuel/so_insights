@@ -7,6 +7,7 @@ from .search_query_set_create import SearchQuerySetCreate
 from .search_query_set_update import SearchQuerySetUpdate
 from .validation_error import ValidationError
 from .workspace import Workspace
+from .workspace_create import WorkspaceCreate
 from .workspace_update import WorkspaceUpdate
 
 __all__ = (
@@ -17,5 +18,6 @@ __all__ = (
     "SearchQuerySetUpdate",
     "ValidationError",
     "Workspace",
+    "WorkspaceCreate",
     "WorkspaceUpdate",
 )

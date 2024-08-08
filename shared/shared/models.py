@@ -15,13 +15,18 @@ def utc_datetime_factory():
     return datetime.now(UTC)
 
 
+ModelTitle = Annotated[
+    str, StringConstraints(min_length=3, max_length=30, strip_whitespace=True)
+]
+
+ModelDescription = Annotated[
+    str, StringConstraints(max_length=500, strip_whitespace=True)
+]
+
+
 class Workspace(Document):
-    name: Annotated[
-        str, StringConstraints(min_length=3, max_length=30, strip_whitespace=True)
-    ]
-    description: Annotated[
-        str, StringConstraints(max_length=500, strip_whitespace=True)
-    ] = Field(default="")
+    name: ModelTitle
+    description: ModelDescription = Field(default="")
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
@@ -32,9 +37,7 @@ class Workspace(Document):
 class SearchQuerySet(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     queries: list[str]
-    title: Annotated[
-        str, StringConstraints(min_length=3, max_length=30, strip_whitespace=True)
-    ]
+    title: ModelTitle
     region: Region
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
