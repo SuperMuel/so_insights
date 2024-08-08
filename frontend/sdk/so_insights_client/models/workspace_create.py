@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type, TypeVar, Union, cast
+from typing import Any, Dict, Type, TypeVar, Union
 
 from attrs import define as _attrs_define
 
@@ -12,20 +12,16 @@ class WorkspaceCreate:
     """
     Attributes:
         name (str):
-        description (Union[None, Unset, str]):
+        description (Union[Unset, str]):  Default: ''.
     """
 
     name: str
-    description: Union[None, Unset, str] = UNSET
+    description: Union[Unset, str] = ""
 
     def to_dict(self) -> Dict[str, Any]:
         name = self.name
 
-        description: Union[None, Unset, str]
-        if isinstance(self.description, Unset):
-            description = UNSET
-        else:
-            description = self.description
+        description = self.description
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(
@@ -43,14 +39,7 @@ class WorkspaceCreate:
         d = src_dict.copy()
         name = d.pop("name")
 
-        def _parse_description(data: object) -> Union[None, Unset, str]:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(Union[None, Unset, str], data)
-
-        description = _parse_description(d.pop("description", UNSET))
+        description = d.pop("description", UNSET)
 
         workspace_create = cls(
             name=name,
