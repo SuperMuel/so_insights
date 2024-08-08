@@ -1,6 +1,7 @@
 from beanie import init_beanie
 from shared.db_settings import DBSettings
 from shared.models import (
+    Cluster,
     Workspace,
     SearchQuerySet,
     IngestionRun,
@@ -21,6 +22,7 @@ async def my_init_beanie(client):
             Workspace,
             SearchQuerySet,
             IngestionRun,
+            Cluster,
             ClusteringSession,
             Article,
         ],
