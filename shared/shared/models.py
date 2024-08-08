@@ -80,7 +80,7 @@ class IngestionRun(Document):
     def is_finished(self) -> bool:
         return self.status in ("completed", "failed")
 
-    def is_not_finished(self) -> bool:
+    def is_running(self) -> bool:
         return not self.is_finished()
 
 

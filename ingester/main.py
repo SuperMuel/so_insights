@@ -125,7 +125,7 @@ async def main():
         last_run = await search_query_set.find_last_run()
 
         if last_run is not None:
-            if last_run.is_not_finished():
+            if last_run.is_running():
                 logger.warning(
                     f"Skipping search query set {search_query_set.id} because the last run is not finished"
                 )
