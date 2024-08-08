@@ -17,10 +17,9 @@ COPY backend /app/backend
 WORKDIR /app/backend
 
 # Install project dependencies
-RUN poetry install --no-dev
+RUN poetry install --only main
 
-# Expose the port the app runs on
-EXPOSE 8000
+EXPOSE ${PORT}
 
 # Command to run the application
-CMD ["poetry", "run", "uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD poetry run uvicorn src.api:app --host 0.0.0.0 --port ${PORT:-8000}

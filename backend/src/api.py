@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
@@ -8,10 +7,12 @@ from fastapi import FastAPI
 
 from shared.db import get_client, my_init_beanie
 
+from src.api_settings import APISettings
 from src.routers import search_query_sets, workspaces
 
 # TODO : API KEY AUTHENTICATION
 
+settings = APISettings()
 
 # Configure logging
 logging.basicConfig(
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     load_dotenv()
 
-    client = get_client(os.environ["MONGODB_URI"])
+    client = get_client(settings.MONGODB_URI)
 
     await my_init_beanie(client)
 
@@ -64,4 +65,4 @@ app.include_router(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=settings.PORT)
