@@ -3,21 +3,40 @@
 This is the backend service for the SO Insights project. It's built with FastAPI and uses MongoDB for data storage.
 
 ## Building the Docker Image
+
+To build the Docker image for the backend service, run the following command from the root directory of the project:
+
 ```bash
-docker build -t so-insights-backend -f backend/Dockerfile .
+docker build -t so-insights-api -f Dockerfile.api .
 ```
-   
-Note: The build command is run from the root directory of the project, not from the backend directory. This is because the Dockerfile needs access to the `shared` package located in the parent directory.
+
+Note: The build command is run from the root directory of the project, not from the backend directory. This is because the Dockerfile needs access to both the `backend` and `shared` directories.
 
 ## Running the Docker Container
 
-Create a `.env` file in the `backend` directory if it doesn't exist already. Add your environment variables.
+1. Set up environment variables:
+   You can either set environment variables directly or use a `.env` file.
+
+   - `MONGODB_URI`: Your MongoDB connection string
+   - `PORT` (optional): The port on which the API will run (default is 8000)
 
 2. Run the Docker container:
-```bash
-docker run -p 8000:8000 --e MONGODB_URI="..." -e MONGODB_DATABSE="actual_db_name" so-insights-backend
-```
-3. The API should now be accessible at `http://localhost:8000`.
+
+   ```bash
+   docker run -p 8000:8000 \
+     -e MONGODB_URI="mongodb://your_mongodb_uri" \
+     -e MONGODB_DATABASE="your_database_name" \
+     -e PORT=8000 \
+     so-insights-api
+   ```
+
+   Or, if you prefer using a `.env` file:
+
+   ```bash
+   docker run -p 8000:8000 --env-file ./backend/.env so-insights-api
+   ```
+
+3. The API should now be accessible at `http://localhost:8000` (or the port you specified).
 
 ## API Documentation
 
@@ -27,10 +46,12 @@ Once the server is running, you can access the API documentation:
 - ReDoc: `http://localhost:8000/redoc`
 
 ## Development
+
 For development purposes, you might want to run the application outside of Docker. To do this:
 
 1. Ensure you have Python 3.12 installed.
 2. Install Poetry: `pip install poetry`
 3. Navigate to the backend directory: `cd backend`
 4. Install dependencies: `poetry install`
-5. Run the application: `poetry run uvicorn src.api:app --reload`
+5. Set up your environment variables in a `.env` file in the `backend` directory.
+6. Run the application: `poetry run uvicorn src.api:app --reload`
