@@ -9,6 +9,9 @@ from shared.models import (
     Article,
 )
 from motor.motor_asyncio import AsyncIOMotorClient
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_client(mongodb_uri):
@@ -27,3 +30,5 @@ async def my_init_beanie(client):
             Article,
         ],
     )
+
+    logger.info("Beanie Initialized")

@@ -10,14 +10,17 @@ class IngesterSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-    INITIAL_SLEEP_TIME: int = 5
-    MAX_SLEEP_TIME: int = 60
-    MAX_RETRIES: int = 3
-    TIMEOUT: int = 30
+    MAX_RETRIES_PER_QUERY: int = 2
+    RETRY_SLEEP_TIME_S: int = 5
+    SLEEP_BETWEEN_QUERIES_S: int = 5
+    QUERY_TIMEOUT: int = 30
+
+    # Whether to log each search query during the search
+    VERBOSE_SEARCH: bool = True
 
     VOYAGE_API_KEY: str = Field(default=...)
     EMBEDDING_MODEL: str = "voyage-large-2-instruct"
-    EMBEDDING_BATCH_SIZE = 128
+    EMBEDDING_BATCH_SIZE: int = 128
 
     PINECONE_API_KEY: str = Field(default=...)
     PINECONE_INDEX: str = Field(default=...)
