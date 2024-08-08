@@ -47,13 +47,24 @@ class SearchQuerySet(Document):
     class Settings:
         name: str = DBSettings().mongodb_search_query_sets_collection
 
+    async def find_last_run(self) -> "IngestionRun | None":
+        return (
+            await IngestionRun.find(
+                IngestionRun.workspace_id == self.workspace_id,
+                IngestionRun.queries_set_id == self.id,
+            )
+            .sort(-IngestionRun.end_at)  # type: ignore
+            .first_or_none()
+        )
+
 
 class IngestionRun(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
+    queries_set_id: Annotated[PydanticObjectId, Indexed()]
     time_limit: Literal["d", "w", "m", "y"]
     max_results: int = Field(..., ge=1, le=100)
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    trigger: str = "manual"
+    end_at: PastDatetime | None = None
     status: Literal["running", "completed", "failed"]
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
@@ -62,6 +73,12 @@ class IngestionRun(Document):
 
     class Settings:
         name = DBSettings().mongodb_ingestion_runs_collection
+
+    def is_finished(self) -> bool:
+        return self.status in ("completed", "failed")
+
+    def is_not_finished(self) -> bool:
+        return not self.is_finished()
 
 
 class Article(Document):
