@@ -18,7 +18,7 @@ class IngesterSettings(BaseSettings):
     # Whether to log each search query during the search
     VERBOSE_SEARCH: bool = True
 
-    VOYAGE_API_KEY: str = Field(default=...)
+    VOYAGEAI_API_KEY: str = Field(default=...)
     EMBEDDING_MODEL: str = "voyage-large-2-instruct"
     EMBEDDING_BATCH_SIZE: int = 128
 

@@ -1,18 +1,15 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterable
-from beanie import PydanticObjectId
 from pydantic import HttpUrl
 from sdk.so_insights_client.models.workspace import Workspace
 from langchain.chains import create_history_aware_retriever
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
-from shared.models import Article
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.app_settings import AppSettings
 from src.shared import select_workspace, get_client
 import streamlit as st
 from langchain.chat_models import init_chat_model
-from langchain.chat_models.base import init_chat_model, BaseChatModel
 from langchain import hub
 from langchain_core.vectorstores.base import VectorStoreRetriever
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
@@ -49,7 +46,7 @@ load_dotenv()
 settings = AppSettings()
 
 embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameters "_client", "_aclient"
-    voyage_api_key=settings.VOYAGE_API_KEY,
+    voyage_api_key=settings.VOYAGEAI_API_KEY,
     model=settings.EMBEDDING_MODEL,
 )
 
@@ -75,7 +72,7 @@ def select_ai_model():
     return init_chat_model(selected)
 
 
-def select_time_limit() -> int:
+def select_time_limit() -> int:  # TODO : use this
     days_labels = {
         1: "Last 24h",
         2: "Last 2 days",
@@ -158,6 +155,7 @@ def format_docs(articles: SetOfUniqueArticles) -> str:
 
 
 def create_chain(retriever: VectorStoreRetriever):
+    # TODO : raise error if there are no documents to retrieve
     rag_chain = (
         RunnablePassthrough.assign(
             context=_create_history_aware_retriever(retriever)

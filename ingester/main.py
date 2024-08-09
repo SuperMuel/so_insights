@@ -41,6 +41,19 @@ def deduplicate_articles(articles: list[BaseArticle]) -> list[BaseArticle]:
     return list({article.url: article for article in articles}.values())
 
 
+def article_to_document(article: Article) -> Document:
+    return Document(
+        page_content=f"{article.title}\n{article.body}",
+        metadata={
+            "title": article.title,
+            "url": str(article.url),
+            "body": article.body,
+            "found_at": article.found_at.timestamp(),
+            "date": article.date.timestamp(),
+        },
+    )
+
+
 async def index_not_indexed_articles(
     pinecone_index: PineconeVectorStore,
 ) -> list[Article]:
@@ -50,19 +63,7 @@ async def index_not_indexed_articles(
 
     logger.info(f"Indexing {len(not_indexed)} articles")
 
-    documents = [
-        Document(
-            page_content=f"{article.title}\n{article.body}",
-            metadata={
-                "title": article.title,
-                "url": str(article.url),
-                "body": article.body,
-                "found_at": article.found_at.timestamp(),
-                "date": article.date.timestamp(),
-            },
-        )
-        for article in not_indexed
-    ]
+    documents = list(map(article_to_document, not_indexed))
 
     await pinecone_index.aadd_documents(documents)
 
@@ -88,7 +89,7 @@ async def main():
     await my_init_beanie(mongo_client)
 
     embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for parameters "_client", "_aclient"PylancereportCallIssue
-        voyage_api_key=settings.VOYAGE_API_KEY,
+        voyage_api_key=settings.VOYAGEAI_API_KEY,
         model=settings.EMBEDDING_MODEL,
         batch_size=settings.EMBEDDING_BATCH_SIZE,
     )

@@ -15,7 +15,7 @@ class AppSettings(BaseSettings):
         default=... if os.getenv("DYNO") else "http://localhost:8000"
     )
 
-    VOYAGE_API_KEY: str = Field(default=...)
+    VOYAGEAI_API_KEY: str = Field(default=...)
     EMBEDDING_MODEL: str = "voyage-large-2-instruct"
     EMBEDDING_BATCH_SIZE: int = 128
 
