@@ -5,6 +5,7 @@ from sdk.so_insights_client.api.search_query_sets import (
     list_search_query_sets,
     delete_search_query_set,
 )
+from sdk.so_insights_client.api.ingestion_runs import list_ingestion_runs
 from sdk.so_insights_client.models import SearchQuerySetCreate, Region
 from src.shared import create_toast, get_client, select_workspace
 
@@ -113,3 +114,25 @@ else:
                 )
                 create_toast(f"**{query_set.title}** deleted successfully!", icon="🗑️")
                 st.rerun()
+
+
+# Show list of ingestion runs
+st.subheader("Ingestion Runs")
+
+runs = list_ingestion_runs.sync(client=client, workspace_id=str(workspace.field_id))
+
+if not runs:
+    st.info("No ingestion runs found.")
+elif not isinstance(runs, list):
+    st.error(f"Failed to fetch ingestion runs. ({runs})")
+else:
+    for run in runs:
+        with st.expander(f"Run {run.field_id}"):
+            st.write(f"**Status:** {run.status}")
+            st.write(f"**Time Limit:** {run.time_limit}")
+            st.write(f"**Max Results:** {run.max_results}")
+            st.write(f"**Queries Set ID:** {run.queries_set_id}")
+            st.write(f"**Created At:** {run.created_at}")
+            st.write(f"**End At:** {run.end_at}")
+            st.write(f"**Successfull Queries:** {run.successfull_queries}")
+            st.write(f"**Error:** {run.error}")
