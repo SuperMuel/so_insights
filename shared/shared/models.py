@@ -49,7 +49,7 @@ class SearchQuerySet(Document):
     class Settings:
         name: str = DBSettings().mongodb_search_query_sets_collection
 
-    async def find_last_run(self) -> "IngestionRun | None":
+    async def find_last_finished_run(self) -> "IngestionRun | None":
         return (
             await IngestionRun.find(
                 IngestionRun.workspace_id == self.workspace_id,

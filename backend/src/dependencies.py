@@ -3,7 +3,7 @@ from typing import Annotated
 from beanie import PydanticObjectId
 from fastapi import Depends, HTTPException
 
-from shared.models import SearchQuerySet, Workspace
+from shared.models import IngestionRun, SearchQuerySet, Workspace
 
 
 async def get_workspace(workspace_id: str | PydanticObjectId) -> Workspace:
@@ -33,3 +33,15 @@ async def get_search_query_set(
 
 
 ExistingSearchQuerySet = Annotated[SearchQuerySet, Depends(get_search_query_set)]
+
+
+async def get_ingestion_run(
+    ingestion_run_id: str | PydanticObjectId, workspace: ExistingWorkspace
+) -> IngestionRun:
+    ingestion_run = await IngestionRun.get(ingestion_run_id)
+    if not ingestion_run or ingestion_run.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="Ingestion run not found")
+    return ingestion_run
+
+
+ExistingIngestionRun = Annotated[IngestionRun, Depends(get_ingestion_run)]

@@ -122,7 +122,7 @@ async def main():
             )
             continue
 
-        last_run = await search_query_set.find_last_run()
+        last_run = await search_query_set.find_last_finished_run()
 
         if last_run is not None:
             if last_run.is_running():

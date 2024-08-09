@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from shared.db import get_client, my_init_beanie
 
 from src.api_settings import APISettings
-from src.routers import search_query_sets, workspaces
+from src.routers import ingestion_runs, search_query_sets, workspaces
 
 # TODO : API KEY AUTHENTICATION
 
@@ -59,6 +59,10 @@ app.include_router(workspaces.router, prefix="/workspaces")
 app.include_router(
     search_query_sets.router,
     prefix="/workspaces/{workspace_id}/search-query-sets",
+)
+app.include_router(
+    ingestion_runs.router,
+    prefix="/workspaces/{workspace_id}/ingestion-runs",
 )
 
 
