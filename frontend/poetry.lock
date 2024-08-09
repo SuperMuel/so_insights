@@ -905,8 +905,8 @@ jsonpatch = ">=1.33,<2.0"
 langsmith = ">=0.1.75,<0.2.0"
 packaging = ">=23.2,<25"
 pydantic = [
-    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
     {version = ">=1,<3", markers = "python_full_version < \"3.12.4\""},
+    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 PyYAML = ">=5.3"
 tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<9.0.0"
@@ -972,8 +972,8 @@ files = [
 [package.dependencies]
 orjson = ">=3.9.14,<4.0.0"
 pydantic = [
-    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
     {version = ">=1,<3", markers = "python_full_version < \"3.12.4\""},
+    {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 requests = ">=2,<3"
 
@@ -1646,8 +1646,8 @@ files = [
 annotated-types = ">=0.4.0"
 pydantic-core = "2.20.1"
 typing-extensions = [
-    {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
     {version = ">=4.6.1", markers = "python_version < \"3.13\""},
+    {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
 ]
 
 [package.extras]
@@ -2235,6 +2235,24 @@ files = [
 ]
 
 [[package]]
+name = "shared"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = "^3.12"
+files = []
+develop = true
+
+[package.dependencies]
+beanie = "^1.26.0"
+pydantic-settings = "^2.4.0"
+pymongo = "^4.8.0"
+
+[package.source]
+type = "directory"
+url = "../shared"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -2757,4 +2775,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "bc160e5d03b7dd9f7632229ecd31485e0c8fe228203f22000fb79e6492386dde"
+content-hash = "f2b6cbe9be16fbc1053bee62b524bf96597959227653b8749396c4657570affe"

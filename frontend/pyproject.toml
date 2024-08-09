@@ -20,6 +20,7 @@ langchain-openai = "^0.1.20"
 langchain-community = "^0.2.11"
 langchainhub = "^0.1.20"
 beanie = "^1.26.0"
+shared = { path = "../shared", develop = true }
 
 
 [build-system]
