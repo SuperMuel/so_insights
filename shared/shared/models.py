@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import Annotated, Any, Dict, Literal
 
-from beanie import Document, Indexed, Link, PydanticObjectId
+from beanie import Document, Indexed, PydanticObjectId
 from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
@@ -164,7 +164,7 @@ class ClusteringSession(Document):
     async def get_included_sorted_clusters(self) -> list["Cluster"]:
         return await (
             Cluster.find_many(
-                Cluster.session.ref.id == self.id,
+                Cluster.session_id == self.id,
                 ClusterEvaluation.decision == "include",
             )
             .sort(-Cluster.articles_count)  # type: ignore
@@ -180,9 +180,7 @@ class ClusterEvaluation(BaseModel):
 
 class Cluster(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    session: Link[
-        ClusteringSession
-    ]  # TODO : change to simple session_id for consistency
+    session_id: Annotated[PydanticObjectId, Indexed()]
     articles_count: int = Field(
         ...,
         description="Number of articles in the cluster.",

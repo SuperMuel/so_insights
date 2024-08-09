@@ -9,7 +9,7 @@ from src.app_settings import AppSettings
 
 @st.cache_resource
 def get_client():
-    return Client(base_url=AppSettings().so_insights_api_url)
+    return Client(base_url=AppSettings().SO_INSIGHTS_API_URL)
 
 
 def select_workspace(client, show_description: bool = False) -> Workspace | None:

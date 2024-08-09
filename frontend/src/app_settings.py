@@ -11,6 +11,15 @@ class AppSettings(BaseSettings):
         extra="ignore",
     )
 
-    so_insights_api_url: str = Field(
+    SO_INSIGHTS_API_URL: str = Field(
         default=... if os.getenv("DYNO") else "http://localhost:8000"
     )
+
+    VOYAGE_API_KEY: str = Field(default=...)
+    EMBEDDING_MODEL: str = "voyage-large-2-instruct"
+    EMBEDDING_BATCH_SIZE: int = 128
+
+    PINECONE_API_KEY: str = Field(default=...)
+    PINECONE_INDEX: str = Field(default=...)
+
+    RETRIEVER_K: int = 30
