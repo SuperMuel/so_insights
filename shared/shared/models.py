@@ -23,6 +23,8 @@ ModelDescription = Annotated[
     str, StringConstraints(max_length=500, strip_whitespace=True)
 ]
 
+type TimeLimit = Literal["d", "w", "m", "y"]
+
 
 class Workspace(Document):
     name: ModelTitle
@@ -47,14 +49,26 @@ class SearchQuerySet(Document):
     class Settings:
         name: str = DBSettings().mongodb_search_query_sets_collection
 
+    async def find_last_run(self) -> "IngestionRun | None":
+        return (
+            await IngestionRun.find(
+                IngestionRun.workspace_id == self.workspace_id,
+                IngestionRun.queries_set_id == self.id,
+            )
+            .sort(-IngestionRun.end_at)  # type: ignore
+            .first_or_none()
+        )
+
 
 class IngestionRun(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    time_limit: Literal["d", "w", "m", "y"]
+    queries_set_id: Annotated[PydanticObjectId, Indexed()]
+    time_limit: TimeLimit
     max_results: int = Field(..., ge=1, le=100)
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    trigger: str = "manual"
+    end_at: PastDatetime | None = None
     status: Literal["running", "completed", "failed"]
+    successfull_queries: int | None = None
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
     )
@@ -63,17 +77,28 @@ class IngestionRun(Document):
     class Settings:
         name = DBSettings().mongodb_ingestion_runs_collection
 
+    def is_finished(self) -> bool:
+        return self.status in ("completed", "failed")
+
+    def is_running(self) -> bool:
+        return not self.is_finished()
+
 
 class Article(Document):
     workspace_id: PydanticObjectId
-    title: str = Field(..., min_length=1, max_length=200)
+    title: Annotated[
+        str, StringConstraints(min_length=1, max_length=200, strip_whitespace=True)
+    ]
     url: HttpUrl
-    body: str = Field(default="", max_length=1000)
+    body: Annotated[str, StringConstraints(max_length=1000, strip_whitespace=True)] = ""
     found_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     date: PastDatetime
     region: Region | None = None
     image: HttpUrl | None = None
-    source: str | None = Field(default=None, max_length=100)
+    source: Annotated[str, StringConstraints(max_length=100, strip_whitespace=True)] = (
+        ""
+    )
+
     vector_indexed: bool = False
 
     @field_validator("title", mode="before")
@@ -84,7 +109,16 @@ class Article(Document):
     @field_validator("body", mode="before")
     @classmethod
     def truncate_body(cls, v: str) -> str:
+        if not v:
+            return ""
         return v[:1000] if len(v) > 1000 else v
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def truncate_source(cls, v: str) -> str:
+        if not v:
+            return ""
+        return v[:100] if len(v) > 100 else v
 
     class Settings:
         name = DBSettings().mongodb_articles_collection

@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "ingester"
+version = "0.1.0"
+description = ""
+authors = ["Samuel Mallet  <69467005+SuperMuel@users.noreply.github.com>"]
+readme = "README.md"
+packages = [
+    { include = "src" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+shared = { path = "../shared", develop = true }
+pydantic-settings = "^2.4.0"
+langchain-voyageai = "^0.1.1"
+langchain-pinecone = "^0.1.3"
+duckduckgo-search = "^6.2.6"
+pydantic = "^2.8.2"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -19,21 +19,28 @@ with st.sidebar:
         st.stop()
 
 # Page Header
-st.title("Create a Set of Search Queries")
+st.title("Data ingestion")
+# explanations here
+st.markdown(
+    """
+    This page allows you to create and manage your keywords. Each Data Ingestion Profile of a list of keywords and a region. 
+    When you trigger a search, the search engine will search for the queries in the specified region and fill the database with the results.
+    """
+)
 
 # Form for Creating a Search Query Set
 with st.form("create_search_query_set"):
-    st.subheader("New Search Query Set Details")
+    st.subheader("New Data Ingestion")
 
     query_set_title = st.text_input(
         "Title*",
-        placeholder="Enter the title of the search query set",
+        placeholder="Enter a title for the set of keywords",
         max_chars=30,
     )
 
     queries_input = st.text_area(
-        "Search Queries*",
-        placeholder="Enter search queries, one per line.\n\nExample : \n\nArtificial Intelligence\nMachine Learning\nDeep Learning\nOpenAI\nChatGPT\nSam Altman\nAnthropic\nNew AI Model\nOpen Source AI",
+        "Keywords*",
+        placeholder="Enter the keywords one per line.\n\nExample : \n\nArtificial Intelligence\nMachine Learning\nDeep Learning\nOpenAI\nChatGPT\nSam Altman\nAnthropic\nNew AI Model\nOpen Source AI",
         height=200,
     )  # TODO : it's better to have a table with a line for each query
 
@@ -46,7 +53,7 @@ with st.form("create_search_query_set"):
         ).title(),  # TODO : show full region names
     )
 
-    if st.form_submit_button("Create Search Query Set"):
+    if st.form_submit_button("Create data ingestion"):
         if not query_set_title or not queries_input:
             st.error("Please fill in all the required fields.")
         else:
@@ -69,7 +76,7 @@ with st.form("create_search_query_set"):
                 st.error(f"Failed to create search query set. ({response})")
 
 # List existing Search Query Sets
-st.subheader("Existing Search Query Sets")
+st.subheader("Existing Data Ingestions")
 
 query_sets = list_search_query_sets.sync(
     client=client, workspace_id=str(workspace.field_id)
@@ -83,7 +90,7 @@ else:
     for query_set in query_sets:
         with st.expander(query_set.title):
             st.write(f"**Region:** {query_set.region.name.replace('_', ' ').title()}")
-            st.write(f"**{len(query_set.queries)} Queries:**")
+            st.write(f"**{len(query_set.queries)} Keywords:**")
             st.write(" - ".join([f"`{query}`" for query in query_set.queries]))
 
             # "Trigger a Search" button
