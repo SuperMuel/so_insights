@@ -83,6 +83,8 @@ def display_session_metrics(session: ClusteringSession):
 
 display_session_metrics(selected_session)
 
+st.divider()
+
 clusters_with_articles = list_clusters_with_articles_for_session.sync(
     client=client,
     session_id=str(selected_session.field_id),
@@ -104,23 +106,22 @@ def display_clusters(clusters: list[ClusterWithArticles]):
         col1, col2 = st.columns([2, 3])
 
         with col1:
-            with st.container(border=True):
-                if cluster.first_image:
-                    st.image(
-                        str(cluster.first_image),
-                        use_column_width=True,
-                    )
-                st.write(f"### {cluster.title}".replace("$", "\\$"))
-                st.write((cluster.summary or "").replace("$", "\\$"))
-                if cluster.overview_generation_error is not None:
-                    st.write(
-                        f"**Could not generate an overview of this cluster : {cluster.overview_generation_error}**"
-                    )
+            # with st.container(border=True):
+            if cluster.first_image:
+                st.image(
+                    str(cluster.first_image),
+                    use_column_width=True,
+                )
+            st.write(f"### {cluster.title}".replace("$", "\\$"))
+            st.write((cluster.summary or "").replace("$", "\\$"))
+            if cluster.overview_generation_error is not None:
+                st.write(
+                    f"**Could not generate an overview of this cluster : {cluster.overview_generation_error}**"
+                )
 
         with col2:
-            st.metric("Number of articles", cluster.articles_count)
             for article in cluster.articles:
-                st.write(f"[{article.title}]({article.url})".replace("$", "\\$"))
+                st.write(f"[**{article.title}**]({article.url})".replace("$", "\\$"))
                 st.caption(article.body.replace("$", "\\$"))
         st.divider()
 
