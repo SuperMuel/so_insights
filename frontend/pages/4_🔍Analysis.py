@@ -1,4 +1,4 @@
-from sdk.so_insights_client.models.cluster import Cluster
+from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 import streamlit as st
 from millify import millify
@@ -6,7 +6,7 @@ from millify import millify
 from sdk.so_insights_client.models.workspace import Workspace
 from sdk.so_insights_client.api.clustering import (
     list_clustering_sessions,
-    list_clusters_for_session,
+    list_clusters_with_articles_for_session,
 )
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 
@@ -62,21 +62,6 @@ sessions = list_clustering_sessions.sync(
 )
 
 
-clusters = list_clusters_for_session.sync(
-    client=client,
-    workspace_id=str(workspace.field_id),
-    session_id=str(selected_session.field_id),
-)
-
-if isinstance(clusters, HTTPValidationError):
-    st.error(clusters.detail)
-    st.stop()
-
-if not clusters:
-    st.warning("No clusters found for this session.")
-    st.stop()
-
-
 def display_session_metrics(session: ClusteringSession):
     metrics = [
         ("Number of clusters", session.clusters_count),
@@ -98,16 +83,31 @@ def display_session_metrics(session: ClusteringSession):
 
 display_session_metrics(selected_session)
 
+clusters_with_articles = list_clusters_with_articles_for_session.sync(
+    client=client,
+    session_id=str(selected_session.field_id),
+    workspace_id=str(workspace.field_id),
+)
 
-def display_clusters(clusters: list[Cluster]):
+
+if isinstance(clusters_with_articles, HTTPValidationError):
+    st.error(clusters_with_articles.detail)
+    st.stop()
+
+if not clusters_with_articles:
+    st.warning("No clusters found for this session.")
+    st.stop()
+
+
+def display_clusters(clusters: list[ClusterWithArticles]):
     for cluster in clusters:
-        with st.container(border=True):
-            col1, col2 = st.columns([1, 2])
+        col1, col2 = st.columns([2, 3])
 
-            with col1:
+        with col1:
+            with st.container(border=True):
                 if cluster.first_image:
                     st.image(
-                        cluster.first_image,
+                        str(cluster.first_image),
                         use_column_width=True,
                     )
                 st.write(f"### {cluster.title}".replace("$", "\\$"))
@@ -117,27 +117,12 @@ def display_clusters(clusters: list[Cluster]):
                         f"**Could not generate an overview of this cluster : {cluster.overview_generation_error}**"
                     )
 
-            with col2:
-                # Get 5 unique articles
-                # unique_articles = get_unique_articles(cluster["articles"], 5)
-                unique_articles = []
-
-                for article in unique_articles:
-                    st.write(
-                        f"[{article['title']}]({article['url']}) ({article.get('source', 'Unknown')})".replace(
-                            "$", "\\$"
-                        )
-                    )
-                    st.caption(article["body"].replace("$", "\\$"))
+        with col2:
+            st.metric("Number of articles", cluster.articles_count)
+            for article in cluster.articles:
+                st.write(f"[{article.title}]({article.url})".replace("$", "\\$"))
+                st.caption(article.body.replace("$", "\\$"))
+        st.divider()
 
 
-display_clusters(clusters)
-
-
-for cluster in clusters:
-    with st.expander(f"Cluster {cluster.field_id} - {cluster.articles_count} articles"):
-        st.write(f"Title: {cluster.title}")
-        st.write(f"Summary: {cluster.summary}")
-        if cluster.evaluation:
-            st.write(f"Evaluation: {cluster.evaluation.decision}")
-            st.write(f"Justification: {cluster.evaluation.justification}")
+display_clusters(clusters_with_articles)

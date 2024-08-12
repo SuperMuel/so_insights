@@ -4,7 +4,9 @@ from src.dependencies import (
     ExistingClusteringSession,
     ExistingWorkspace,
 )
-from shared.models import ClusteringSession, Cluster
+from beanie.operators import In
+from shared.models import Article, ClusteringSession, Cluster
+from src.schemas import ArticlePreview, ClusterWithArticles
 
 router = APIRouter(tags=["clustering"])
 
@@ -58,3 +60,42 @@ async def list_clusters(session: ExistingClusteringSession):
 async def get_cluster(cluster: ExistingCluster):
     """Get a specific cluster"""
     return cluster
+
+
+@router.get(
+    "/sessions/{session_id}/clusters-with-articles",
+    response_model=list[ClusterWithArticles],
+    operation_id="list_clusters_with_articles_for_session",
+)
+async def list_clusters_with_articles(
+    session: ExistingClusteringSession, n_articles: int = 5
+):
+    """List all clusters with their top N articles for a specific clustering session"""
+    clusters = (
+        await Cluster.find(
+            Cluster.session_id == session.id,
+            Cluster.workspace_id == session.workspace_id,
+        )
+        .sort(-Cluster.articles_count)  # type: ignore
+        .to_list()
+    )
+
+    result = []
+    for cluster in clusters:
+        articles = await Article.find(
+            In(Article.id, cluster.articles_ids[:n_articles])
+        ).to_list()
+        article_previews = [
+            ArticlePreview(
+                id=str(article.id),
+                title=article.title,
+                url=article.url,
+                body=article.body,
+                date=article.date,
+                source=article.source,
+            )
+            for article in articles
+        ]
+        result.append(ClusterWithArticles.from_cluster(cluster, article_previews))
+
+    return result

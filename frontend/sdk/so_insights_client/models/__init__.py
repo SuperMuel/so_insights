@@ -1,8 +1,10 @@
 """Contains all the data models used in inputs/outputs"""
 
+from .article_preview import ArticlePreview
 from .cluster import Cluster
 from .cluster_evaluation import ClusterEvaluation
 from .cluster_evaluation_decision import ClusterEvaluationDecision
+from .cluster_with_articles import ClusterWithArticles
 from .clustering_session import ClusteringSession
 from .clustering_session_metadata import ClusteringSessionMetadata
 from .http_validation_error import HTTPValidationError
@@ -19,11 +21,13 @@ from .workspace_create import WorkspaceCreate
 from .workspace_update import WorkspaceUpdate
 
 __all__ = (
+    "ArticlePreview",
     "Cluster",
     "ClusterEvaluation",
     "ClusterEvaluationDecision",
     "ClusteringSession",
     "ClusteringSessionMetadata",
+    "ClusterWithArticles",
     "HTTPValidationError",
     "IngestionRun",
     "IngestionRunStatus",
