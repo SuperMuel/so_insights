@@ -1,5 +1,7 @@
 import asyncio
 from typing import Literal
+
+import typer
 from beanie import BulkWriter
 from beanie.odm.operators.update.general import Set
 from pymongo.errors import BulkWriteError
@@ -117,13 +119,17 @@ async def create_ingestion_run(
 ) -> IngestionRun:
     """Creates and insert an IngestionRun for this SearchQuerySet"""
     assert search_query_set.id
-    return await IngestionRun(
+    run = await IngestionRun(
         workspace_id=search_query_set.workspace_id,
         queries_set_id=search_query_set.id,
         status=status,
         time_limit=settings.TIME_LIMIT,
         max_results=settings.MAX_RESULTS,
     ).insert()
+
+    logger.info(f"Created ingestion run {run.id} for search query set {search_query_set.id}")
+
+    return run
 
 
 async def perform_search_and_deduplicate_results(
@@ -253,11 +259,14 @@ async def handle_all_search_query_sets(ddgs: AsyncDDGS, get_pinecone_index):
     logger.info("Finished processing all search query sets")
 
 
-async def main():
+
+app = typer.Typer()
+
+async def setup():
     mongo_client = get_client(settings.MONGODB_URI)
     await my_init_beanie(mongo_client)
 
-    embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for parameters "_client", "_aclient"PylancereportCallIssue
+    embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for parameters "_client", "_aclient"
         voyage_api_key=settings.VOYAGEAI_API_KEY,
         model=settings.EMBEDDING_MODEL,
         batch_size=settings.EMBEDDING_BATCH_SIZE,
@@ -273,10 +282,40 @@ async def main():
 
     ddgs = AsyncDDGS(timeout=settings.QUERY_TIMEOUT)
 
-    await handle_all_search_query_sets(ddgs, get_pinecone_index)
+    return mongo_client, ddgs, get_pinecone_index
 
-    mongo_client.close()
+@app.command()
+def run_one(search_query_set_id: str):
+    """Run ingestion for a single SearchQuerySet"""
+    async def single_run():
+        mongo_client, ddgs, get_pinecone_index = await setup()
+        
+        search_query_set = await SearchQuerySet.get(search_query_set_id)
+        if not search_query_set:
+            typer.echo(f"SearchQuerySet with id {search_query_set_id} not found.")
+            return
+
+        await handle_search_query_set(search_query_set, ddgs, get_pinecone_index)
+
+        mongo_client.close()
+
+    asyncio.run(single_run())
+
+@app.command()
+def run_all():
+    """Run ingestion for all SearchQuerySets"""
+    async def all_runs():
+        mongo_client, ddgs, get_pinecone_index = await setup()
+        
+        await handle_all_search_query_sets(ddgs, get_pinecone_index)
+
+        mongo_client.close()
+
+    asyncio.run(all_runs())
+
+
+
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    app()
