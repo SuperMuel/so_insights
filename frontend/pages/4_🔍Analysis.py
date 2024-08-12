@@ -36,8 +36,7 @@ def select_session(workspace: Workspace) -> ClusteringSession:
     session = st.selectbox(
         "Select a clustering session",
         options=sessions,
-        # format_func with Start and end dates in human readable format # data_start: datetime.datetime data_end: datetime.datetime. Use month names instead of numbers.
-        format_func=lambda s: f"{s.data_start.strftime('%d %B %Y')} - {s.data_end.strftime('%d %B %Y')}",
+        format_func=lambda s: f"{s.data_start.strftime('%d %B %Y')} → {s.data_end.strftime('%d %B %Y')}",
     )
     if not session:
         st.warning("Please select a session.")

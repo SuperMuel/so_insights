@@ -22,4 +22,4 @@ WORKDIR /app/ingester
 RUN poetry install --only main
 
 # Command to run the ingester application
-CMD ["poetry", "run", "python", "main.py"]
+CMD ["poetry", "run", "python", "main.py", "run-all"]
