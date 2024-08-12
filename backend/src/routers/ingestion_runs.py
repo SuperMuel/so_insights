@@ -12,7 +12,11 @@ router = APIRouter(tags=["ingestion-runs"])
 
 @router.get("/", response_model=List[IngestionRun], operation_id="list_ingestion_runs")
 async def list_ingestion_runs(workspace: ExistingWorkspace):
-    return await IngestionRun.find(IngestionRun.workspace_id == workspace.id).to_list()
+    return (
+        await IngestionRun.find(IngestionRun.workspace_id == workspace.id)
+        .sort(-IngestionRun.created_at)  # type: ignore
+        .to_list()
+    )
 
 
 @router.get(

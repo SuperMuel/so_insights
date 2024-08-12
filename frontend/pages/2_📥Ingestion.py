@@ -1,3 +1,6 @@
+from typing import Literal
+from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
 import streamlit as st
 from sdk.so_insights_client.models.search_query_set import SearchQuerySet
 from sdk.so_insights_client.api.search_query_sets import (
@@ -121,18 +124,32 @@ st.subheader("Ingestion Runs")
 
 runs = list_ingestion_runs.sync(client=client, workspace_id=str(workspace.field_id))
 
+if isinstance(runs, HTTPValidationError):
+    st.error(runs.detail)
+    st.stop()
 if not runs:
     st.info("No ingestion runs found.")
-elif not isinstance(runs, list):
-    st.error(f"Failed to fetch ingestion runs. ({runs})")
-else:
-    for run in runs:
-        with st.expander(f"Run {run.field_id}"):
-            st.write(f"**Status:** {run.status}")
-            st.write(f"**Time Limit:** {run.time_limit}")
-            st.write(f"**Max Results:** {run.max_results}")
-            st.write(f"**Queries Set ID:** {run.queries_set_id}")
-            st.write(f"**Created At:** {run.created_at}")
-            st.write(f"**End At:** {run.end_at}")
-            st.write(f"**Successfull Queries:** {run.successfull_queries}")
-            st.write(f"**Error:** {run.error}")
+    st.stop()
+
+status_map: dict[IngestionRunStatus, Literal["running", "complete", "error"]] = {
+    IngestionRunStatus.RUNNING: "running",
+    IngestionRunStatus.COMPLETED: "complete",
+    IngestionRunStatus.FAILED: "error",
+}
+
+for run in runs:
+    status = st.status(
+        label=f"Run {run.field_id}",
+        state=status_map[run.status],
+    )
+    status.write(f"**Status:** {run.status}")
+    status.write(f"**Time Limit:** {run.time_limit}")
+    status.write(f"**Max Results:** {run.max_results}")
+    status.write(
+        f"**New articles found:** {run.n_inserted if run.n_inserted is not None else 'Unknown'}"
+    )
+    status.write(f"**Queries Set ID:** {run.queries_set_id}")
+    status.write(f"**Created At:** {run.created_at}")
+    status.write(f"**End At:** {run.end_at}")
+    status.write(f"**Successfull Queries:** {run.successfull_queries}")
+    status.write(f"**Error:** {run.error}")
