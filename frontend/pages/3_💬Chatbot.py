@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Iterable
 from pydantic import HttpUrl
 from sdk.so_insights_client.models.workspace import Workspace
@@ -82,6 +82,7 @@ def select_time_limit() -> int:  # TODO : use this
         30: "Last month",
         60: "Last 2 months",
         90: "Last 3 months",
+        -1: "All time",
     }
 
     selected = st.radio(
@@ -149,7 +150,7 @@ def convert_docs(docs: Iterable[Document]) -> SetOfUniqueArticles:
 def format_docs(articles: SetOfUniqueArticles) -> str:
     separator = "\n\n---\n\n"
     return separator.join(
-        f"{article.title} - (Published on {article.date})\n{article.url}\n{article.body}"
+        f"{article.title} - (Published on {article.date.strftime('%Y-%m-%d')})\n{article.url}\n{article.body}"
         for article in articles
     )
 
@@ -176,7 +177,27 @@ def create_chain(retriever: VectorStoreRetriever):
     )
 
 
-chain = create_chain(docsearch.as_retriever(search_kwargs={"k": settings.RETRIEVER_K}))
+retriever_filter = (
+    {
+        "date": {
+            "$gte": (datetime.now() - timedelta(days=time_limit_days)).timestamp()
+        },
+    }
+    if time_limit_days != -1
+    else {}
+)
+chain = create_chain(
+    docsearch.as_retriever(
+        search_kwargs={
+            "k": settings.RETRIEVER_K,
+            # Filter by date
+            "filter": {
+                **retriever_filter,
+                "workspace_id": workspace.field_id,
+            },
+        }
+    )
+)
 
 
 if prompt := st.chat_input("What would you like to know about your data ?"):
