@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from shared.db import get_client, my_init_beanie
 
 from src.api_settings import APISettings
-from src.routers import ingestion_runs, search_query_sets, workspaces
+from src.routers import clustering, ingestion_runs, search_query_sets, workspaces
 
 # TODO : API KEY AUTHENTICATION
 
@@ -65,6 +65,10 @@ app.include_router(
     prefix="/workspaces/{workspace_id}/ingestion-runs",
 )
 
+app.include_router(
+    clustering.router,
+    prefix="/workspaces/{workspace_id}/clustering",
+)
 
 if __name__ == "__main__":
     import uvicorn

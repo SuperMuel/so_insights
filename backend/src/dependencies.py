@@ -3,7 +3,13 @@ from typing import Annotated
 from beanie import PydanticObjectId
 from fastapi import Depends, HTTPException
 
-from shared.models import IngestionRun, SearchQuerySet, Workspace
+from shared.models import (
+    Cluster,
+    ClusteringSession,
+    IngestionRun,
+    SearchQuerySet,
+    Workspace,
+)
 
 
 async def get_workspace(workspace_id: str | PydanticObjectId) -> Workspace:
@@ -45,3 +51,29 @@ async def get_ingestion_run(
 
 
 ExistingIngestionRun = Annotated[IngestionRun, Depends(get_ingestion_run)]
+
+
+async def get_clustering_session(
+    session_id: str | PydanticObjectId, workspace: ExistingWorkspace
+) -> ClusteringSession:
+    session = await ClusteringSession.get(session_id)
+    if not session or session.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="Clustering session not found")
+    return session
+
+
+ExistingClusteringSession = Annotated[
+    ClusteringSession, Depends(get_clustering_session)
+]
+
+
+async def get_cluster(
+    cluster_id: str | PydanticObjectId, workspace: ExistingWorkspace
+) -> Cluster:
+    cluster = await Cluster.get(cluster_id)
+    if not cluster or cluster.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+    return cluster
+
+
+ExistingCluster = Annotated[Cluster, Depends(get_cluster)]
