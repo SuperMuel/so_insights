@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from langchain_core.runnables.config import RunnableConfig
 from datetime import datetime, timedelta
 from typing import Iterable
+from uuid import uuid4
 from pydantic import HttpUrl
 from sdk.so_insights_client.models.workspace import Workspace
 from langchain.chains import create_history_aware_retriever
@@ -53,6 +55,8 @@ embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameter
 
 client = get_client()
 
+if not st.session_state.get('session_id'):
+    st.session_state['session_id'] = uuid4().hex
 
 def _select_workspace() -> Workspace:
     workspaces = select_workspace(client)
@@ -100,6 +104,7 @@ history = StreamlitChatMessageHistory(key="chat_history")
 
 def reset_chat_button():
     if st.button("🗑️ Reset Chat"):
+        del st.session_state["session_id"]
         history.clear()
         st.rerun()
 
@@ -206,6 +211,10 @@ chain = create_chain(
     )
 )
 
+config = RunnableConfig(
+    metadata={"workspace_id": workspace.field_id},
+    configurable={"session_id": st.session_state.session_id},
+)
 
 if prompt := st.chat_input("What would you like to know about your data ?"):
     st.chat_message("user").markdown(prompt)
@@ -214,10 +223,7 @@ if prompt := st.chat_input("What would you like to know about your data ?"):
         full_response = ""
         for chunk in chain.stream(
             {"input": prompt},
-            config={
-                "metadata": {"workspace_id": workspace.field_id},
-                "configurable": {"session_id": "any"},
-            },
+            config=config,
         ):
             full_response += chunk
             message_placeholder.markdown(full_response + "▌")
