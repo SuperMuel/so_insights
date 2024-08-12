@@ -26,6 +26,7 @@ class IngestionRun:
         end_at (Union[None, Unset, datetime.datetime]):
         successfull_queries (Union[None, Unset, int]):
         error (Union[None, Unset, str]):
+        n_inserted (Union[None, Unset, int]):
     """
 
     workspace_id: str
@@ -38,6 +39,7 @@ class IngestionRun:
     end_at: Union[None, Unset, datetime.datetime] = UNSET
     successfull_queries: Union[None, Unset, int] = UNSET
     error: Union[None, Unset, str] = UNSET
+    n_inserted: Union[None, Unset, int] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,6 +83,12 @@ class IngestionRun:
         else:
             error = self.error
 
+        n_inserted: Union[None, Unset, int]
+        if isinstance(self.n_inserted, Unset):
+            n_inserted = UNSET
+        else:
+            n_inserted = self.n_inserted
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -102,6 +110,8 @@ class IngestionRun:
             field_dict["successfull_queries"] = successfull_queries
         if error is not UNSET:
             field_dict["error"] = error
+        if n_inserted is not UNSET:
+            field_dict["n_inserted"] = n_inserted
 
         return field_dict
 
@@ -169,6 +179,15 @@ class IngestionRun:
 
         error = _parse_error(d.pop("error", UNSET))
 
+        def _parse_n_inserted(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        n_inserted = _parse_n_inserted(d.pop("n_inserted", UNSET))
+
         ingestion_run = cls(
             workspace_id=workspace_id,
             queries_set_id=queries_set_id,
@@ -180,6 +199,7 @@ class IngestionRun:
             end_at=end_at,
             successfull_queries=successfull_queries,
             error=error,
+            n_inserted=n_inserted,
         )
 
         ingestion_run.additional_properties = d
