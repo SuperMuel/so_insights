@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import streamlit as st
+from streamlit.runtime.state import WidgetCallback
 
 from sdk.so_insights_client.api.workspaces import list_workspaces
 from sdk.so_insights_client.client import Client
@@ -12,7 +13,7 @@ def get_client():
     return Client(base_url=AppSettings().SO_INSIGHTS_API_URL)
 
 
-def select_workspace(client, show_description: bool = False) -> Workspace | None:
+def select_workspace(client, show_description: bool = False, on_change:WidgetCallback | None=None,) -> Workspace | None:
     workspaces = list_workspaces.sync(client=client)
     if workspaces is None:
         st.error("Workspaces not found")
@@ -28,6 +29,7 @@ def select_workspace(client, show_description: bool = False) -> Workspace | None
         "Select Workspace",
         options=workspaces,
         format_func=format_workspace,
+        on_change=on_change,
     )
 
 

@@ -691,6 +691,16 @@ files = [
 ]
 
 [[package]]
+name = "millify"
+version = "0.1.1"
+description = "Convert long numbers into a human-readable format in Python"
+optional = false
+python-versions = "*"
+files = [
+    {file = "millify-0.1.1.tar.gz", hash = "sha256:619defdc98b6d23f941b5ce4aaf4bf87a0e0f64cd0446ffa299be94486597f1a"},
+]
+
+[[package]]
 name = "motor"
 version = "3.5.1"
 description = "Non-blocking MongoDB driver for Tornado or asyncio"
@@ -2166,4 +2176,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "158dabfb537a61d908d35345efc3a332cf264cd1e898032dbf66f04bbab702f4"
+content-hash = "a51acbdbd98e4057bf69034957c36370fbdf4adeae001baa337a6d7bf5536b07"

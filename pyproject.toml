@@ -11,6 +11,7 @@ python = "^3.12"
 shared = { path = "shared", develop = true }
 so-insights-back = { path = "backend", develop = true }
 so-insights-front = { path = "frontend", develop = true }
+millify = "^0.1.1"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -2,7 +2,7 @@ import asyncio
 from typing import Literal
 
 import typer
-from beanie import BulkWriter
+from beanie import BulkWriter, PydanticObjectId
 from beanie.odm.operators.update.general import Set
 from pymongo.errors import BulkWriteError
 from duckduckgo_search import AsyncDDGS
@@ -49,6 +49,7 @@ def deduplicate_articles(articles: list[BaseArticle]) -> list[BaseArticle]:
 def article_to_document(article: Article) -> Document:
     return Document(
         page_content=f"{article.title}\n{article.body}",
+        id=str(article.id),
         metadata={
             "title": article.title,
             "url": str(article.url),
@@ -64,17 +65,20 @@ async def index_not_indexed_articles(
 ) -> list[Article]:
     assert pinecone_index._namespace
     not_indexed = await Article.find(
-        Article.workspace_id == pinecone_index._namespace,
+        Article.workspace_id == PydanticObjectId(pinecone_index._namespace),
         Article.vector_indexed == False,  # noqa: E712
     ).to_list()
+
+    if not not_indexed:
+        logger.info("No articles to index")
+        return []
 
     logger.info(f"Indexing {len(not_indexed)} articles")
 
     documents = list(map(article_to_document, not_indexed))
 
-    await pinecone_index.aadd_documents(documents)
+    await pinecone_index.aadd_documents(documents, ids=[str(article.id) for article in not_indexed])
 
-    print("Indexed.")
     return not_indexed
 
 

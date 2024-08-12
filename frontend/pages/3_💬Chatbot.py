@@ -58,8 +58,12 @@ client = get_client()
 if not st.session_state.get('session_id'):
     st.session_state['session_id'] = uuid4().hex
 
+def reset_chat():
+    del st.session_state["session_id"]
+    history.clear()
+
 def _select_workspace() -> Workspace:
-    workspaces = select_workspace(client)
+    workspaces = select_workspace(client, on_change=reset_chat)
     if not workspaces:
         st.warning("Please select a workspace.")
         st.stop()
@@ -93,6 +97,8 @@ def select_time_limit() -> int:  # TODO : use this
         "Select Time Limit",
         list(days_labels.keys()),
         format_func=lambda x: days_labels[x],
+        index=list(days_labels.keys()).index(-1),
+
     )
     assert selected is not None
 
@@ -102,11 +108,7 @@ def select_time_limit() -> int:  # TODO : use this
 history = StreamlitChatMessageHistory(key="chat_history")
 
 
-def reset_chat_button():
-    if st.button("🗑️ Reset Chat"):
-        del st.session_state["session_id"]
-        history.clear()
-        st.rerun()
+
 
 
 with st.sidebar:
@@ -114,7 +116,9 @@ with st.sidebar:
     workspace = _select_workspace()
     llm = select_ai_model()
     time_limit_days = select_time_limit()
-    reset_chat_button()
+    if st.button("🗑️ Reset Chat"):
+        reset_chat()
+        st.rerun()
 
 
 assert workspace.field_id

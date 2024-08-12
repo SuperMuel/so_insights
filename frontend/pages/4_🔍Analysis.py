@@ -1,5 +1,7 @@
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 import streamlit as st
+from millify import millify
+
 from sdk.so_insights_client.models.workspace import Workspace
 from sdk.so_insights_client.api.clustering import (
     list_clustering_sessions,
@@ -8,6 +10,9 @@ from sdk.so_insights_client.api.clustering import (
     get_cluster,
 )
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+
+st.set_page_config(page_title="Clustering Analysis", layout="wide")
+
 from src.shared import get_client, select_workspace
 
 client = get_client()
@@ -71,7 +76,19 @@ if not clusters:
     st.warning("No clusters found for this session.")
     st.stop()
 
+def display_session_metrics(session: ClusteringSession):
+    metrics = [
+        ("Number of clusters", session.clusters_count),
+        ("Number of articles assigned to clusters", millify(session.clustered_articles_count, precision=2)),
+        ("Number of noise articles", millify(session.noise_articles_count, precision=2)),
+        ("Number of articles analysed", millify(session.articles_count,precision=2)),
+    ]
 
+    cols = st.columns(len(metrics))
+    for i, (label, value) in enumerate(metrics):
+        cols[i].metric(label,value)
+
+display_session_metrics(selected_session)
 for cluster in clusters:
     with st.expander(f"Cluster {cluster.field_id} - {cluster.articles_count} articles"):
         st.write(f"Title: {cluster.title}")
