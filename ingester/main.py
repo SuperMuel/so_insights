@@ -1,5 +1,6 @@
 import asyncio
 from typing import Literal
+from itertools import batched
 
 import typer
 from beanie import BulkWriter, PydanticObjectId
@@ -8,7 +9,7 @@ from pymongo.errors import BulkWriteError
 from duckduckgo_search import AsyncDDGS
 from langchain_pinecone import PineconeVectorStore
 from langchain_voyageai import VoyageAIEmbeddings
-from shared.models import Article, IngestionRun, SearchQuerySet
+from shared.models import Article, IngestionRun, SearchQuerySet, Workspace
 from langchain_core.documents import Document
 
 from src.ingester_settings import IngesterSettings
@@ -77,7 +78,9 @@ async def index_not_indexed_articles(
 
     documents = list(map(article_to_document, not_indexed))
 
-    await pinecone_index.aadd_documents(documents, ids=[str(article.id) for article in not_indexed])
+    await pinecone_index.aadd_documents(
+        documents, ids=[str(article.id) for article in not_indexed]
+    )
 
     return not_indexed
 
@@ -131,7 +134,9 @@ async def create_ingestion_run(
         max_results=settings.MAX_RESULTS,
     ).insert()
 
-    logger.info(f"Created ingestion run {run.id} for search query set {search_query_set.id}")
+    logger.info(
+        f"Created ingestion run {run.id} for search query set {search_query_set.id}"
+    )
 
     return run
 
@@ -263,8 +268,51 @@ async def handle_all_search_query_sets(ddgs: AsyncDDGS, get_pinecone_index):
     logger.info("Finished processing all search query sets")
 
 
+async def upsert_articles_of_workspace(
+    workspace: Workspace, index: PineconeVectorStore, batch_size: int = 1000
+):
+    assert workspace.id
+    logger.info(f"Fetching articles for workspace {workspace.id}")
+    articles = await Article.find(
+        Article.workspace_id == workspace.id,
+        Article.vector_indexed == False,  # noqa: E712
+    ).to_list()
+    logger.info(
+        f"Found {len(articles)} not indexed articles for workspace {workspace.id}"
+    )
+
+    nb_batches = len(articles) // batch_size + 1
+
+    for i, batch in enumerate(batched(articles, batch_size)):
+        logger.info(
+            f"Upserting articles for workspace {workspace.id} ({i + 1}/{nb_batches})"
+        )
+        documents = [article_to_document(article) for article in batch]
+        await index.aadd_documents(
+            documents, ids=[str(article.id) for article in batch]
+        )
+        await mark_articles_as_vector_indexed(list(batch))
+
+    logger.info(f"Finished upserting articles for workspace {workspace.id}")
+
+
+async def upsert_articles_all_workspaces(get_pinecone_index):
+    workspaces = await Workspace.find_all().to_list()
+
+    logger.info(f"Upserting articles for {len(workspaces)} workspaces")
+
+    for i, workspace in enumerate(workspaces):
+        logger.info(
+            f"Upserting articles for workspace {workspace.id} ({i + 1}/{len(workspaces)})"
+        )
+        index = get_pinecone_index(workspace.id)
+        await upsert_articles_of_workspace(workspace, index)
+
+    logger.info("Finished upserting articles for all workspaces")
+
 
 app = typer.Typer()
+
 
 async def setup():
     mongo_client = get_client(settings.MONGODB_URI)
@@ -276,24 +324,26 @@ async def setup():
         batch_size=settings.EMBEDDING_BATCH_SIZE,
     )
 
-    def get_pinecone_index(namespace: str):
+    def get_pinecone_index(namespace: str | PydanticObjectId):
         return PineconeVectorStore(
             pinecone_api_key=settings.PINECONE_API_KEY,
             index_name=settings.PINECONE_INDEX,
             embedding=embeddings,
-            namespace=namespace,
+            namespace=str(namespace),
         )
 
     ddgs = AsyncDDGS(timeout=settings.QUERY_TIMEOUT)
 
     return mongo_client, ddgs, get_pinecone_index
 
+
 @app.command()
 def run_one(search_query_set_id: str):
     """Run ingestion for a single SearchQuerySet"""
+
     async def single_run():
         mongo_client, ddgs, get_pinecone_index = await setup()
-        
+
         search_query_set = await SearchQuerySet.get(search_query_set_id)
         if not search_query_set:
             typer.echo(f"SearchQuerySet with id {search_query_set_id} not found.")
@@ -305,12 +355,14 @@ def run_one(search_query_set_id: str):
 
     asyncio.run(single_run())
 
+
 @app.command()
 def run_all():
     """Run ingestion for all SearchQuerySets"""
+
     async def all_runs():
         mongo_client, ddgs, get_pinecone_index = await setup()
-        
+
         await handle_all_search_query_sets(ddgs, get_pinecone_index)
 
         mongo_client.close()
@@ -318,7 +370,38 @@ def run_all():
     asyncio.run(all_runs())
 
 
+@app.command()
+def upsert(workspace_id: str):
+    """Upsert articles for a single workspace"""
 
+    async def upsert_articles():
+        mongo_client, ddgs, get_pinecone_index = await setup()
+
+        workspace = await Workspace.get(workspace_id)
+        if not workspace:
+            typer.echo(f"Workspace with id {workspace_id} not found.")
+            return
+
+        index = get_pinecone_index(workspace_id)
+        await upsert_articles_of_workspace(workspace, index)
+
+        mongo_client.close()
+
+    asyncio.run(upsert_articles())
+
+
+@app.command()
+def upsert_all():
+    """Upsert articles for all workspaces"""
+
+    async def upsert_all_articles():
+        mongo_client, ddgs, get_pinecone_index = await setup()
+
+        await upsert_articles_all_workspaces(get_pinecone_index)
+
+        mongo_client.close()
+
+    asyncio.run(upsert_all_articles())
 
 
 if __name__ == "__main__":
