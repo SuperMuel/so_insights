@@ -1,4 +1,5 @@
 from typing import Literal
+import arrow
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
 import streamlit as st
@@ -86,37 +87,40 @@ query_sets = list_search_query_sets.sync(
     client=client, workspace_id=str(workspace.field_id)
 )
 
+if isinstance(query_sets, HTTPValidationError):
+    st.error(query_sets.detail)
+    st.stop()
+
 if not query_sets:
     st.info("No search query sets found.")
-elif not isinstance(query_sets, list):
-    st.error(f"Failed to fetch search query sets. ({query_sets})")
-else:
-    for query_set in query_sets:
-        with st.expander(query_set.title):
-            st.write(f"**Region:** {query_set.region.name.replace('_', ' ').title()}")
-            st.write(f"**{len(query_set.queries)} Keywords:**")
-            st.write(" - ".join([f"`{query}`" for query in query_set.queries]))
+    st.stop()
 
-            # "Trigger a Search" button
-            if st.button(
-                "🔍 Trigger a Search",
-                key=f"trigger_search_{query_set.field_id}",
-                type="primary",
-            ):
-                st.warning("This is not implemented yet :(")
+for query_set in query_sets:
+    with st.expander(query_set.title):
+        st.write(f"**Region:** {query_set.region.name.replace('_', ' ').title()}")
+        st.write(f"**{len(query_set.queries)} Keywords:**")
+        st.write(" - ".join([f"`{query}`" for query in query_set.queries]))
 
-            # delete button
-            if st.button(
-                "❌ Delete",
-                key=f"delete_search_query_set_{query_set.field_id}",
-            ):
-                delete_search_query_set.sync(
-                    client=client,
-                    workspace_id=str(workspace.field_id),
-                    search_query_set_id=str(query_set.field_id),
-                )
-                create_toast(f"**{query_set.title}** deleted successfully!", icon="🗑️")
-                st.rerun()
+        # "Trigger a Search" button
+        if st.button(
+            "🔍 Trigger a Search",
+            key=f"trigger_search_{query_set.field_id}",
+            type="primary",
+        ):
+            st.warning("This is not implemented yet :(")
+
+        # delete button
+        if st.button(
+            "❌ Delete",
+            key=f"delete_search_query_set_{query_set.field_id}",
+        ):
+            delete_search_query_set.sync(
+                client=client,
+                workspace_id=str(workspace.field_id),
+                search_query_set_id=str(query_set.field_id),
+            )
+            create_toast(f"**{query_set.title}** deleted successfully!", icon="🗑️")
+            st.rerun()
 
 
 # Show list of ingestion runs
@@ -138,8 +142,18 @@ status_map: dict[IngestionRunStatus, Literal["running", "complete", "error"]] = 
 }
 
 for run in runs:
+    assert run.created_at
+    created_at_str = arrow.get(run.created_at).humanize()
+
+    # get title from run.queries_set_id
+    query_set_title = next(
+        (q.title for q in query_sets if q.field_id == run.queries_set_id), None
+    ) or run.queries_set_id
+
+    new_articles_found = f"Found {run.n_inserted} articles" if run.n_inserted else ""
+
     status = st.status(
-        label=f"Run {run.field_id}",
+        label=f"**{query_set_title}** - {created_at_str} - {new_articles_found}",
         state=status_map[run.status],
     )
     status.write(f"**Status:** {run.status}")
