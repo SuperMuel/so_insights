@@ -95,11 +95,21 @@ def select_time_limit() -> int:  # TODO : use this
     return selected
 
 
+history = StreamlitChatMessageHistory(key="chat_history")
+
+
+def reset_chat_button():
+    if st.button("🗑️ Reset Chat"):
+        history.clear()
+        st.rerun()
+
+
 with st.sidebar:
     st.subheader("Parameters")
     workspace = _select_workspace()
     llm = select_ai_model()
     time_limit_days = select_time_limit()
+    reset_chat_button()
 
 
 assert workspace.field_id
@@ -110,9 +120,6 @@ docsearch = PineconeVectorStore(
     namespace=workspace.field_id,
     text_key="title",  # Page content of retrieved documents will be set to the articles titles
 )
-
-
-history = StreamlitChatMessageHistory(key="chat_history")
 
 
 def display_chat_history():
