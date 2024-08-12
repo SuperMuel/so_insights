@@ -72,7 +72,9 @@ class IngestionRun(Document):
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
     )
-    # TODO : search result
+
+    # Number of new articles found, that didn't exist in the database before
+    n_inserted: int | None = None
 
     class Settings:
         name = DBSettings().mongodb_ingestion_runs_collection

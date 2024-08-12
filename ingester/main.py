@@ -173,11 +173,13 @@ async def main():
 
         logger.info(f"Deduplicated to {len(articles)} articles")
 
+        n_inserted = None
+
         if not articles:
             logger.info("No articles to upsert")
+            n_inserted = 0
         else:
             logger.info("Upserting articles to mongodb")
-
             try:
                 inserted = await Article.insert_many(
                     [
@@ -193,11 +195,13 @@ async def main():
                 logger.info(
                     f"Inserted {len(inserted.inserted_ids)} articles to mongodb"
                 )
+                n_inserted = len(inserted.inserted_ids)
             except BulkWriteError as e:
                 logger.info(
                     f"Inserted {e.details['nInserted']} new documents into MongoDB."
                 )
                 logger.info(f"Encountered {len(e.details['writeErrors'])} duplicates.")
+                n_inserted = e.details["nInserted"]
 
             try:
                 pinecone_index = get_pinecone_index(str(search_query_set.workspace_id))
@@ -209,6 +213,8 @@ async def main():
             else:
                 await mark_articles_as_vector_indexed(indexed)
 
+        assert n_inserted is not None
+        run.n_inserted = n_inserted
         run.status = "completed"
         run.end_at = datetime.now(timezone.utc)
         await run.replace()
