@@ -57,9 +57,7 @@ class BaseArticle(BaseModel):
     @field_validator("image", mode="before")
     @classmethod
     def validate_image_url(cls, v: str) -> str | None:
-        if not validate_url(v):
-            return None
-        return v
+        return validate_url(v)
 
     @classmethod
     def try_parse(cls, d: dict):

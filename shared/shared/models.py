@@ -118,6 +118,7 @@ class Article(Document):
     def truncate_source(cls, v: str) -> str:
         if not v:
             return ""
+        v = str(v)
         return v[:100] if len(v) > 100 else v
 
     class Settings:
