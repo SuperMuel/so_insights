@@ -25,6 +25,7 @@ class Cluster:
         summary (Union[None, Unset, str]): AI generated summary of the cluster
         overview_generation_error (Union[None, Unset, str]): Error message if the overview generation failed
         evaluation (Union['ClusterEvaluation', None, Unset]):
+        first_image (Union[None, Unset, str]):
     """
 
     workspace_id: str
@@ -36,6 +37,7 @@ class Cluster:
     summary: Union[None, Unset, str] = UNSET
     overview_generation_error: Union[None, Unset, str] = UNSET
     evaluation: Union["ClusterEvaluation", None, Unset] = UNSET
+    first_image: Union[None, Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,6 +83,12 @@ class Cluster:
         else:
             evaluation = self.evaluation
 
+        first_image: Union[None, Unset, str]
+        if isinstance(self.first_image, Unset):
+            first_image = UNSET
+        else:
+            first_image = self.first_image
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -101,6 +109,8 @@ class Cluster:
             field_dict["overview_generation_error"] = overview_generation_error
         if evaluation is not UNSET:
             field_dict["evaluation"] = evaluation
+        if first_image is not UNSET:
+            field_dict["first_image"] = first_image
 
         return field_dict
 
@@ -170,6 +180,15 @@ class Cluster:
 
         evaluation = _parse_evaluation(d.pop("evaluation", UNSET))
 
+        def _parse_first_image(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        first_image = _parse_first_image(d.pop("first_image", UNSET))
+
         cluster = cls(
             workspace_id=workspace_id,
             session_id=session_id,
@@ -180,6 +199,7 @@ class Cluster:
             summary=summary,
             overview_generation_error=overview_generation_error,
             evaluation=evaluation,
+            first_image=first_image,
         )
 
         cluster.additional_properties = d

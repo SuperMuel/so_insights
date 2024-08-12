@@ -206,6 +206,8 @@ class Cluster(Document):
 
     evaluation: ClusterEvaluation | None = None
 
+    first_image: HttpUrl | None = None
+
     class Settings:
         name = DBSettings().mongodb_clusters_collection
 
