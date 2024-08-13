@@ -55,12 +55,14 @@ embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameter
 
 client = get_client()
 
-if not st.session_state.get('session_id'):
-    st.session_state['session_id'] = uuid4().hex
+if not st.session_state.get("session_id"):
+    st.session_state["session_id"] = uuid4().hex
+
 
 def reset_chat():
     del st.session_state["session_id"]
     history.clear()
+
 
 def _select_workspace() -> Workspace:
     workspaces = select_workspace(client, on_change=reset_chat)
@@ -98,7 +100,6 @@ def select_time_limit() -> int:  # TODO : use this
         list(days_labels.keys()),
         format_func=lambda x: days_labels[x],
         index=list(days_labels.keys()).index(-1),
-
     )
     assert selected is not None
 
@@ -106,10 +107,6 @@ def select_time_limit() -> int:  # TODO : use this
 
 
 history = StreamlitChatMessageHistory(key="chat_history")
-
-
-
-
 
 with st.sidebar:
     st.subheader("Parameters")
@@ -193,27 +190,20 @@ def create_chain(retriever: VectorStoreRetriever):
     )
 
 
-retriever_filter = (
-    {
+search_kwargs = {
+    "k": settings.RETRIEVER_K,
+    # Filter by date
+    "filter": {
         "date": {
             "$gte": (datetime.now() - timedelta(days=time_limit_days)).timestamp()
         },
     }
     if time_limit_days != -1
-    else {}
-)
-chain = create_chain(
-    docsearch.as_retriever(
-        search_kwargs={
-            "k": settings.RETRIEVER_K,
-            # Filter by date
-            "filter": {
-                **retriever_filter,
-                "workspace_id": workspace.field_id,
-            },
-        }
-    )
-)
+    else None,
+}
+
+
+chain = create_chain(docsearch.as_retriever(search_kwargs=search_kwargs))
 
 config = RunnableConfig(
     metadata={"workspace_id": workspace.field_id},
