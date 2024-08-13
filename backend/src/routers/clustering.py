@@ -1,10 +1,11 @@
+from typing import Literal
 from fastapi import APIRouter
 from src.dependencies import (
     ExistingCluster,
     ExistingClusteringSession,
     ExistingWorkspace,
 )
-from beanie.operators import In
+from beanie.operators import In, Exists, Or
 from shared.models import Article, ClusteringSession, Cluster
 from src.schemas import ArticlePreview, ClusterWithArticles
 
@@ -62,23 +63,45 @@ async def get_cluster(cluster: ExistingCluster):
     return cluster
 
 
+type RelevancyFilter = Literal["all", "relevant", "irrelevant", "unknown"]
+
+
 @router.get(
     "/sessions/{session_id}/clusters-with-articles",
     response_model=list[ClusterWithArticles],
     operation_id="list_clusters_with_articles_for_session",
 )
 async def list_clusters_with_articles(
-    session: ExistingClusteringSession, n_articles: int = 5
+    session: ExistingClusteringSession,
+    relevancy: RelevancyFilter = "all",
+    n_articles: int = 5,
 ):
     """List all clusters with their top N articles for a specific clustering session"""
-    clusters = (
-        await Cluster.find(
-            Cluster.session_id == session.id,
-            Cluster.workspace_id == session.workspace_id,
-        )
-        .sort(-Cluster.articles_count)  # type: ignore
-        .to_list()
+    clusters = Cluster.find(
+        Cluster.session_id == session.id,
+        Cluster.workspace_id == session.workspace_id,
     )
+
+    if relevancy == "unknown":
+        clusters = clusters.find(
+            Or(
+                Exists(Cluster.evaluation, False),
+                Cluster.evaluation == None,  # noqa: E711 # type: ignore
+            )
+        )
+    elif relevancy == "relevant" or relevancy == "irrelevant":
+        clusters = clusters.find(
+            Exists(Cluster.evaluation),
+            Cluster.evaluation.relevant == (relevancy == "relevant"),  # type: ignore
+        )
+    elif relevancy == "all":
+        pass
+    else:
+        raise ValueError(f"Invalid relevancy filter: {relevancy}")
+
+    clusters = await clusters.sort(
+        -Cluster.articles_count,  # type: ignore
+    ).to_list()
 
     result = []
     for cluster in clusters:

@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Type, TypeVar, Union, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..models.cluster_evaluation_decision import ClusterEvaluationDecision
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="ClusterEvaluation")
@@ -14,36 +13,36 @@ class ClusterEvaluation:
     """
     Attributes:
         justification (str):
-        decision (ClusterEvaluationDecision):
-        exclusion_reason (Union[None, Unset, str]):
+        relevant (bool):
+        irrelevancy_reason (Union[None, Unset, str]):
     """
 
     justification: str
-    decision: ClusterEvaluationDecision
-    exclusion_reason: Union[None, Unset, str] = UNSET
+    relevant: bool
+    irrelevancy_reason: Union[None, Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         justification = self.justification
 
-        decision = self.decision.value
+        relevant = self.relevant
 
-        exclusion_reason: Union[None, Unset, str]
-        if isinstance(self.exclusion_reason, Unset):
-            exclusion_reason = UNSET
+        irrelevancy_reason: Union[None, Unset, str]
+        if isinstance(self.irrelevancy_reason, Unset):
+            irrelevancy_reason = UNSET
         else:
-            exclusion_reason = self.exclusion_reason
+            irrelevancy_reason = self.irrelevancy_reason
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
                 "justification": justification,
-                "decision": decision,
+                "relevant": relevant,
             }
         )
-        if exclusion_reason is not UNSET:
-            field_dict["exclusion_reason"] = exclusion_reason
+        if irrelevancy_reason is not UNSET:
+            field_dict["irrelevancy_reason"] = irrelevancy_reason
 
         return field_dict
 
@@ -52,21 +51,21 @@ class ClusterEvaluation:
         d = src_dict.copy()
         justification = d.pop("justification")
 
-        decision = ClusterEvaluationDecision(d.pop("decision"))
+        relevant = d.pop("relevant")
 
-        def _parse_exclusion_reason(data: object) -> Union[None, Unset, str]:
+        def _parse_irrelevancy_reason(data: object) -> Union[None, Unset, str]:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
             return cast(Union[None, Unset, str], data)
 
-        exclusion_reason = _parse_exclusion_reason(d.pop("exclusion_reason", UNSET))
+        irrelevancy_reason = _parse_irrelevancy_reason(d.pop("irrelevancy_reason", UNSET))
 
         cluster_evaluation = cls(
             justification=justification,
-            decision=decision,
-            exclusion_reason=exclusion_reason,
+            relevant=relevant,
+            irrelevancy_reason=irrelevancy_reason,
         )
 
         cluster_evaluation.additional_properties = d

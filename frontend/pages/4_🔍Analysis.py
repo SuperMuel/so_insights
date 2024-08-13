@@ -1,5 +1,6 @@
 from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
+from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
 import streamlit as st
 from millify import millify
 
@@ -64,7 +65,7 @@ sessions = list_clustering_sessions.sync(
 
 def display_session_metrics(session: ClusteringSession):
     metrics = [
-        ("Number of clusters", session.clusters_count),
+        ("Total of clusters", session.clusters_count),
         (
             "Number of articles assigned to clusters",
             millify(session.clustered_articles_count, precision=2),
@@ -82,23 +83,6 @@ def display_session_metrics(session: ClusteringSession):
 
 
 display_session_metrics(selected_session)
-
-st.divider()
-
-clusters_with_articles = list_clusters_with_articles_for_session.sync(
-    client=client,
-    session_id=str(selected_session.field_id),
-    workspace_id=str(workspace.field_id),
-)
-
-
-if isinstance(clusters_with_articles, HTTPValidationError):
-    st.error(clusters_with_articles.detail)
-    st.stop()
-
-if not clusters_with_articles:
-    st.warning("No clusters found for this session.")
-    st.stop()
 
 
 def display_clusters(clusters: list[ClusterWithArticles]):
@@ -126,4 +110,36 @@ def display_clusters(clusters: list[ClusterWithArticles]):
         st.divider()
 
 
-display_clusters(clusters_with_articles)
+def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
+    clusters_with_articles = list_clusters_with_articles_for_session.sync(
+        client=client,
+        session_id=str(selected_session.field_id),
+        workspace_id=str(workspace.field_id),
+        relevancy=relevancy_filter,
+    )
+    if isinstance(clusters_with_articles, HTTPValidationError):
+        st.error(clusters_with_articles.detail)
+        st.stop()
+
+    if not clusters_with_articles:
+        st.warning("No clusters found for this session.")
+        st.stop()
+
+    display_clusters(clusters_with_articles)
+
+
+relevant, irrelevant, all, not_evaluated = st.tabs(
+    ["Relevant", "Irrelevant", "All", "Not evaluated"]
+)
+
+with relevant:
+    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.RELEVANT)
+
+with irrelevant:
+    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.IRRELEVANT)
+
+with all:
+    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.ALL)
+
+with not_evaluated:
+    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.UNKNOWN)

@@ -168,7 +168,7 @@ class ClusteringSession(Document):
         return await (
             Cluster.find_many(
                 Cluster.session_id == self.id,
-                ClusterEvaluation.decision == "include",
+                ClusterEvaluation.relevant == True,  # noqa: E712
             )
             .sort(-Cluster.articles_count)  # type: ignore
             .to_list()
@@ -177,8 +177,20 @@ class ClusteringSession(Document):
 
 class ClusterEvaluation(BaseModel):
     justification: str
-    decision: Literal["include", "exclude"]
-    exclusion_reason: str | None = None
+    relevant: bool
+    irrelevancy_reason: str | None = None
+
+    @field_validator("irrelevancy_reason")
+    @classmethod
+    def check_irrelevancy_reason(cls, v, values):
+        relevant = values.data.get("relevant")
+        if relevant is True and v is not None:
+            raise ValueError("irrelevancy_reason must be None when relevant is True")
+        if relevant is False and v is None:
+            raise ValueError(
+                "irrelevancy_reason must not be None when relevant is False"
+            )
+        return v
 
 
 class Cluster(Document):

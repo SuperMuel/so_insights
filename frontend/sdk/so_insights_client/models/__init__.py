@@ -3,7 +3,6 @@
 from .article_preview import ArticlePreview
 from .cluster import Cluster
 from .cluster_evaluation import ClusterEvaluation
-from .cluster_evaluation_decision import ClusterEvaluationDecision
 from .cluster_with_articles import ClusterWithArticles
 from .clustering_session import ClusteringSession
 from .clustering_session_metadata import ClusteringSessionMetadata
@@ -11,6 +10,7 @@ from .http_validation_error import HTTPValidationError
 from .ingestion_run import IngestionRun
 from .ingestion_run_status import IngestionRunStatus
 from .region import Region
+from .relevancy_filter import RelevancyFilter
 from .search_query_set import SearchQuerySet
 from .search_query_set_create import SearchQuerySetCreate
 from .search_query_set_update import SearchQuerySetUpdate
@@ -24,7 +24,6 @@ __all__ = (
     "ArticlePreview",
     "Cluster",
     "ClusterEvaluation",
-    "ClusterEvaluationDecision",
     "ClusteringSession",
     "ClusteringSessionMetadata",
     "ClusterWithArticles",
@@ -32,6 +31,7 @@ __all__ = (
     "IngestionRun",
     "IngestionRunStatus",
     "Region",
+    "RelevancyFilter",
     "SearchQuerySet",
     "SearchQuerySetCreate",
     "SearchQuerySetUpdate",
