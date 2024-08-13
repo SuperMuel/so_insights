@@ -1,4 +1,4 @@
-notebooks
+*.ipynb
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,windows,linux,macos,virtualenv,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,windows,linux,macos,virtualenv,visualstudiocode
