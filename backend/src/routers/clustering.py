@@ -1,5 +1,6 @@
 from typing import Literal
 from fastapi import APIRouter
+from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.dependencies import (
     ExistingCluster,
     ExistingClusteringSession,
@@ -105,9 +106,10 @@ async def list_clusters_with_articles(
 
     result = []
     for cluster in clusters:
-        articles = await Article.find(
-            In(Article.id, cluster.articles_ids[:n_articles])
-        ).to_list()
+        articles = SetOfUniqueArticles(
+            await Article.find(In(Article.id, cluster.articles_ids)).to_list()
+        ).limit(n_articles)
+
         article_previews = [
             ArticlePreview(
                 id=str(article.id),

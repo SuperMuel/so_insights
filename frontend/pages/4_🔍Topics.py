@@ -86,17 +86,20 @@ display_session_metrics(selected_session)
 
 
 def display_clusters(clusters: list[ClusterWithArticles]):
+    if not clusters:
+        st.warning("No clusters found.")
+        return
+
     for cluster in clusters:
         col1, col2 = st.columns([2, 3])
 
         with col1:
-            # with st.container(border=True):
             if cluster.first_image:
                 st.image(
                     str(cluster.first_image),
                     use_column_width=True,
                 )
-            st.write(f"### {cluster.title}".replace("$", "\\$"))
+            st.write(f"### {cluster.title or ''}".replace("$", "\\$"))
             st.write((cluster.summary or "").replace("$", "\\$"))
             if cluster.overview_generation_error is not None:
                 st.write(
@@ -117,13 +120,12 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
         workspace_id=str(workspace.field_id),
         relevancy=relevancy_filter,
     )
+
     if isinstance(clusters_with_articles, HTTPValidationError):
         st.error(clusters_with_articles.detail)
         st.stop()
 
-    if not clusters_with_articles:
-        st.warning("No clusters found for this session.")
-        st.stop()
+    assert clusters_with_articles is not None
 
     display_clusters(clusters_with_articles)
 
