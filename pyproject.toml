@@ -11,6 +11,8 @@ python = ">=3.12,<3.13"
 shared = { path = "shared", develop = true }
 so-insights-back = { path = "backend", develop = true }
 so-insights-front = { path = "frontend", develop = true }
+ingester = { path = "ingester", develop = true }
+clusterer = { path = "clusterer", develop = true }
 
 
 [tool.poetry.group.dev.dependencies]

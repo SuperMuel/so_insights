@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "clusterer"
+version = "0.1.0"
+description = ""
+authors = ["Samuel Mallet  <69467005+SuperMuel@users.noreply.github.com>"]
+readme = "README.md"
+packages = [
+    { include = "src" }
+]
+
+[ tool.poetry.scripts ]
+clusterer = "main:app"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+shared = { path = "../shared", develop = true }
+pydantic-settings = "^2.4.0"
+python-dotenv = "^1.0.1"
+typer = "^0.12.3"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.5.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
