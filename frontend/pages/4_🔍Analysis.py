@@ -65,7 +65,7 @@ sessions = list_clustering_sessions.sync(
 
 def display_session_metrics(session: ClusteringSession):
     metrics = [
-        ("Total of clusters", session.clusters_count),
+        ("Total number of clusters", session.clusters_count),
         (
             "Number of articles assigned to clusters",
             millify(session.clustered_articles_count, precision=2),
