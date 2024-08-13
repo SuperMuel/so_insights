@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "clusterer"
+name = "analyzer"
 version = "0.1.0"
 description = ""
 authors = ["Samuel Mallet  <69467005+SuperMuel@users.noreply.github.com>"]
@@ -9,7 +9,7 @@ packages = [
 ]
 
 [ tool.poetry.scripts ]
-clusterer = "main:app"
+analyzer = "main:app"
 
 [tool.poetry.dependencies]
 python = "^3.12"

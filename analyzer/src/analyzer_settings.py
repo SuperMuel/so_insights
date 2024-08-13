@@ -3,7 +3,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class ClustererSettings(BaseSettings):
+class AnalyzerSettings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=False,
         env_file=".env",
