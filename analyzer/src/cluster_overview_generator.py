@@ -37,7 +37,6 @@ class ClusterOverview(BaseModel):
         description="A clear, descriptive title that encapsulates the overall theme or subject matter of the cluster.",
     )
 
-    # TODO : improve title style
     # TODO : add language selection
 
 

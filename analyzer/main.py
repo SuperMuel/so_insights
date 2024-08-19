@@ -76,6 +76,25 @@ def analyze(workspace_id: str):
 
 
 @app.command()
+def analyze_all():
+    async def _clusterize():
+        mongo_client, analyzer = await setup()
+
+        workspaces = await Workspace.find_all().to_list()
+
+        for workspace in workspaces:
+            await analyzer.analyse(
+                workspace,
+                data_start=datetime.now() - timedelta(days=2),
+                data_end=datetime.now(),
+            )
+
+        mongo_client.close()
+
+    asyncio.run(_clusterize())
+
+
+@app.command()
 def generate_overviews(session_id: str):
     async def _generate_overviews():
         mongo_client, analyzer = await setup()
