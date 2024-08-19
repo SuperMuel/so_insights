@@ -254,7 +254,9 @@ async def handle_all_search_query_sets(
     get_pinecone_index,
     time_limit: TimeLimit = settings.DEFAULT_TIME_LIMIT,
 ):
-    search_query_sets = await SearchQuerySet.find_all().to_list()
+    search_query_sets = await SearchQuerySet.find(
+        SearchQuerySet.deleted == False  # noqa: E712
+    ).to_list()
 
     logger.info(f"Processing {len(search_query_sets)} search query sets")
 
