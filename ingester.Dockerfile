@@ -21,5 +21,4 @@ WORKDIR /app/ingester
 # Install project dependencies
 RUN poetry install --only main
 
-# Command to run the ingester application
-CMD ["poetry", "run", "python", "main.py", "run-all"]
+ENTRYPOINT ["poetry", "run", "python", "main.py"]

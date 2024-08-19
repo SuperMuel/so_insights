@@ -1,24 +1,24 @@
 import asyncio
-from typing import Literal
+import logging
+from datetime import datetime, timedelta, timezone
+from enum import Enum
 from itertools import batched
+from typing import Literal
 
 import typer
 from beanie import BulkWriter, PydanticObjectId
 from beanie.odm.operators.update.general import Set
-from pymongo.errors import BulkWriteError
+from dotenv import load_dotenv
 from duckduckgo_search import AsyncDDGS
+from langchain_core.documents import Document
 from langchain_pinecone import PineconeVectorStore
 from langchain_voyageai import VoyageAIEmbeddings
-from shared.models import Article, IngestionRun, SearchQuerySet, Workspace
-from langchain_core.documents import Document
-
+from pymongo.errors import BulkWriteError
 from src.ingester_settings import IngesterSettings
-from shared.db import my_init_beanie, get_client
-from datetime import datetime, timedelta, timezone
-import logging
-
 from src.search import BaseArticle, perform_search
-from dotenv import load_dotenv
+
+from shared.db import get_client, my_init_beanie
+from shared.models import Article, IngestionRun, SearchQuerySet, TimeLimit, Workspace
 
 load_dotenv()
 
@@ -122,7 +122,8 @@ async def check_search_query_set_eligibility(search_query_set: SearchQuerySet) -
 
 async def create_ingestion_run(
     search_query_set: SearchQuerySet,
-    status: Literal["running", "completed", "failed"] = "running",
+    time_limit: TimeLimit,
+    status: Literal["running", "completed", "failed"],
 ) -> IngestionRun:
     """Creates and insert an IngestionRun for this SearchQuerySet"""
     assert search_query_set.id
@@ -130,7 +131,7 @@ async def create_ingestion_run(
         workspace_id=search_query_set.workspace_id,
         queries_set_id=search_query_set.id,
         status=status,
-        time_limit=settings.TIME_LIMIT,
+        time_limit=time_limit,
         max_results=settings.MAX_RESULTS,
     ).insert()
 
@@ -212,15 +213,18 @@ async def handle_search_query_set(
     search_query_set: SearchQuerySet,
     ddgs: AsyncDDGS,
     get_pinecone_index,
+    time_limit: TimeLimit = settings.DEFAULT_TIME_LIMIT,
 ):
     assert search_query_set.id
 
     logger.info(
         f"Processing search query set {search_query_set.id} "
-        f"({search_query_set.title}, {len(search_query_set.queries)} queries, timelimit='{settings.TIME_LIMIT}')"
+        f"({search_query_set.title}, {len(search_query_set.queries)} queries, {time_limit=})"
     )
 
-    run = await create_ingestion_run(search_query_set)
+    run = await create_ingestion_run(
+        search_query_set, time_limit=time_limit, status="running"
+    )
 
     try:
         successful_queries, articles = await perform_search_and_deduplicate_results(
@@ -245,7 +249,11 @@ async def handle_search_query_set(
     logger.info(f"Finished processing search query set {search_query_set.id}")
 
 
-async def handle_all_search_query_sets(ddgs: AsyncDDGS, get_pinecone_index):
+async def handle_all_search_query_sets(
+    ddgs: AsyncDDGS,
+    get_pinecone_index,
+    time_limit: TimeLimit = settings.DEFAULT_TIME_LIMIT,
+):
     search_query_sets = await SearchQuerySet.find_all().to_list()
 
     logger.info(f"Processing {len(search_query_sets)} search query sets")
@@ -261,6 +269,7 @@ async def handle_all_search_query_sets(ddgs: AsyncDDGS, get_pinecone_index):
             search_query_set=search_query_set,
             ddgs=ddgs,
             get_pinecone_index=get_pinecone_index,
+            time_limit=time_limit,
         )
 
         logger.info(f"Finished processing search query set {search_query_set.id}")
@@ -337,8 +346,22 @@ async def setup():
     return mongo_client, ddgs, get_pinecone_index
 
 
+class TimeLimitEnum(str, Enum):
+    # Because Typer do not support Literal for enums
+    d = "d"
+    w = "w"
+    m = "m"
+    y = "y"
+
+    def to_literal(self) -> TimeLimit:
+        return self.value
+
+
 @app.command()
-def run_one(search_query_set_id: str):
+def run_one(
+    search_query_set_id: str,
+    time_limit: TimeLimitEnum = typer.Option(None, "-t", "--time-limit"),
+):
     """Run ingestion for a single SearchQuerySet"""
 
     async def single_run():
@@ -349,7 +372,12 @@ def run_one(search_query_set_id: str):
             typer.echo(f"SearchQuerySet with id {search_query_set_id} not found.")
             return
 
-        await handle_search_query_set(search_query_set, ddgs, get_pinecone_index)
+        await handle_search_query_set(
+            search_query_set,
+            ddgs,
+            get_pinecone_index,
+            time_limit=time_limit.to_literal(),
+        )
 
         mongo_client.close()
 
@@ -357,13 +385,19 @@ def run_one(search_query_set_id: str):
 
 
 @app.command()
-def run_all():
+def run_all(
+    time_limit: TimeLimitEnum = typer.Option(None, "-t", "--time-limit"),
+):
     """Run ingestion for all SearchQuerySets"""
 
     async def all_runs():
         mongo_client, ddgs, get_pinecone_index = await setup()
 
-        await handle_all_search_query_sets(ddgs, get_pinecone_index)
+        await handle_all_search_query_sets(
+            ddgs,
+            get_pinecone_index,
+            time_limit.to_literal(),
+        )
 
         mongo_client.close()
 
