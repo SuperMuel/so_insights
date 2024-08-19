@@ -17,14 +17,26 @@ logger = logging.getLogger(__name__)
 
 
 class ClusterOverview(BaseModel):
-    """A title and summary of a cluster of articles"""
+    """Output for your title and summary."""
 
-    title: str = Field(description="The title of the cluster")
-    summary: str = Field(description="A summary of the cluster")
-    error: str | None = Field(
-        description="An error message if the task could not be completed"
+    scratchpad: str = Field(
+        ...,
+        description="A dense, initial draft of the summary that captures key points and ideas from the articles.",
     )
-    # TODO :  chain of density
+    forgot: str = Field(
+        ...,
+        description="A list of important details or points that were initially missed or overlooked in the first draft of the summary.",
+    )
+
+    final_summary: str = Field(
+        ...,
+        description="A comprehensive and cohesive summary that integrates both the initial scratchpad and the details mentioned in the reflection.",
+    )
+    title: str = Field(
+        ...,
+        description="A clear, descriptive title that encapsulates the overall theme or subject matter of the cluster.",
+    )
+
     # TODO : improve title style
     # TODO : add language selection
 
@@ -58,7 +70,7 @@ class ClusterOverviewGenerator:
         return self._format_articles(unique_articles)
 
     def _create_chain(self) -> Runnable[Cluster, ClusterOverview]:
-        prompt = hub.pull("supermuel/articles_title_summary")
+        prompt = hub.pull("articles_overview")
         structured_llm = self.llm.with_structured_output(ClusterOverview)
 
         return (
@@ -91,7 +103,7 @@ class ClusterOverviewGenerator:
                 cluster.overview_generation_error = str(overview)
             else:
                 cluster.title = overview.title
-                cluster.summary = overview.summary
+                cluster.summary = overview.final_summary
             await cluster.save()
 
         logger.info(f"Finished generating overviews for session {session.id}")
@@ -117,6 +129,11 @@ async def _main():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[logging.StreamHandler()],
     )
+    llm = init_chat_model("gpt-4o-mini")
+
+    # structured_llm = llm.with_structured_output(ClusterOverview)
+
+    # print(structured_llm.output_schema.schema())
 
     settings = AnalyzerSettings()
 
