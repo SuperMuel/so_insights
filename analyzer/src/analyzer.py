@@ -6,6 +6,7 @@ from shared.models import Article, Cluster, ClusteringSession, Workspace
 
 import logging
 
+from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
 from src.vector_repository import PineconeVectorRepository
 
@@ -23,9 +24,11 @@ class Analyzer:
         self,
         vector_repository: PineconeVectorRepository,
         clustering_engine: ClusteringEngine,
+        overview_generator: ClusterOverviewGenerator,
     ):
         self.vector_repository = vector_repository
         self.clustering_engine = clustering_engine
+        self.overview_generator = overview_generator
 
     async def analyse(
         self, workspace: Workspace, data_start: datetime, data_end: datetime
@@ -84,19 +87,34 @@ class Analyzer:
         ).insert()
 
         assert session.id
-        for cluster in clustering_result.clusters:
+
+        for cluster_result in clustering_result.clusters:  # TODO : parallelize
             articles_ids = [
-                PydanticObjectId(article.id) for article in cluster.articles
+                PydanticObjectId(article.id) for article in cluster_result.articles
             ]
-            await Cluster(
+            cluster: Cluster = await Cluster(
                 workspace_id=workspace.id,
                 session_id=session.id,
                 articles_ids=articles_ids,
-                articles_count=len(cluster.articles),
+                articles_count=len(cluster_result.articles),
                 first_image=await get_first_image(
                     [article for article in all_articles if article.id in articles_ids]
                 ),
             ).insert()
+
+            try:
+                logger.info(f"Generating overview for cluster {cluster.id}")
+                overview = await self.overview_generator.generate_overview(
+                    cluster=cluster
+                )
+                cluster.title = overview.title
+                cluster.summary = overview.summary
+            except Exception as e:
+                logger.error(
+                    f"Failed to generate overview for cluster {cluster.id}: {e}"
+                )
+                cluster.overview_generation_error = str(e)
+            await cluster.save()
 
         logger.info(
             f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."

@@ -2,6 +2,8 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 
+from src.cluster_overview_generator import ClusterOverviewGenerator
+from src.evaluator import Evaluator
 import typer
 from dotenv import load_dotenv
 from pinecone.grpc import PineconeGRPC as Pinecone
@@ -9,9 +11,10 @@ from src.analyzer import Analyzer
 from src.analyzer_settings import AnalyzerSettings
 from src.clustering_engine import ClusteringEngine
 from src.vector_repository import PineconeVectorRepository
+from langchain.chat_models import init_chat_model
 
 from shared.db import get_client, my_init_beanie
-from shared.models import Workspace
+from shared.models import ClusteringSession, Workspace
 
 load_dotenv()
 
@@ -40,17 +43,19 @@ async def setup():
         min_cluster_size=settings.DEFAULT_MIN_CLUSTER_SIZE,
         min_samples=settings.DEFAULT_MIN_SAMPLES,
     )
+    overview_generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
 
     analyzer = Analyzer(
         vector_repository=vector_repository,
         clustering_engine=clustering_engine,
+        overview_generator=overview_generator,
     )
 
     return mongo_client, analyzer
 
 
 @app.command()
-def clusterize(workspace_id: str):
+def analyze(workspace_id: str):
     async def _clusterize():
         mongo_client, analyzer = await setup()
 
@@ -61,7 +66,7 @@ def clusterize(workspace_id: str):
         else:
             await analyzer.analyse(
                 workspace,
-                data_start=datetime.now() - timedelta(days=2),
+                data_start=datetime.now(),
                 data_end=datetime.now() - timedelta(days=1),
             )
 

@@ -17,3 +17,5 @@ class AnalyzerSettings(BaseSettings):
 
     DEFAULT_MIN_CLUSTER_SIZE: int = 6
     DEFAULT_MIN_SAMPLES: int = 3
+
+    OVERVIEW_GENERATION_MAX_ARTICLES: int = 30
