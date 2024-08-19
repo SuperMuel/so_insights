@@ -66,8 +66,8 @@ def analyze(workspace_id: str):
         else:
             await analyzer.analyse(
                 workspace,
-                data_start=datetime.now(),
-                data_end=datetime.now() - timedelta(days=1),
+                data_start=datetime.now() - timedelta(days=2),
+                data_end=datetime.now(),
             )
 
         mongo_client.close()
@@ -75,5 +75,24 @@ def analyze(workspace_id: str):
     asyncio.run(_clusterize())
 
 
+@app.command()
+def generate_overviews(session_id: str):
+    async def _generate_overviews():
+        mongo_client, analyzer = await setup()
+
+        session = await ClusteringSession.get(session_id)
+
+        if session is None:
+            typer.echo("No session found for the given id.", err=True)
+        else:
+            generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
+            await generator.generate_overviews_for_session(session)
+
+        mongo_client.close()
+
+    asyncio.run(_generate_overviews())
+
+
 if __name__ == "__main__":
+    load_dotenv()
     app()

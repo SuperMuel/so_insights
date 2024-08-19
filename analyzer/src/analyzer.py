@@ -47,6 +47,10 @@ class Analyzer:
 
         logger.info(f"Found {len(all_articles)} articles.")
 
+        if not all_articles:
+            logger.warn("No articles found. Skipping clustering. No session created.")
+            return
+
         vectors = self.vector_repository.fetch_vectors(
             [id_to_str(article.id) for article in all_articles],
             namespace=id_to_str(workspace.id),
@@ -88,7 +92,9 @@ class Analyzer:
 
         assert session.id
 
-        for cluster_result in clustering_result.clusters:  # TODO : parallelize
+        clusters = []
+
+        for cluster_result in clustering_result.clusters:
             articles_ids = [
                 PydanticObjectId(article.id) for article in cluster_result.articles
             ]
@@ -102,19 +108,10 @@ class Analyzer:
                 ),
             ).insert()
 
-            try:
-                logger.info(f"Generating overview for cluster {cluster.id}")
-                overview = await self.overview_generator.generate_overview(
-                    cluster=cluster
-                )
-                cluster.title = overview.title
-                cluster.summary = overview.summary
-            except Exception as e:
-                logger.error(
-                    f"Failed to generate overview for cluster {cluster.id}: {e}"
-                )
-                cluster.overview_generation_error = str(e)
-            await cluster.save()
+            clusters.append(cluster)
+
+        logger.info(f"Generating overviews for {len(clusters)} clusters.")
+        await self.overview_generator.generate_overviews_for_session(session)
 
         logger.info(
             f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
