@@ -125,7 +125,9 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
         st.error(clusters_with_articles.detail)
         st.stop()
 
-    assert clusters_with_articles is not None
+    if not clusters_with_articles:
+        st.warning("No clusters found.")
+        return
 
     display_clusters(clusters_with_articles)
 
