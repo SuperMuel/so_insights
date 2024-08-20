@@ -12,7 +12,7 @@ T = TypeVar("T", bound="ClusterEvaluation")
 class ClusterEvaluation:
     """
     Attributes:
-        justification (str):
+        justification (str): Your explanation for the relevance level.
         relevance_level (ClusterEvaluationRelevanceLevel):
         confidence_score (float):
     """
