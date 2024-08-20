@@ -3,7 +3,6 @@ import logging
 from datetime import datetime, timedelta
 
 from src.cluster_overview_generator import ClusterOverviewGenerator
-from src.evaluator import Evaluator
 import typer
 from dotenv import load_dotenv
 from pinecone.grpc import PineconeGRPC as Pinecone
@@ -55,7 +54,10 @@ async def setup():
 
 
 @app.command()
-def analyze(workspace_id: str):
+def analyze(
+    workspace_id: str,
+    days: int = typer.Option(2, "--days", "-d", help="Number of days to analyze"),
+):
     async def _clusterize():
         mongo_client, analyzer = await setup()
 
@@ -66,7 +68,7 @@ def analyze(workspace_id: str):
         else:
             await analyzer.analyse(
                 workspace,
-                data_start=datetime.now() - timedelta(days=2),
+                data_start=datetime.now() - timedelta(days=days),
                 data_end=datetime.now(),
             )
 
@@ -76,7 +78,9 @@ def analyze(workspace_id: str):
 
 
 @app.command()
-def analyze_all():
+def analyze_all(
+    days: int = typer.Option(2, "--days", "-d", help="Number of days to analyze"),
+):
     async def _clusterize():
         mongo_client, analyzer = await setup()
 
@@ -85,7 +89,7 @@ def analyze_all():
         for workspace in workspaces:
             await analyzer.analyse(
                 workspace,
-                data_start=datetime.now() - timedelta(days=2),
+                data_start=datetime.now() - timedelta(days=days),
                 data_end=datetime.now(),
             )
 
