@@ -14,6 +14,7 @@ class IngesterSettings(BaseSettings):
     RETRY_SLEEP_TIME_S: int = 5
     SLEEP_BETWEEN_QUERIES_S: int = 5
     QUERY_TIMEOUT: int = 30
+    MIN_HOURS_BETWEEN_RUNS: int = 1
 
     # Whether to log each search query during the search
     VERBOSE_SEARCH: bool = True

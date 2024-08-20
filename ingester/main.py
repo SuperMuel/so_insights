@@ -33,14 +33,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def has_run_less_than_24h_ago(last_run: IngestionRun) -> bool:
+def has_recent_run(last_run: IngestionRun, t: timedelta) -> bool:
+    assert t.total_seconds() > 0, "t must be greater than 0 seconds"
+
     end_at = last_run.end_at
 
     assert (
         end_at is not None
     ), "You should first verify that the last run has finished, and thus has an end_at date"
 
-    return end_at > datetime.now() - timedelta(days=1)
+    return end_at > datetime.now() - t
 
 
 def deduplicate_articles(articles: list[BaseArticle]) -> list[BaseArticle]:
@@ -111,9 +113,9 @@ async def check_search_query_set_eligibility(search_query_set: SearchQuerySet) -
                 f"Skipping search query set {search_query_set.id} because the last run is not finished"
             )
             return False
-        if has_run_less_than_24h_ago(last_run):
+        if has_recent_run(last_run, timedelta(hours=settings.MIN_HOURS_BETWEEN_RUNS)):
             logger.info(
-                f"Skipping search query set {search_query_set.id} because the last run was less than 24h ago"
+                f"Skipping search query set {search_query_set.id} because the last run was less than {settings.MIN_HOURS_BETWEEN_RUNS} hours ago"
             )
             return False
 
@@ -358,11 +360,17 @@ class TimeLimitEnum(str, Enum):
     def to_literal(self) -> TimeLimit:
         return self.value
 
+    @classmethod
+    def from_literal(cls, value: TimeLimit) -> "TimeLimitEnum":
+        return TimeLimitEnum(value)
+
 
 @app.command()
 def run_one(
     search_query_set_id: str,
-    time_limit: TimeLimitEnum = typer.Option(None, "-t", "--time-limit"),
+    time_limit: TimeLimitEnum = typer.Option(
+        TimeLimitEnum.from_literal(settings.DEFAULT_TIME_LIMIT), "-t", "--time-limit"
+    ),
 ):
     """Run ingestion for a single SearchQuerySet"""
 
@@ -388,7 +396,9 @@ def run_one(
 
 @app.command()
 def run_all(
-    time_limit: TimeLimitEnum = typer.Option(None, "-t", "--time-limit"),
+    time_limit: TimeLimitEnum = typer.Option(
+        TimeLimitEnum.from_literal(settings.DEFAULT_TIME_LIMIT), "-t", "--time-limit"
+    ),
 ):
     """Run ingestion for all SearchQuerySets"""
 
