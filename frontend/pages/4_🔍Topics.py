@@ -133,10 +133,10 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
 
 
 tab_title_to_filter = {
-    "All": RelevancyFilter.ALL,
     "Relevant": RelevancyFilter.HIGHLY_RELEVANT,
     "Somewhat relevant": RelevancyFilter.SOMEWHAT_RELEVANT,
     "Irrelevant": RelevancyFilter.NOT_RELEVANT,
+    "All": RelevancyFilter.ALL,
     "Not evaluated": RelevancyFilter.UNKNOWN,
 }
 
