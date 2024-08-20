@@ -2,6 +2,7 @@ from typing import Literal
 import arrow
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
+import shared.region
 import streamlit as st
 from sdk.so_insights_client.models.search_query_set import SearchQuerySet
 from sdk.so_insights_client.api.search_query_sets import (
@@ -12,6 +13,11 @@ from sdk.so_insights_client.api.search_query_sets import (
 from sdk.so_insights_client.api.ingestion_runs import list_ingestion_runs
 from sdk.so_insights_client.models import SearchQuerySetCreate, Region
 from src.shared import create_toast, get_client, select_workspace
+
+
+def region_to_full_name(region: Region) -> str:
+    return shared.region.Region(region).get_full_name()
+
 
 client = get_client()
 
@@ -53,9 +59,7 @@ with st.form("create_search_query_set"):
         "Region*",
         options=[Region.WT_WT]
         + [r for r in Region if r != Region.WT_WT],  # put WT_WT first
-        format_func=lambda r: r.name.replace(
-            "_", " "
-        ).title(),  # TODO : show full region names
+        format_func=region_to_full_name,
     )
 
     if st.form_submit_button("Create data ingestion"):
@@ -97,7 +101,7 @@ if not query_sets:
 
 for query_set in query_sets:
     with st.expander(query_set.title):
-        st.write(f"**Region:** {query_set.region.name.replace('_', ' ').title()}")
+        st.write(f"**Region:** {region_to_full_name(query_set.region)}")
         st.write(f"**{len(query_set.queries)} Keywords:**")
         st.write(" - ".join([f"`{query}`" for query in query_set.queries]))
 
@@ -146,9 +150,10 @@ for run in runs:
     created_at_str = arrow.get(run.created_at).humanize()
 
     # get title from run.queries_set_id
-    query_set_title = next(
-        (q.title for q in query_sets if q.field_id == run.queries_set_id), None
-    ) or run.queries_set_id
+    query_set_title = (
+        next((q.title for q in query_sets if q.field_id == run.queries_set_id), None)
+        or run.queries_set_id
+    )
 
     new_articles_found = f"Found {run.n_inserted} articles" if run.n_inserted else ""
 
