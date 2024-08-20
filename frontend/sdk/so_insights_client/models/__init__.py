@@ -3,6 +3,7 @@
 from .article_preview import ArticlePreview
 from .cluster import Cluster
 from .cluster_evaluation import ClusterEvaluation
+from .cluster_evaluation_relevance_level import ClusterEvaluationRelevanceLevel
 from .cluster_with_articles import ClusterWithArticles
 from .clustering_session import ClusteringSession
 from .clustering_session_metadata import ClusteringSessionMetadata
@@ -24,6 +25,7 @@ __all__ = (
     "ArticlePreview",
     "Cluster",
     "ClusterEvaluation",
+    "ClusterEvaluationRelevanceLevel",
     "ClusteringSession",
     "ClusteringSessionMetadata",
     "ClusterWithArticles",

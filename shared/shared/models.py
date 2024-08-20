@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any, Dict, Literal
 
 from beanie import Document, Indexed, PydanticObjectId
+from beanie.operators import Exists
 from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
@@ -138,6 +139,9 @@ class Article(Document):
         ]
 
 
+RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
+
+
 class ClusteringSession(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     session_start: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -164,33 +168,27 @@ class ClusteringSession(Document):
     class Settings:
         name = DBSettings().mongodb_clustering_sessions_collection
 
-    async def get_included_sorted_clusters(self) -> list["Cluster"]:
-        return await (
-            Cluster.find_many(
-                Cluster.session_id == self.id,
-                ClusterEvaluation.relevant == True,  # noqa: E712
+    async def get_sorted_clusters(
+        self, relevance_level: RelevanceLevel | None = None
+    ) -> list["Cluster"]:
+        clusters = Cluster.find_many(Cluster.session_id == self.id)
+
+        if relevance_level:
+            clusters = clusters.find(
+                Exists(Cluster.evaluation),
+                Cluster.evaluation != None,  # noqa: E711
+                Cluster.evaluation.relevance_level == relevance_level,  # type: ignore "relevance_level" is not a known attribute of "None"
             )
-            .sort(-Cluster.articles_count)  # type: ignore
-            .to_list()
-        )  # TODO test this
+
+        clusters = clusters.sort(-Cluster.articles_count)  # type: ignore
+
+        return await clusters.to_list()
 
 
 class ClusterEvaluation(BaseModel):
     justification: str
-    relevant: bool
-    irrelevancy_reason: str | None = None
-
-    @field_validator("irrelevancy_reason")
-    @classmethod
-    def check_irrelevancy_reason(cls, v, values):
-        relevant = values.data.get("relevant")
-        if relevant is True and v is not None:
-            raise ValueError("irrelevancy_reason must be None when relevant is True")
-        if relevant is False and v is None:
-            raise ValueError(
-                "irrelevancy_reason must not be None when relevant is False"
-            )
-        return v
+    relevance_level: RelevanceLevel
+    confidence_score: float = Field(..., ge=0.0, le=1.0)
 
 
 class Cluster(Document):

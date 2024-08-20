@@ -118,7 +118,7 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
         client=client,
         session_id=str(selected_session.field_id),
         workspace_id=str(workspace.field_id),
-        relevancy=relevancy_filter,
+        relevancy_filter=relevancy_filter,
     )
 
     if isinstance(clusters_with_articles, HTTPValidationError):
@@ -132,18 +132,16 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
     display_clusters(clusters_with_articles)
 
 
-relevant, irrelevant, all, not_evaluated = st.tabs(
-    ["Relevant", "Irrelevant", "All", "Not evaluated"]
-)
+tab_title_to_filter = {
+    "All": RelevancyFilter.ALL,
+    "Relevant": RelevancyFilter.HIGHLY_RELEVANT,
+    "Somewhat relevant": RelevancyFilter.SOMEWHAT_RELEVANT,
+    "Irrelevant": RelevancyFilter.NOT_RELEVANT,
+    "Not evaluated": RelevancyFilter.UNKNOWN,
+}
 
-with relevant:
-    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.RELEVANT)
+tabs = st.tabs(list(tab_title_to_filter.keys()))
 
-with irrelevant:
-    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.IRRELEVANT)
-
-with all:
-    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.ALL)
-
-with not_evaluated:
-    fetch_and_display_clusters(relevancy_filter=RelevancyFilter.UNKNOWN)
+for tab, filter in zip(tabs, tab_title_to_filter.values()):
+    with tab:
+        fetch_and_display_clusters(relevancy_filter=filter)

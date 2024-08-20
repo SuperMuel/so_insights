@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import Any, Dict, List, Type, TypeVar
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..types import UNSET, Unset
+from ..models.cluster_evaluation_relevance_level import ClusterEvaluationRelevanceLevel
 
 T = TypeVar("T", bound="ClusterEvaluation")
 
@@ -13,36 +13,31 @@ class ClusterEvaluation:
     """
     Attributes:
         justification (str):
-        relevant (bool):
-        irrelevancy_reason (Union[None, Unset, str]):
+        relevance_level (ClusterEvaluationRelevanceLevel):
+        confidence_score (float):
     """
 
     justification: str
-    relevant: bool
-    irrelevancy_reason: Union[None, Unset, str] = UNSET
+    relevance_level: ClusterEvaluationRelevanceLevel
+    confidence_score: float
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         justification = self.justification
 
-        relevant = self.relevant
+        relevance_level = self.relevance_level.value
 
-        irrelevancy_reason: Union[None, Unset, str]
-        if isinstance(self.irrelevancy_reason, Unset):
-            irrelevancy_reason = UNSET
-        else:
-            irrelevancy_reason = self.irrelevancy_reason
+        confidence_score = self.confidence_score
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
                 "justification": justification,
-                "relevant": relevant,
+                "relevance_level": relevance_level,
+                "confidence_score": confidence_score,
             }
         )
-        if irrelevancy_reason is not UNSET:
-            field_dict["irrelevancy_reason"] = irrelevancy_reason
 
         return field_dict
 
@@ -51,21 +46,14 @@ class ClusterEvaluation:
         d = src_dict.copy()
         justification = d.pop("justification")
 
-        relevant = d.pop("relevant")
+        relevance_level = ClusterEvaluationRelevanceLevel(d.pop("relevance_level"))
 
-        def _parse_irrelevancy_reason(data: object) -> Union[None, Unset, str]:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(Union[None, Unset, str], data)
-
-        irrelevancy_reason = _parse_irrelevancy_reason(d.pop("irrelevancy_reason", UNSET))
+        confidence_score = d.pop("confidence_score")
 
         cluster_evaluation = cls(
             justification=justification,
-            relevant=relevant,
-            irrelevancy_reason=irrelevancy_reason,
+            relevance_level=relevance_level,
+            confidence_score=confidence_score,
         )
 
         cluster_evaluation.additional_properties = d

@@ -7,7 +7,7 @@ from src.dependencies import (
     ExistingWorkspace,
 )
 from beanie.operators import In, Exists, Or
-from shared.models import Article, ClusteringSession, Cluster
+from shared.models import Article, ClusteringSession, Cluster, RelevanceLevel
 from src.schemas import ArticlePreview, ClusterWithArticles
 
 router = APIRouter(tags=["clustering"])
@@ -64,7 +64,7 @@ async def get_cluster(cluster: ExistingCluster):
     return cluster
 
 
-type RelevancyFilter = Literal["all", "relevant", "irrelevant", "unknown"]
+type RelevancyFilter = Literal[RelevanceLevel, "all", "unknown"]
 
 
 @router.get(
@@ -74,31 +74,30 @@ type RelevancyFilter = Literal["all", "relevant", "irrelevant", "unknown"]
 )
 async def list_clusters_with_articles(
     session: ExistingClusteringSession,
-    relevancy: RelevancyFilter = "all",
+    relevancy_filter: RelevancyFilter = "all",
     n_articles: int = 5,
 ):
     """List all clusters with their top N articles for a specific clustering session"""
+
     clusters = Cluster.find(
         Cluster.session_id == session.id,
         Cluster.workspace_id == session.workspace_id,
     )
 
-    if relevancy == "unknown":
+    if relevancy_filter == "all":
+        pass
+    elif relevancy_filter == "unknown":
         clusters = clusters.find(
             Or(
                 Exists(Cluster.evaluation, False),
                 Cluster.evaluation == None,  # noqa: E711 # type: ignore
             )
         )
-    elif relevancy == "relevant" or relevancy == "irrelevant":
+    else:
         clusters = clusters.find(
             Exists(Cluster.evaluation),
-            Cluster.evaluation.relevant == (relevancy == "relevant"),  # type: ignore
+            Cluster.evaluation.relevance_level == relevancy_filter,  # type: ignore
         )
-    elif relevancy == "all":
-        pass
-    else:
-        raise ValueError(f"Invalid relevancy filter: {relevancy}")
 
     clusters = await clusters.sort(
         -Cluster.articles_count,  # type: ignore
@@ -107,8 +106,10 @@ async def list_clusters_with_articles(
     result = []
     for cluster in clusters:
         articles = SetOfUniqueArticles(
-            await Article.find(In(Article.id, cluster.articles_ids)).to_list()
-        ).limit(n_articles)
+            await Article.find(
+                In(Article.id, cluster.articles_ids[:n_articles])
+            ).to_list()
+        )
 
         article_previews = [
             ArticlePreview(
