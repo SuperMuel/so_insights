@@ -1,4 +1,6 @@
 from datetime import datetime
+import aiohttp
+
 
 from beanie import PydanticObjectId
 from pydantic import HttpUrl
@@ -6,6 +8,7 @@ from shared.models import Article, Cluster, ClusteringSession, Workspace
 
 import logging
 
+from src.evaluator import ClusterEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
 from src.vector_repository import PineconeVectorRepository
@@ -25,10 +28,12 @@ class Analyzer:
         vector_repository: PineconeVectorRepository,
         clustering_engine: ClusteringEngine,
         overview_generator: ClusterOverviewGenerator,
+        cluster_evaluator: ClusterEvaluator,
     ):
         self.vector_repository = vector_repository
         self.clustering_engine = clustering_engine
         self.overview_generator = overview_generator
+        self.evaluator = cluster_evaluator
 
     async def analyse(
         self, workspace: Workspace, data_start: datetime, data_end: datetime
@@ -46,6 +51,9 @@ class Analyzer:
         ).to_list()
 
         logger.info(f"Found {len(all_articles)} articles.")
+
+        if len(all_articles) > 10_000:
+            logger.warn("High number of articles !")
 
         if not all_articles:
             logger.warn("No articles found. Skipping clustering. No session created.")
@@ -103,7 +111,7 @@ class Analyzer:
                 session_id=session.id,
                 articles_ids=articles_ids,
                 articles_count=len(cluster_result.articles),
-                first_image=await get_first_image(
+                first_image=await get_first_valid_image(
                     [article for article in all_articles if article.id in articles_ids]
                 ),
             ).insert()
@@ -113,13 +121,27 @@ class Analyzer:
         logger.info(f"Generating overviews for {len(clusters)} clusters.")
         await self.overview_generator.generate_overviews_for_session(session)
 
+        logger.info(f"Evaluating {len(clusters)} clusters.")
+
+        await self.evaluator.evaluate_session(session)
+
         logger.info(
             f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
         )
 
 
-async def get_first_image(articles: list[Article]) -> HttpUrl | None:
-    for article in articles:
-        if article.image:
-            return article.image
+async def get_first_valid_image(articles: list[Article]) -> HttpUrl | None:
+    timeout = aiohttp.ClientTimeout(total=5)  # 5 seconds timeout for the entire request
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        for article in articles:
+            if not article.image:
+                continue
+            try:
+                async with session.head(str(article.image)) as response:
+                    if response.status == 200:
+                        content_type = response.headers.get("Content-Type", "")
+                        if content_type.startswith("image/"):
+                            return article.image
+            except aiohttp.ClientError:
+                continue  # Move to the next article if there's an error
     return None

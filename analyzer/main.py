@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta
 
 from src.cluster_overview_generator import ClusterOverviewGenerator
+from src.evaluator import ClusterEvaluator
 import typer
 from dotenv import load_dotenv
 from pinecone.grpc import PineconeGRPC as Pinecone
@@ -43,11 +44,13 @@ async def setup():
         min_samples=settings.DEFAULT_MIN_SAMPLES,
     )
     overview_generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
+    cluster_evaluator = ClusterEvaluator(llm=init_chat_model("gpt-4o-mini"))
 
     analyzer = Analyzer(
         vector_repository=vector_repository,
         clustering_engine=clustering_engine,
         overview_generator=overview_generator,
+        cluster_evaluator=cluster_evaluator,
     )
 
     return mongo_client, analyzer
@@ -114,6 +117,24 @@ def generate_overviews(session_id: str):
         mongo_client.close()
 
     asyncio.run(_generate_overviews())
+
+
+@app.command()
+def evaluate(session_id: str):
+    async def _evaluate():
+        mongo_client, analyzer = await setup()
+
+        session = await ClusteringSession.get(session_id)
+
+        if session is None:
+            typer.echo("No session found for the given id.", err=True)
+        else:
+            evaluator = ClusterEvaluator(llm=init_chat_model("gpt-4o-mini"))
+            await evaluator.evaluate_session(session)
+
+        mongo_client.close()
+
+    asyncio.run(_evaluate())
 
 
 if __name__ == "__main__":

@@ -1,8 +1,6 @@
-from dotenv import load_dotenv
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain import hub
-from langchain.chat_models import init_chat_model
 from langsmith import traceable
 from shared.models import Article, Cluster, ClusteringSession
 from beanie.operators import In
@@ -117,42 +115,42 @@ class ClusterOverviewGenerator:
         return await self.chain.ainvoke(cluster)
 
 
-async def _main():
-    from shared.db import get_client, my_init_beanie
-    from src.analyzer_settings import AnalyzerSettings
+# async def _main():
+#     from shared.db import get_client, my_init_beanie
+#     from src.analyzer_settings import AnalyzerSettings
 
-    load_dotenv()
+#     load_dotenv()
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.StreamHandler()],
-    )
-    llm = init_chat_model("gpt-4o-mini")
+#     logging.basicConfig(
+#         level=logging.INFO,
+#         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+#         handlers=[logging.StreamHandler()],
+#     )
+#     llm = init_chat_model("gpt-4o-mini")
 
-    # structured_llm = llm.with_structured_output(ClusterOverview)
+#     # structured_llm = llm.with_structured_output(ClusterOverview)
 
-    # print(structured_llm.output_schema.schema())
+#     # print(structured_llm.output_schema.schema())
 
-    settings = AnalyzerSettings()
+#     settings = AnalyzerSettings()
 
-    mongo_client = get_client(settings.MONGODB_URI)
-    await my_init_beanie(mongo_client)
+#     mongo_client = get_client(settings.MONGODB_URI)
+#     await my_init_beanie(mongo_client)
 
-    session = await ClusteringSession.get("66bb8eee8267db888758dd24")
-    assert session
-    clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
-    cluster = clusters[0]
+#     session = await ClusteringSession.get("66bb8eee8267db888758dd24")
+#     assert session
+#     clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
+#     cluster = clusters[0]
 
-    generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
+#     generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
 
-    overview = await generator.generate_overview(cluster=cluster)
-    print(overview)
+#     overview = await generator.generate_overview(cluster=cluster)
+#     print(overview)
 
-    # await generator.generate_overviews_for_session(session)
+#     # await generator.generate_overviews_for_session(session)
 
 
-if __name__ == "__main__":
-    import asyncio
+# if __name__ == "__main__":
+#     import asyncio
 
-    asyncio.run(_main())
+#     asyncio.run(_main())

@@ -186,7 +186,9 @@ class ClusteringSession(Document):
 
 
 class ClusterEvaluation(BaseModel):
-    justification: str
+    justification: str = Field(
+        ..., description="Your explanation for the relevance level."
+    )
     relevance_level: RelevanceLevel
     confidence_score: float = Field(..., ge=0.0, le=1.0)
 
