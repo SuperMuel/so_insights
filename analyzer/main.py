@@ -107,12 +107,13 @@ def generate_overviews(session_id: str):
         mongo_client, analyzer = await setup()
 
         session = await ClusteringSession.get(session_id)
+        assert session, f"No session found for the given id: {session_id}"
 
-        if session is None:
-            typer.echo("No session found for the given id.", err=True)
-        else:
-            generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
-            await generator.generate_overviews_for_session(session)
+        workspace = await Workspace.get(session.workspace_id)
+        assert workspace, f"No workspace found for the given session: {session_id}"
+
+        generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
+        await generator.generate_overviews_for_session(session)
 
         mongo_client.close()
 

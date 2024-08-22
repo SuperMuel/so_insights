@@ -1,7 +1,13 @@
 import logging
 from typing import Annotated, Sequence
 from pydantic import BaseModel, StringConstraints
-from shared.models import Cluster, ClusterEvaluation, Workspace, ClusteringSession
+from shared.models import (
+    Cluster,
+    ClusterEvaluation,
+    ClusterOverview,
+    Workspace,
+    ClusteringSession,
+)
 from langchain_core.runnables import Runnable, RunnableLambda
 
 from langchain import hub
@@ -15,18 +21,21 @@ _NotEmptyStr = Annotated[str, StringConstraints(min_length=5, strip_whitespace=T
 
 class ClusterEvaluationRequest(BaseModel):
     workspace_description: _NotEmptyStr
-    cluster_title: _NotEmptyStr
-    cluster_summary: _NotEmptyStr
+    cluster_overview: ClusterOverview
 
     def to_chain_input(self) -> dict[str, str]:
         return {
             "description": self.workspace_description,
-            "title": self.cluster_title,
-            "summary": self.cluster_summary,
+            "title": self.cluster_overview.title,
+            "summary": self.cluster_overview.summary,
         }
 
 
 EvaluationChain = Runnable[ClusterEvaluationRequest, ClusterEvaluation]
+
+
+def get_workspace_description(Workspace: Workspace) -> str:
+    return f"**{Workspace.name}**\n{Workspace.description}"
 
 
 class ClusterEvaluator:
@@ -41,16 +50,15 @@ class ClusterEvaluator:
         ).with_config(run_name="cluster_eval_chain")
 
     async def evaluate_cluster(self, cluster: Cluster) -> ClusterEvaluation:
-        assert cluster.title and cluster.summary, "Cluster must have title and summary"
+        assert cluster.overview, "Cluster must have an overview"
 
         workspace = await Workspace.get(cluster.workspace_id)
         assert workspace
 
         return await self.chain.ainvoke(
             ClusterEvaluationRequest(
-                workspace_description=f"**{workspace.name}**\n{workspace.description}",
-                cluster_title=cluster.title,
-                cluster_summary=cluster.summary,
+                workspace_description=get_workspace_description(workspace),
+                cluster_overview=cluster.overview,
             )
         )
 
@@ -68,15 +76,14 @@ class ClusterEvaluator:
         }, "All clusters must belong to the same workspace"
 
         assert all(
-            cluster.title and cluster.summary for cluster in clusters
-        ), "All clusters must have title and summary"
+            cluster.overview for cluster in clusters
+        ), "All clusters must have an overview"
 
         return await self.chain.abatch(
             [
                 ClusterEvaluationRequest(
-                    workspace_description=f"**{workspace.name}**\n{workspace.description}",
-                    cluster_title=cluster.title,  # type: ignore
-                    cluster_summary=cluster.summary,  # type: ignore
+                    workspace_description=get_workspace_description(workspace),
+                    cluster_overview=cluster.overview,  # type: ignore
                 )
                 for cluster in clusters
             ]

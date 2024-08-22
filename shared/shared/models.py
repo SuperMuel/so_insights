@@ -195,6 +195,19 @@ class ClusterEvaluation(BaseModel):
     confidence_score: float = Field(..., ge=0.0, le=1.0)
 
 
+class ClusterOverview(BaseModel):
+    title: Annotated[
+        str,
+        StringConstraints(
+            min_length=5, max_length=200, strip_whitespace=True
+        ),  # TODO : force model to output smaller titles and update this value
+    ]
+    summary: Annotated[
+        str, StringConstraints(min_length=5, max_length=1000, strip_whitespace=True)
+    ]
+    language: Language
+
+
 class Cluster(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     session_id: Annotated[PydanticObjectId, Indexed()]
@@ -207,16 +220,8 @@ class Cluster(Document):
         description="IDs of articles in the cluster, sorted by their distance to the cluster center",
     )
 
-    title: str | None = Field(
-        default=None, description="AI generated title of the cluster"
-    )
-    summary: str | None = Field(
-        default=None, description="AI generated summary of the cluster"
-    )
-
-    overview_generation_error: str | None = Field(
-        default=None, description="Error message if the overview generation failed"
-    )
+    overview: ClusterOverview | None = None
+    overview_generation_error: str | None = None
 
     evaluation: ClusterEvaluation | None = None
 

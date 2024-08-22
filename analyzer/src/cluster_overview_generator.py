@@ -2,7 +2,14 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain import hub
 from langsmith import traceable
-from shared.models import Article, Cluster, ClusteringSession
+from shared.language import Language
+from shared.models import (
+    Article,
+    Cluster,
+    ClusterOverview,
+    ClusteringSession,
+    Workspace,
+)
 from beanie.operators import In
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.analyzer_settings import AnalyzerSettings
@@ -14,7 +21,7 @@ settings = AnalyzerSettings()
 logger = logging.getLogger(__name__)
 
 
-class ClusterOverview(BaseModel):
+class ClusterOverviewOutput(BaseModel):
     """Output for your title and summary."""
 
     scratchpad: str = Field(
@@ -34,8 +41,6 @@ class ClusterOverview(BaseModel):
         ...,
         description="A clear, descriptive title that encapsulates the overall theme or subject matter of the cluster.",
     )
-
-    # TODO : add language selection
 
 
 class ClusterOverviewGenerator:
@@ -66,13 +71,19 @@ class ClusterOverviewGenerator:
         unique_articles = await self._get_articles(cluster)
         return self._format_articles(unique_articles)
 
-    def _create_chain(self) -> Runnable[Cluster, ClusterOverview]:
+    async def _get_language(self, cluster: Cluster) -> Language:
+        workspace = await Workspace.get(cluster.workspace_id)
+        assert workspace
+        return workspace.language
+
+    def _create_chain(self) -> Runnable[Cluster, ClusterOverviewOutput]:
         prompt = hub.pull("articles_overview")
-        structured_llm = self.llm.with_structured_output(ClusterOverview)
+        structured_llm = self.llm.with_structured_output(ClusterOverviewOutput)
 
         return (
             {
                 "articles": RunnableLambda(self._get_formatted_articles),
+                "language": RunnableLambda(self._get_language),
             }
             | prompt
             | structured_llm
@@ -86,12 +97,20 @@ class ClusterOverviewGenerator:
         logger.info(f"Generating overviews for session {session.id}")
         clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
         logger.info(f"Found {len(clusters)} clusters")
-        overviews: list[ClusterOverview | Exception] = await self.chain.abatch(  # type:ignore
+
+        if not clusters:
+            logger.warn("No clusters found for the given session.")
+            return
+
+        overviews: list[ClusterOverviewOutput | Exception] = await self.chain.abatch(  # type:ignore
             clusters,
             config={"max_concurrency": max_concurrency},
             return_exceptions=True,
         )
         logger.info(f"Generated {len(overviews)} overviews")
+
+        language = await self._get_language(clusters[0])
+
         for cluster, overview in zip(clusters, overviews):
             if isinstance(overview, Exception):
                 logger.error(
@@ -99,8 +118,11 @@ class ClusterOverviewGenerator:
                 )
                 cluster.overview_generation_error = str(overview)
             else:
-                cluster.title = overview.title
-                cluster.summary = overview.final_summary
+                cluster.overview = ClusterOverview(
+                    title=overview.title,
+                    summary=overview.final_summary,
+                    language=language,
+                )
             await cluster.save()
 
         logger.info(f"Finished generating overviews for session {session.id}")
@@ -109,7 +131,7 @@ class ClusterOverviewGenerator:
     async def generate_overview(
         self,
         cluster: Cluster,
-    ) -> ClusterOverview:
+    ) -> ClusterOverviewOutput:
         """Generate a title and summary for a cluster of articles."""
 
         return await self.chain.ainvoke(cluster)

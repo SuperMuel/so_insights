@@ -7,6 +7,7 @@ from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
     from ..models.cluster_evaluation import ClusterEvaluation
+    from ..models.cluster_overview import ClusterOverview
 
 
 T = TypeVar("T", bound="Cluster")
@@ -21,9 +22,8 @@ class Cluster:
         articles_count (int): Number of articles in the cluster.
         articles_ids (List[str]): IDs of articles in the cluster, sorted by their distance to the cluster center
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
-        title (Union[None, Unset, str]): AI generated title of the cluster
-        summary (Union[None, Unset, str]): AI generated summary of the cluster
-        overview_generation_error (Union[None, Unset, str]): Error message if the overview generation failed
+        overview (Union['ClusterOverview', None, Unset]):
+        overview_generation_error (Union[None, Unset, str]):
         evaluation (Union['ClusterEvaluation', None, Unset]):
         first_image (Union[None, Unset, str]):
     """
@@ -33,8 +33,7 @@ class Cluster:
     articles_count: int
     articles_ids: List[str]
     field_id: Union[None, Unset, str] = UNSET
-    title: Union[None, Unset, str] = UNSET
-    summary: Union[None, Unset, str] = UNSET
+    overview: Union["ClusterOverview", None, Unset] = UNSET
     overview_generation_error: Union[None, Unset, str] = UNSET
     evaluation: Union["ClusterEvaluation", None, Unset] = UNSET
     first_image: Union[None, Unset, str] = UNSET
@@ -42,6 +41,7 @@ class Cluster:
 
     def to_dict(self) -> Dict[str, Any]:
         from ..models.cluster_evaluation import ClusterEvaluation
+        from ..models.cluster_overview import ClusterOverview
 
         workspace_id = self.workspace_id
 
@@ -57,17 +57,13 @@ class Cluster:
         else:
             field_id = self.field_id
 
-        title: Union[None, Unset, str]
-        if isinstance(self.title, Unset):
-            title = UNSET
+        overview: Union[Dict[str, Any], None, Unset]
+        if isinstance(self.overview, Unset):
+            overview = UNSET
+        elif isinstance(self.overview, ClusterOverview):
+            overview = self.overview.to_dict()
         else:
-            title = self.title
-
-        summary: Union[None, Unset, str]
-        if isinstance(self.summary, Unset):
-            summary = UNSET
-        else:
-            summary = self.summary
+            overview = self.overview
 
         overview_generation_error: Union[None, Unset, str]
         if isinstance(self.overview_generation_error, Unset):
@@ -101,10 +97,8 @@ class Cluster:
         )
         if field_id is not UNSET:
             field_dict["_id"] = field_id
-        if title is not UNSET:
-            field_dict["title"] = title
-        if summary is not UNSET:
-            field_dict["summary"] = summary
+        if overview is not UNSET:
+            field_dict["overview"] = overview
         if overview_generation_error is not UNSET:
             field_dict["overview_generation_error"] = overview_generation_error
         if evaluation is not UNSET:
@@ -117,6 +111,7 @@ class Cluster:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         from ..models.cluster_evaluation import ClusterEvaluation
+        from ..models.cluster_overview import ClusterOverview
 
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
@@ -136,23 +131,22 @@ class Cluster:
 
         field_id = _parse_field_id(d.pop("_id", UNSET))
 
-        def _parse_title(data: object) -> Union[None, Unset, str]:
+        def _parse_overview(data: object) -> Union["ClusterOverview", None, Unset]:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
-            return cast(Union[None, Unset, str], data)
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                overview_type_0 = ClusterOverview.from_dict(data)
 
-        title = _parse_title(d.pop("title", UNSET))
+                return overview_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union["ClusterOverview", None, Unset], data)
 
-        def _parse_summary(data: object) -> Union[None, Unset, str]:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(Union[None, Unset, str], data)
-
-        summary = _parse_summary(d.pop("summary", UNSET))
+        overview = _parse_overview(d.pop("overview", UNSET))
 
         def _parse_overview_generation_error(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -195,8 +189,7 @@ class Cluster:
             articles_count=articles_count,
             articles_ids=articles_ids,
             field_id=field_id,
-            title=title,
-            summary=summary,
+            overview=overview,
             overview_generation_error=overview_generation_error,
             evaluation=evaluation,
             first_image=first_image,

@@ -394,6 +394,9 @@ def run_one(
     asyncio.run(single_run())
 
 
+# TODO : add a command to run all ingestions for a single workspace
+
+
 @app.command()
 def run_all(
     time_limit: TimeLimitEnum = typer.Option(
