@@ -10,6 +10,7 @@ from .clustering_session_metadata import ClusteringSessionMetadata
 from .http_validation_error import HTTPValidationError
 from .ingestion_run import IngestionRun
 from .ingestion_run_status import IngestionRunStatus
+from .language import Language
 from .region import Region
 from .relevancy_filter import RelevancyFilter
 from .search_query_set import SearchQuerySet
@@ -32,6 +33,7 @@ __all__ = (
     "HTTPValidationError",
     "IngestionRun",
     "IngestionRunStatus",
+    "Language",
     "Region",
     "RelevancyFilter",
     "SearchQuerySet",

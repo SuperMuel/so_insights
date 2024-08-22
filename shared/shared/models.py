@@ -6,6 +6,7 @@ from beanie.operators import Exists
 from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from pymongo import IndexModel
 
+from shared.language import Language
 from shared.region import Region
 from shared.db_settings import DBSettings
 
@@ -32,6 +33,7 @@ class Workspace(Document):
     description: ModelDescription = Field(default="")
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    language: Language = Language.fr
 
     class Settings:
         name: str = DBSettings().mongodb_workspaces_collection

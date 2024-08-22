@@ -5,6 +5,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.language import Language
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="Workspace")
@@ -19,6 +20,7 @@ class Workspace:
         description (Union[Unset, str]):  Default: ''.
         created_at (Union[Unset, datetime.datetime]):
         updated_at (Union[Unset, datetime.datetime]):
+        language (Union[Unset, Language]):  Default: Language.FR.
     """
 
     name: str
@@ -26,6 +28,7 @@ class Workspace:
     description: Union[Unset, str] = ""
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
+    language: Union[Unset, Language] = Language.FR
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -47,6 +50,10 @@ class Workspace:
         if not isinstance(self.updated_at, Unset):
             updated_at = self.updated_at.isoformat()
 
+        language: Union[Unset, str] = UNSET
+        if not isinstance(self.language, Unset):
+            language = self.language.value
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -62,6 +69,8 @@ class Workspace:
             field_dict["created_at"] = created_at
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
+        if language is not UNSET:
+            field_dict["language"] = language
 
         return field_dict
 
@@ -95,12 +104,20 @@ class Workspace:
         else:
             updated_at = isoparse(_updated_at)
 
+        _language = d.pop("language", UNSET)
+        language: Union[Unset, Language]
+        if isinstance(_language, Unset):
+            language = UNSET
+        else:
+            language = Language(_language)
+
         workspace = cls(
             name=name,
             field_id=field_id,
             description=description,
             created_at=created_at,
             updated_at=updated_at,
+            language=language,
         )
 
         workspace.additional_properties = d

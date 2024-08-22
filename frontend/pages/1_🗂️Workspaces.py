@@ -1,4 +1,5 @@
 import arrow
+from sdk.so_insights_client.models.language import Language
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
 import streamlit as st
 
@@ -9,11 +10,21 @@ from sdk.so_insights_client.api.workspaces import (
 )
 from src.shared import create_toast, get_client
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
+import shared.language
 
 client = get_client()
 
 
 workspaces = list_workspaces.sync(client=client)
+
+
+def language_formatter(language: Language) -> str:
+    return shared.language.Language(language.value).to_full_name()
+
+
+def get_language_index(language: Language) -> int:
+    values = list(Language)
+    return values.index(language)
 
 
 def create_new_worspace_form():
@@ -23,11 +34,21 @@ def create_new_worspace_form():
             "Workspace Name*", placeholder="Artificial Intelligence"
         )
         new_workspace_description = st.text_area("Workspace Description")
+        new_workspace_language = st.selectbox(
+            "Language",
+            options=Language,
+            format_func=language_formatter,
+            index=get_language_index(Language.EN),
+        )
+        assert new_workspace_language is not None
+
         submit_button = st.form_submit_button("Create Workspace")
 
         if submit_button and new_workspace_name:
             new_workspace = WorkspaceCreate(
-                name=new_workspace_name, description=new_workspace_description
+                name=new_workspace_name,
+                description=new_workspace_description,
+                language=new_workspace_language,
             )
             response = create_workspace.sync(client=client, body=new_workspace)
             if isinstance(response, Workspace):
@@ -42,11 +63,19 @@ def edit_workspace(workspace: Workspace):
     with st.form("edit_workspace_form"):
         updated_name = st.text_input("Name", value=workspace.name)
         updated_description = st.text_area("Description", value=workspace.description)
+        updated_language = st.selectbox(
+            "Language",
+            options=Language,
+            format_func=language_formatter,
+            index=get_language_index(Language(workspace.language)),
+        )
         update_button = st.form_submit_button("Update Workspace")
 
         if update_button:
             workspace_update = WorkspaceUpdate(
-                name=updated_name, description=updated_description
+                name=updated_name,
+                description=updated_description,
+                language=updated_language,
             )
             response = update_workspace.sync(
                 client=client,

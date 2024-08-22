@@ -1,13 +1,20 @@
 from datetime import datetime
 from pydantic import BaseModel, HttpUrl
 
-from shared.models import Cluster, ClusterEvaluation, ModelDescription, ModelTitle
+from shared.models import (
+    Cluster,
+    ClusterEvaluation,
+    Language,
+    ModelDescription,
+    ModelTitle,
+)
 from shared.region import Region
 
 
 class WorkspaceCreate(BaseModel):
     name: ModelTitle
     description: ModelDescription = ""
+    language: Language
 
     class Config:
         extra = "forbid"
@@ -16,6 +23,7 @@ class WorkspaceCreate(BaseModel):
 class WorkspaceUpdate(BaseModel):
     name: ModelTitle | None
     description: ModelDescription | None
+    language: Language | None
 
     class Config:
         extra = "forbid"
