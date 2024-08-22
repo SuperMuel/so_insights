@@ -1,5 +1,5 @@
 from typing import Literal
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.dependencies import (
     ExistingCluster,
@@ -7,7 +7,13 @@ from src.dependencies import (
     ExistingWorkspace,
 )
 from beanie.operators import In, Exists, Or
-from shared.models import Article, ClusteringSession, Cluster, RelevanceLevel
+from shared.models import (
+    Article,
+    ClusterFeedback,
+    ClusteringSession,
+    Cluster,
+    RelevanceLevel,
+)
 from src.schemas import ArticlePreview, ClusterWithArticles
 
 router = APIRouter(tags=["clustering"])
@@ -125,3 +131,35 @@ async def list_clusters_with_articles(
         result.append(ClusterWithArticles.from_cluster(cluster, article_previews))
 
     return result
+
+
+@router.put(
+    "/clusters/{cluster_id}/feedback",
+    response_model=Cluster,
+    operation_id="set_cluster_feedback",
+)
+async def set_cluster_feedback(
+    cluster: ExistingCluster,
+    feedback: ClusterFeedback,
+):
+    """Set or update feedback for a specific cluster"""
+    cluster.feedback = feedback
+    return await cluster.save()
+
+
+@router.delete(
+    "/clusters/{cluster_id}/feedback",
+    response_model=Cluster,
+    operation_id="delete_cluster_feedback",
+)
+async def delete_cluster_feedback(
+    cluster: ExistingCluster,
+):
+    """Delete feedback for a specific cluster"""
+    if cluster.feedback is None:
+        raise HTTPException(
+            status_code=404, detail="No feedback exists for this cluster"
+        )
+
+    cluster.feedback = None
+    return await cluster.save()

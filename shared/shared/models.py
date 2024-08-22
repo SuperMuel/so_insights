@@ -208,6 +208,10 @@ class ClusterOverview(BaseModel):
     language: Language
 
 
+class ClusterFeedback(BaseModel):
+    relevant: bool
+
+
 class Cluster(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     session_id: Annotated[PydanticObjectId, Indexed()]
@@ -224,6 +228,8 @@ class Cluster(Document):
     overview_generation_error: str | None = None
 
     evaluation: ClusterEvaluation | None = None
+
+    feedback: ClusterFeedback | None = None
 
     first_image: HttpUrl | None = None
 

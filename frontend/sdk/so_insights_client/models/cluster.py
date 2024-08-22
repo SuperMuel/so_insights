@@ -7,6 +7,7 @@ from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
     from ..models.cluster_evaluation import ClusterEvaluation
+    from ..models.cluster_feedback import ClusterFeedback
     from ..models.cluster_overview import ClusterOverview
 
 
@@ -25,6 +26,7 @@ class Cluster:
         overview (Union['ClusterOverview', None, Unset]):
         overview_generation_error (Union[None, Unset, str]):
         evaluation (Union['ClusterEvaluation', None, Unset]):
+        feedback (Union['ClusterFeedback', None, Unset]):
         first_image (Union[None, Unset, str]):
     """
 
@@ -36,11 +38,13 @@ class Cluster:
     overview: Union["ClusterOverview", None, Unset] = UNSET
     overview_generation_error: Union[None, Unset, str] = UNSET
     evaluation: Union["ClusterEvaluation", None, Unset] = UNSET
+    feedback: Union["ClusterFeedback", None, Unset] = UNSET
     first_image: Union[None, Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         from ..models.cluster_evaluation import ClusterEvaluation
+        from ..models.cluster_feedback import ClusterFeedback
         from ..models.cluster_overview import ClusterOverview
 
         workspace_id = self.workspace_id
@@ -79,6 +83,14 @@ class Cluster:
         else:
             evaluation = self.evaluation
 
+        feedback: Union[Dict[str, Any], None, Unset]
+        if isinstance(self.feedback, Unset):
+            feedback = UNSET
+        elif isinstance(self.feedback, ClusterFeedback):
+            feedback = self.feedback.to_dict()
+        else:
+            feedback = self.feedback
+
         first_image: Union[None, Unset, str]
         if isinstance(self.first_image, Unset):
             first_image = UNSET
@@ -103,6 +115,8 @@ class Cluster:
             field_dict["overview_generation_error"] = overview_generation_error
         if evaluation is not UNSET:
             field_dict["evaluation"] = evaluation
+        if feedback is not UNSET:
+            field_dict["feedback"] = feedback
         if first_image is not UNSET:
             field_dict["first_image"] = first_image
 
@@ -111,6 +125,7 @@ class Cluster:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         from ..models.cluster_evaluation import ClusterEvaluation
+        from ..models.cluster_feedback import ClusterFeedback
         from ..models.cluster_overview import ClusterOverview
 
         d = src_dict.copy()
@@ -174,6 +189,23 @@ class Cluster:
 
         evaluation = _parse_evaluation(d.pop("evaluation", UNSET))
 
+        def _parse_feedback(data: object) -> Union["ClusterFeedback", None, Unset]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                feedback_type_0 = ClusterFeedback.from_dict(data)
+
+                return feedback_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union["ClusterFeedback", None, Unset], data)
+
+        feedback = _parse_feedback(d.pop("feedback", UNSET))
+
         def _parse_first_image(data: object) -> Union[None, Unset, str]:
             if data is None:
                 return data
@@ -192,6 +224,7 @@ class Cluster:
             overview=overview,
             overview_generation_error=overview_generation_error,
             evaluation=evaluation,
+            feedback=feedback,
             first_image=first_image,
         )
 
