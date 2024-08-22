@@ -1,6 +1,7 @@
 from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
+from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
 import streamlit as st
 from millify import millify
 
@@ -8,6 +9,7 @@ from sdk.so_insights_client.models.workspace import Workspace
 from sdk.so_insights_client.api.clustering import (
     list_clustering_sessions,
     list_clusters_with_articles_for_session,
+    set_cluster_feedback,
 )
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 
@@ -110,6 +112,15 @@ def display_clusters(clusters: list[ClusterWithArticles]):
             for article in cluster.articles:
                 st.write(f"[**{article.title}**]({article.url})".replace("$", "\\$"))
                 st.caption(article.body.replace("$", "\\$"))
+
+            if (feedback := st.feedback("thumbs", key=cluster.id)) is not None:
+                set_cluster_feedback.sync(
+                    client=client,
+                    workspace_id=str(workspace.field_id),
+                    cluster_id=cluster.id,
+                    body=ClusterFeedback(relevant=bool(feedback)),
+                )
+
         st.divider()
 
 
