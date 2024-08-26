@@ -282,14 +282,22 @@ async def handle_all_search_query_sets(
 
 
 async def upsert_articles_of_workspace(
-    workspace: Workspace, index: PineconeVectorStore, batch_size: int = 1000
+    workspace: Workspace,
+    index: PineconeVectorStore,
+    batch_size: int = 1000,
+    force: bool = False,
 ):
     assert workspace.id
     logger.info(f"Fetching articles for workspace {workspace.id}")
-    articles = await Article.find(
-        Article.workspace_id == workspace.id,
-        Article.vector_indexed == False,  # noqa: E712
-    ).to_list()
+
+    if force:
+        articles = await Article.find(Article.workspace_id == workspace.id).to_list()
+    else:
+        articles = await Article.find(
+            Article.workspace_id == workspace.id,
+            Article.vector_indexed == False,  # noqa: E712
+        ).to_list()
+
     logger.info(
         f"Found {len(articles)} not indexed articles for workspace {workspace.id}"
     )
@@ -420,7 +428,12 @@ def run_all(
 
 
 @app.command()
-def upsert(workspace_id: str):
+def upsert(
+    workspace_id: str,
+    force: bool = typer.Option(
+        False, "--force", help="Force upsert even if the articles are already indexed"
+    ),
+):
     """Upsert articles for a single workspace"""
 
     async def upsert_articles():
@@ -432,7 +445,7 @@ def upsert(workspace_id: str):
             return
 
         index = get_pinecone_index(workspace_id)
-        await upsert_articles_of_workspace(workspace, index)
+        await upsert_articles_of_workspace(workspace, index, force=force)
 
         mongo_client.close()
 
