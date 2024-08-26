@@ -102,18 +102,36 @@ def analyze_all(
 
 
 @app.command()
-def generate_overviews(session_id: str):
+def generate_overviews(
+    session_ids: list[str],
+    only_missing: bool = typer.Option(
+        False,
+        "--only-missing",
+        "-m",
+        help="Generate overviews only for clusters without overviews",
+    ),
+):
     async def _generate_overviews():
         mongo_client, analyzer = await setup()
 
-        session = await ClusteringSession.get(session_id)
-        assert session, f"No session found for the given id: {session_id}"
+        for session_id in session_ids:
+            session = await ClusteringSession.get(session_id)
+            if not session:
+                typer.echo(f"No session found for the given id: {session_id}", err=True)
+                continue
 
-        workspace = await Workspace.get(session.workspace_id)
-        assert workspace, f"No workspace found for the given session: {session_id}"
+            workspace = await Workspace.get(session.workspace_id)
+            if not workspace:
+                typer.echo(
+                    f"No workspace found for the given session: {session_id}", err=True
+                )
+                continue
 
-        generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
-        await generator.generate_overviews_for_session(session)
+            generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
+            await generator.generate_overviews_for_session(
+                session, only_missing=only_missing
+            )
+            typer.echo(f"Overviews generated for session: {session_id}")
 
         mongo_client.close()
 
@@ -121,17 +139,20 @@ def generate_overviews(session_id: str):
 
 
 @app.command()
-def evaluate(session_id: str):
+def evaluate(session_ids: list[str]):
     async def _evaluate():
         mongo_client, analyzer = await setup()
 
-        session = await ClusteringSession.get(session_id)
+        for session_id in session_ids:
+            session = await ClusteringSession.get(session_id)
 
-        if session is None:
-            typer.echo("No session found for the given id.", err=True)
-        else:
+            if session is None:
+                typer.echo(f"No session found for the given id: {session_id}", err=True)
+                continue
+
             evaluator = ClusterEvaluator(llm=init_chat_model("gpt-4o-mini"))
             await evaluator.evaluate_session(session)
+            typer.echo(f"Evaluation completed for session: {session_id}")
 
         mongo_client.close()
 

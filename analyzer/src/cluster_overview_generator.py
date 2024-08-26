@@ -93,10 +93,15 @@ class ClusterOverviewGenerator:
         self,
         session: ClusteringSession,
         max_concurrency: int = settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
+        only_missing: bool = False,
     ) -> None:
         logger.info(f"Generating overviews for session {session.id}")
         clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
         logger.info(f"Found {len(clusters)} clusters")
+
+        if only_missing:
+            clusters = [cluster for cluster in clusters if not cluster.overview]
+            logger.info(f"Found {len(clusters)} clusters without overviews")
 
         if not clusters:
             logger.warn("No clusters found for the given session.")
@@ -123,6 +128,7 @@ class ClusterOverviewGenerator:
                     summary=overview.final_summary,
                     language=language,
                 )
+                cluster.overview_generation_error = None
             await cluster.save()
 
         logger.info(f"Finished generating overviews for session {session.id}")
