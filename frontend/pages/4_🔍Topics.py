@@ -87,10 +87,12 @@ def display_session_metrics(session: ClusteringSession):
 display_session_metrics(selected_session)
 
 
-def display_clusters(clusters: list[ClusterWithArticles]):
+def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
     if not clusters:
         st.warning("No clusters found.")
         return
+
+    print([cluster.id for cluster in clusters])
 
     for cluster in clusters:
         col1, col2 = st.columns([2, 3])
@@ -113,7 +115,9 @@ def display_clusters(clusters: list[ClusterWithArticles]):
                 st.write(f"[**{article.title}**]({article.url})".replace("$", "\\$"))
                 st.caption(article.body.replace("$", "\\$"))
 
-            if (feedback := st.feedback("thumbs", key=cluster.id)) is not None:
+            if (
+                feedback := st.feedback("thumbs", key=f"{cluster.id}{tab_id}")
+            ) is not None:
                 set_cluster_feedback.sync(
                     client=client,
                     workspace_id=str(workspace.field_id),
@@ -140,7 +144,7 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
         st.warning("No clusters found.")
         return
 
-    display_clusters(clusters_with_articles)
+    display_clusters(clusters_with_articles, tab_id=str(relevancy_filter))
 
 
 tab_title_to_filter = {
