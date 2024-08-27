@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import aiohttp
 
@@ -144,4 +145,9 @@ async def get_first_valid_image(articles: list[Article]) -> HttpUrl | None:
                             return article.image
             except aiohttp.ClientError:
                 continue  # Move to the next article if there's an error
+            except asyncio.TimeoutError:
+                continue  # Move to the next article if there's a timeout
+            except Exception as e:
+                logger.error(f"Error while fetching image: {e}")
+                continue
     return None
