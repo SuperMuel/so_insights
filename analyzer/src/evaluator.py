@@ -49,7 +49,7 @@ class ClusterEvaluator:
             | self.structured_llm
         ).with_config(run_name="cluster_eval_chain")
 
-    async def evaluate_cluster(self, cluster: Cluster) -> ClusterEvaluation:
+    async def _get_cluster_evaluation(self, cluster: Cluster) -> ClusterEvaluation:
         assert cluster.overview, "Cluster must have an overview"
 
         workspace = await Workspace.get(cluster.workspace_id)
@@ -62,9 +62,9 @@ class ClusterEvaluator:
             )
         )
 
-    async def evaluate_clusters(
+    async def _get_clusters_evaluations(
         self, clusters: Sequence[Cluster]
-    ) -> Sequence[ClusterEvaluation]:
+    ) -> list[ClusterEvaluation]:
         if not clusters:
             return []
 
@@ -89,16 +89,9 @@ class ClusterEvaluator:
             ]
         )
 
-    async def evaluate_session(self, session: ClusteringSession) -> None:
-        clusters = await session.get_sorted_clusters()
-
-        if not clusters:
-            logger.info("No clusters found for the given session.")
-            return
-
-        logging.info(f"Evaluating {len(clusters)} clusters...")
-
-        evaluations = await self.evaluate_clusters(clusters)
+    async def evaluate_clusters(self, clusters: Sequence[Cluster]) -> None:
+        logger.info(f"Evaluating {len(clusters)} clusters...")
+        evaluations = await self._get_clusters_evaluations(clusters)
 
         for cluster, evaluation in zip(clusters, evaluations):
             cluster.evaluation = evaluation
@@ -121,6 +114,15 @@ class ClusterEvaluator:
         )
 
         logging.info(f"Average confidence score: {confidence_avg:.2f}")
+
+    async def evaluate_session(self, session: ClusteringSession) -> None:
+        clusters = await session.get_sorted_clusters()
+
+        if not clusters:
+            logger.info("No clusters found for the given session.")
+            return
+
+        await self.evaluate_clusters(clusters)
 
 
 # async def _main():

@@ -89,6 +89,38 @@ class ClusterOverviewGenerator:
             | structured_llm
         ).with_config(run_name="overview_generation_chain")
 
+    async def generate_overviews(
+        self,
+        clusters: list[Cluster],
+        max_concurrency: int = settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
+    ) -> None:
+        if not clusters:
+            logger.warn("Empty clusters list, skipping overview generation")
+            return
+        logger.info(f"Generating overviews for {len(clusters)} clusters")
+        overviews: list[ClusterOverviewOutput | Exception] = await self.chain.abatch(  # type:ignore
+            clusters,
+            config={"max_concurrency": max_concurrency},
+            return_exceptions=True,
+        )
+
+        for cluster, overview in zip(clusters, overviews):
+            if isinstance(overview, Exception):
+                logger.error(
+                    f"Failed to generate overview for cluster {cluster.id}: {overview}"
+                )
+                cluster.overview_generation_error = str(overview)
+            else:
+                cluster.overview = ClusterOverview(
+                    title=overview.title,
+                    summary=overview.final_summary,
+                    language=await self._get_language(cluster),
+                )
+                cluster.overview_generation_error = None
+            await cluster.save()
+
+        logger.info(f"Finished generating overviews for {len(clusters)} clusters")
+
     async def generate_overviews_for_session(
         self,
         session: ClusteringSession,
@@ -103,44 +135,8 @@ class ClusterOverviewGenerator:
             clusters = [cluster for cluster in clusters if not cluster.overview]
             logger.info(f"Found {len(clusters)} clusters without overviews")
 
-        if not clusters:
-            logger.warn("No clusters found for the given session.")
-            return
-
-        overviews: list[ClusterOverviewOutput | Exception] = await self.chain.abatch(  # type:ignore
-            clusters,
-            config={"max_concurrency": max_concurrency},
-            return_exceptions=True,
-        )
-        logger.info(f"Generated {len(overviews)} overviews")
-
-        language = await self._get_language(clusters[0])
-
-        for cluster, overview in zip(clusters, overviews):
-            if isinstance(overview, Exception):
-                logger.error(
-                    f"Failed to generate overview for cluster {cluster.id}: {overview}"
-                )
-                cluster.overview_generation_error = str(overview)
-            else:
-                cluster.overview = ClusterOverview(
-                    title=overview.title,
-                    summary=overview.final_summary,
-                    language=language,
-                )
-                cluster.overview_generation_error = None
-            await cluster.save()
-
+        await self.generate_overviews(clusters, max_concurrency=max_concurrency)
         logger.info(f"Finished generating overviews for session {session.id}")
-
-    @traceable
-    async def generate_overview(
-        self,
-        cluster: Cluster,
-    ) -> ClusterOverviewOutput:
-        """Generate a title and summary for a cluster of articles."""
-
-        return await self.chain.ainvoke(cluster)
 
 
 # async def _main():
