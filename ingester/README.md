@@ -1,61 +1,60 @@
-# SoInsights Ingester
+# SO Insights Ingester
 
-## Project Overview
+## Introduction
 
-SoInsights Ingester is a powerful tool designed to collect, process, and store news articles related to Artificial Intelligence from various online sources. It's part of a larger system that aims to provide insights and analysis on AI trends and developments.
+The SO Insights Ingester is a crucial component of the SO Insights project, designed to collect, process, and store articles from various online sources. It performs web searches based on predefined queries and stores them in both MongoDB and Pinecone vector database for efficient retrieval and analysis.
 
 ## Features
 
-- Automated search and collection of AI-related news articles
-- Configurable search queries and regions
-- Deduplication of articles to ensure unique content
-- Integration with MongoDB for data storage
-- Vector indexing of articles for efficient retrieval and analysis
-- Configurable ingestion runs with customizable time limits
-- Robust error handling and logging
+- Asynchronous web searching using DuckDuckGo
+- Storage in MongoDB for structured data
+- Indexing in Pinecone for vector search capabilities
+- Command-line interface
+
+## Prerequisites
+
+- Python 3.12 or higher
+- MongoDB
+- Pinecone account
+- VoyageAI API access
 
 ## Installation
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/your-repo/so-insights-ingester.git
-   cd so-insights-ingester
-   ```
-
-2. Install dependencies using Poetry:
-   ```
-   poetry install
-   ```
+Install dependencies using Poetry:
+```
+poetry install
+```
 
 ## Configuration
 
-1. Create a `.env` file in the `ingester` directory with the following variables:
+1. Create a `.env` file in the ingester directory with the following contents:
+
    ```
-   MONGODB_URI=your_mongodb_connection_string
-   VOYAGEAI_API_KEY=your_voyageai_api_key
+   MONGODB_URI=your_mongodb_uri
    PINECONE_API_KEY=your_pinecone_api_key
    PINECONE_INDEX=your_pinecone_index_name
+   VOYAGEAI_API_KEY=your_voyageai_api_key
    ```
 
-2. If needed, adjust the settings in `src/ingester_settings.py` by setting up more environment variables.
+2. Adjust the settings in `src/ingester_settings.py` as needed.
 
 ## Usage
 
-The ingester can be run using the following commands:
+The Ingester provides several command-line interfaces:
 
-1. Run ingestion for a single SearchQuerySet:
+1. Run ingestion for a single search query set:
    ```
-   poetry run python main.py run-one <search_query_set_id> --time-limit d
-   ```
-
-2. Run ingestion for all SearchQuerySets:
-   ```
-   poetry run python main.py run-all --time-limit w
+   poetry run python main.py run-one <search_query_set_id> [--time-limit <d|w|m|y>]
    ```
 
-3. Upsert articles for a single workspace:
+2. Run ingestion for all search query sets:
    ```
-   poetry run python main.py upsert <workspace_id>
+   poetry run python main.py run-all [--time-limit <d|w|m|y>]
+   ```
+
+3. Upsert articles for a specific workspace:
+   ```
+   poetry run python main.py upsert <workspace_id> [--force]
    ```
 
 4. Upsert articles for all workspaces:
@@ -63,17 +62,20 @@ The ingester can be run using the following commands:
    poetry run python main.py upsert-all
    ```
 
-## Code Structure
+## Architecture
 
-- `main.py`: Entry point of the application
-- `src/`:
-  - `ingester_settings.py`: Configuration settings
-  - `search.py`: Functions for searching and retrieving articles
-  - `util.py`: Utility functions
+The Ingester follows a modular architecture:
 
-## Key Components
+- `main.py`: Entry point and CLI commands
+- `src/ingester_settings.py`: Configuration management
+- `src/search.py`: Web search functionality
+- `src/util.py`: Utility functions
+- `../shared/`: Shared models and utilities
 
-1. **SearchQuerySet**: Defines a set of search queries and parameters for article collection.
-2. **IngestionRun**: Represents a single run of the ingestion process, tracking status and results.
-3. **Article**: Data model for storing article information.
-4. **VectorIndexing**: Indexes articles for efficient similarity search and retrieval.
+## Testing
+
+To run tests:
+
+```
+poetry run pytest
+```
