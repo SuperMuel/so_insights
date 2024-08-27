@@ -36,8 +36,11 @@ class Analyzer:
         self.overview_generator = overview_generator
         self.evaluator = cluster_evaluator
 
-    async def analyse(
-        self, workspace: Workspace, data_start: datetime, data_end: datetime
+    async def analyze_workspace(
+        self,
+        workspace: Workspace,
+        data_start: datetime,
+        data_end: datetime,
     ):
         session_start = datetime.now()
         assert workspace.id

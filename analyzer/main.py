@@ -69,7 +69,7 @@ def analyze(
         if workspace is None:
             typer.echo("No cluster found for the given workspace.", err=True)
         else:
-            await analyzer.analyse(
+            await analyzer.analyze_workspace(
                 workspace,
                 data_start=datetime.now() - timedelta(days=days),
                 data_end=datetime.now(),
@@ -90,7 +90,7 @@ def analyze_all(
         workspaces = await Workspace.find_all().to_list()
 
         for workspace in workspaces:
-            await analyzer.analyse(
+            await analyzer.analyze_workspace(
                 workspace,
                 data_start=datetime.now() - timedelta(days=days),
                 data_end=datetime.now(),
