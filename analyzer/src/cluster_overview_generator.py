@@ -89,7 +89,7 @@ class ClusterOverviewGenerator:
             | structured_llm
         ).with_config(run_name="overview_generation_chain")
 
-    async def generate_overviews(
+    async def generate_overviews(  # TODO : consider moving what updates the models to the analyzer class
         self,
         clusters: list[Cluster],
         max_concurrency: int = settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,

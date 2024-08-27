@@ -167,6 +167,9 @@ class ClusteringSession(Document):
         description="Number of articles in clusters, excluding noise.",
     )
 
+    def pretty_print(self) -> str:
+        return f"{self.data_start.strftime('%d %B %Y')} → {self.data_end.strftime('%d %B %Y')}"
+
     class Settings:
         name = DBSettings().mongodb_clustering_sessions_collection
 

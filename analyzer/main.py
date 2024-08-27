@@ -14,7 +14,7 @@ from src.vector_repository import PineconeVectorRepository
 from langchain.chat_models import init_chat_model
 
 from shared.db import get_client, my_init_beanie
-from shared.models import ClusteringSession, Workspace
+from shared.models import Cluster, ClusteringSession, Workspace
 
 load_dotenv()
 
@@ -157,6 +157,49 @@ def evaluate(session_ids: list[str]):
         mongo_client.close()
 
     asyncio.run(_evaluate())
+
+
+@app.command()
+def repair():
+    """Repair clusters by generating missing overviews and evaluations."""
+
+    async def _repair():
+        mongo_client, analyzer = await setup()
+
+        llm = init_chat_model("gpt-4o-mini")
+
+        # Get all clustering sessions
+        sessions = await ClusteringSession.find_all().to_list()
+
+        for session in sessions:
+            typer.echo(f"Repairing session: {session.id} ({session.pretty_print()})")
+
+            # Get all clusters for the session
+            clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
+
+            # Generate missing overviews
+            clusters_without_overview = [c for c in clusters if not c.overview]
+            if clusters_without_overview:
+                typer.echo(
+                    f"Generating {len(clusters_without_overview)} missing overviews"
+                )
+                generator = ClusterOverviewGenerator(llm=llm)
+                await generator.generate_overviews(clusters_without_overview)
+
+            # Generate missing evaluations
+            clusters_without_evaluation = [c for c in clusters if not c.evaluation]
+            if clusters_without_evaluation:
+                typer.echo(
+                    f"Generating {len(clusters_without_evaluation)} missing evaluations"
+                )
+                evaluator = ClusterEvaluator(llm=llm)
+                await evaluator.evaluate_clusters(clusters_without_evaluation)
+
+            typer.echo(f"Completed repairs for session: {session.id}")
+
+        mongo_client.close()
+
+    asyncio.run(_repair())
 
 
 if __name__ == "__main__":
