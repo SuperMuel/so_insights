@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from streamlit_cookies_controller import CookieController
 import streamlit as st
 from streamlit.runtime.state import WidgetCallback
 
@@ -13,10 +14,21 @@ def get_client():
     return Client(base_url=AppSettings().SO_INSIGHTS_API_URL)
 
 
-def select_workspace(client, show_description: bool = False, on_change:WidgetCallback | None=None,) -> Workspace | None:
+controller = CookieController()
+
+
+def select_workspace(
+    client,
+    show_description: bool = False,
+    on_change: WidgetCallback | None = None,
+) -> Workspace:
     workspaces = list_workspaces.sync(client=client)
     if workspaces is None:
         st.error("Workspaces not found")
+        st.stop()
+
+    if not workspaces:
+        st.warning("No workspaces found. Start by creating a new workspace.")
         st.stop()
 
     def format_workspace(w: Workspace):
@@ -25,12 +37,35 @@ def select_workspace(client, show_description: bool = False, on_change:WidgetCal
         )
         return f"{w.name}{description}"
 
-    return st.selectbox(
+    index = 0
+
+    if controller.get("workspace_id"):
+        index = next(
+            (
+                i
+                for i, w in enumerate(workspaces)
+                if w.field_id == controller.get("workspace_id")
+            ),
+            0,
+        )
+
+    selected = st.selectbox(
         "Select Workspace",
         options=workspaces,
         format_func=format_workspace,
         on_change=on_change,
+        index=index,
     )
+
+    assert selected
+
+    controller.set(
+        "workspace_id",
+        selected.field_id,
+        expires=datetime.now() + timedelta(days=365),
+    )
+
+    return selected
 
 
 def create_toast(text: str, icon: str = "🚀") -> None:
