@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta
+from sdk.so_insights_client.api.clustering import list_clustering_sessions
+from sdk.so_insights_client.models.clustering_session import ClusteringSession
+from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from streamlit_cookies_controller import CookieController
 import streamlit as st
 from streamlit.runtime.state import WidgetCallback
@@ -88,3 +91,27 @@ def show_all_toasts():
         st.toast(text, icon=icon)
     for toast in to_delete:
         toasts.remove(toast)
+
+
+def select_session(client: Client, workspace: Workspace) -> ClusteringSession:
+    sessions = list_clustering_sessions.sync(
+        client=client, workspace_id=str(workspace.field_id)
+    )
+    if not sessions:
+        st.warning("No clustering sessions found for this workspace.")
+        st.stop()
+
+    if isinstance(sessions, HTTPValidationError):
+        st.error(sessions.detail)
+        st.stop()
+
+    session = st.selectbox(
+        "Select a clustering session",
+        options=sessions,
+        format_func=lambda s: f"{s.data_start.strftime('%d %B %Y')} → {s.data_end.strftime('%d %B %Y')} ({s.clusters_count} clusters)",
+    )
+    if not session:
+        st.warning("Please select a session.")
+        st.stop()
+
+    return session
