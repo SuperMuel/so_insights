@@ -8,6 +8,7 @@ if __name__ == "__main__":
             st.Page("pages/2_📥Ingestion.py"),
             st.Page("pages/3_💬Chatbot.py"),
             st.Page("pages/4_🔍Topics.py"),
+            st.Page("pages/5_✍️Content_Studio.py"),
         ]
     )
 
