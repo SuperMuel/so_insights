@@ -1,3 +1,4 @@
+from typing import Literal
 import streamlit as st
 from src.shared import select_workspace, get_client
 
@@ -5,33 +6,69 @@ st.set_page_config(layout="wide", page_title="Content Studio")
 
 client = get_client()
 
+
+def length_selector(content_type: Literal["tweet"] | None = None):
+    if content_type == "tweet":
+        min, max = 50, 280
+        unit = "characters"
+        step = 10
+        initial_value = 140
+    else:
+        min, max = 50, 1000
+        unit = "words"
+        initial_value = 250
+        step = 50
+
+    return st.slider(
+        f"Content Length ({unit})",
+        min_value=min,
+        max_value=max,
+        value=initial_value,
+        step=step,
+    )
+
+
 # Sidebar for workspace selection
 with st.sidebar:
-    st.title("Workspace Selection")
+    st.subheader("Workspace Selection")
     workspace = select_workspace(client)
-    if not workspace:
-        st.warning("Please select a workspace to continue.")
-        st.stop()
+
+    # Content parameters
+    st.subheader("Content Parameters")
+    with st.container(border=True):
+        length = length_selector()
+        tone = st.select_slider(
+            "Tone",
+            options=["Formal", "Neutral", "Casual"],
+        )
+        language = st.selectbox(
+            "Language",
+            options=["French", "English", "German", "Spanish"],
+        )
+
 
 # Main content
 st.title("Content Studio")
 
 # Tabs for different content types
 content_types = [
-    "Social Media Post",
+    "Tweet / X",
+    "Linkedin",
     "Article",
     "Newsletter",
     "Blog Post",
-    "Press Release",
-    "Executive Summary",
 ]
 selected_type = st.tabs(content_types)
+
+
+# Function to create a unique key for each example
+def get_example_key(content_type, index):
+    return f"example_{content_type}_{index}"
+
 
 # Content for each tab
 for tab, content_type in zip(selected_type, content_types):
     with tab:
-        st.header(f"Generate {content_type}")
-
         col1, col2 = st.columns([1, 1])
 
         with col1:
@@ -48,27 +85,45 @@ for tab, content_type in zip(selected_type, content_types):
                 "Select Topics", topics, key=f"topics_{content_type}"
             )
 
-            # Content parameters
-            st.subheader("Content Parameters")
-            length = st.slider(
-                "Content Length",
-                50,
-                1000,
-                250,
-                key=f"length_{content_type}",
-            )
-            tone = st.select_slider(
-                "Tone",
-                options=["Formal", "Neutral", "Casual"],
-                key=f"tone_{content_type}",
-            )
+            # Example content input
+            st.subheader("Example Content")
+            st.caption("Provide examples for the AI to draw inspiration from")
+
+            with st.expander("Example Content"):
+                # Initialize the example count in session state if it doesn't exist
+                if f"example_count_{content_type}" not in st.session_state:
+                    st.session_state[f"example_count_{content_type}"] = 1
+
+                # Display existing examples
+                for i in range(st.session_state[f"example_count_{content_type}"]):
+                    st.text_area(
+                        f"Example {i+1}",
+                        key=get_example_key(content_type, i),
+                        height=100,
+                    )
+
+                # Button to add more examples
+                if st.button("Add Another Example", key=f"add_example_{content_type}"):
+                    st.session_state[f"example_count_{content_type}"] += 1
+                    st.rerun()
 
             # Generate button
             if st.button(
                 "Generate Content",
                 key=f"generate_{content_type}",
             ):
-                st.info("Content generation functionality to be implemented.")
+                # Collect all examples
+                examples = [
+                    st.session_state[get_example_key(content_type, i)]
+                    for i in range(st.session_state[f"example_count_{content_type}"])
+                    if st.session_state[
+                        get_example_key(content_type, i)
+                    ]  # Only include non-empty examples
+                ]
+
+                st.info(
+                    f"Content generation to be implemented. {len(examples)} example(s) provided."
+                )
 
         with col2:
             st.subheader("Output")
