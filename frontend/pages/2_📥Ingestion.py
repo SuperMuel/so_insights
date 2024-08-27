@@ -26,45 +26,45 @@ with st.sidebar:
     st.title("Workspace Selection")
     workspace = select_workspace(client)
     if not workspace:
-        st.warning("Please select a workspace.")
+        st.warning("Please select a workspace to continue.")
         st.stop()
 
 # Page Header
-st.title("Data ingestion")
-# explanations here
+st.title("Article Scraping")
 st.markdown(
     """
-    This page allows you to create and manage your keywords. Each Data Ingestion Profile of a list of keywords and a region. 
-    When you trigger a search, the search engine will search for the queries in the specified region and fill the database with the results.
+    This page allows you to create and manage your search configurations. Each configuration consists of a list of search queries and a search region. 
+    Every morning, our system will find articles matching your search queries in the specified region and store them for later.
     """
 )
 
 # Form for Creating a Search Query Set
 with st.form("create_search_query_set"):
-    st.subheader("New Data Ingestion")
+    st.subheader("New Configuration")
 
     query_set_title = st.text_input(
-        "Title*",
-        placeholder="Enter a title for the set of keywords",
+        "Configuration Title*",
+        placeholder="AI Trends 2024",
         max_chars=30,
     )
 
     queries_input = st.text_area(
-        "Keywords*",
-        placeholder="Enter the keywords one per line.\n\nExample : \n\nArtificial Intelligence\nMachine Learning\nDeep Learning\nOpenAI\nChatGPT\nSam Altman\nAnthropic\nNew AI Model\nOpen Source AI",
+        "Search Queries*",
+        placeholder="Enter one search query per line. Example :\n\nArtificial Intelligence\nMachine Learning\nDeep Learning\nOpenAI\nChatGPT",
         height=200,
-    )  # TODO : it's better to have a table with a line for each query
-
-    region = st.selectbox(
-        "Region*",
-        options=[Region.WT_WT]
-        + [r for r in Region if r != Region.WT_WT],  # put WT_WT first
-        format_func=region_to_full_name,
+        help="Each line will be used as a separate search query",
     )
 
-    if st.form_submit_button("Create data ingestion"):
+    region = st.selectbox(
+        "Search Region*",
+        options=[Region.WT_WT] + [r for r in Region if r != Region.WT_WT],
+        format_func=region_to_full_name,
+        help="Select the region to focus your search on",
+    )
+
+    if st.form_submit_button("Submit"):
         if not query_set_title or not queries_input:
-            st.error("Please fill in all the required fields.")
+            st.error("Please fill in both the title and search queries.")
         else:
             queries = [
                 query.strip() for query in queries_input.splitlines() if query.strip()
@@ -80,63 +80,66 @@ with st.form("create_search_query_set"):
             )
 
             if isinstance(response, SearchQuerySet):
-                st.success(f"**{query_set_title}** created successfully!")
+                st.success(
+                    f"Search Configuration '**{query_set_title}**' created successfully!"
+                )
             else:
-                st.error(f"Failed to create search query set. ({response})")
+                st.error(f"Failed to create search configuration. Error: {response}")
 
 # List existing Search Query Sets
-st.subheader("Existing Data Ingestions")
+st.subheader("Existing Configurations")
 
 query_sets = list_search_query_sets.sync(
     client=client, workspace_id=str(workspace.field_id)
 )
 
 if isinstance(query_sets, HTTPValidationError):
-    st.error(query_sets.detail)
+    st.error(f"Error fetching configurations: {query_sets.detail}")
     st.stop()
 
 if not query_sets:
-    st.info("No search query sets found.")
+    st.info("No configurations found. Create one using the form above.")
     st.stop()
 
 for query_set in query_sets:
-    with st.expander(query_set.title):
-        st.write(f"**Region:** {region_to_full_name(query_set.region)}")
-        st.write(f"**{len(query_set.queries)} Keywords:**")
-        st.write(" - ".join([f"`{query}`" for query in query_set.queries]))
+    with st.expander(f"**{query_set.title}**"):
+        st.metric("Number of Queries", len(query_set.queries))
+        st.write(f"**Search Region:** {region_to_full_name(query_set.region)}")
+        st.write("**Search Queries:**")
+        with st.container(border=True):
+            st.write(" • " + "\n • ".join(query_set.queries))
 
-        # "Trigger a Search" button
         if st.button(
-            "🔍 Trigger a Search",
-            key=f"trigger_search_{query_set.field_id}",
-            type="primary",
-        ):
-            st.warning("This is not implemented yet :(")
-
-        # delete button
-        if st.button(
-            "❌ Delete",
+            "🗑️ Delete Configuration",
             key=f"delete_search_query_set_{query_set.field_id}",
         ):
-            delete_search_query_set.sync(
-                client=client,
-                workspace_id=str(workspace.field_id),
-                search_query_set_id=str(query_set.field_id),
-            )
-            create_toast(f"**{query_set.title}** deleted successfully!", icon="🗑️")
-            st.rerun()
-
+            if st.checkbox(
+                "Confirm deletion", key=f"confirm_delete_{query_set.field_id}"
+            ):
+                delete_search_query_set.sync(
+                    client=client,
+                    workspace_id=str(workspace.field_id),
+                    search_query_set_id=str(query_set.field_id),
+                )
+                create_toast(
+                    f"Configuration '**{query_set.title}**' deleted successfully!",
+                    icon="🗑️",
+                )
+                st.rerun()
+            else:
+                st.warning("Please confirm deletion by checking the box.")
 
 # Show list of ingestion runs
-st.subheader("Ingestion Runs")
+st.subheader("Recent Article Searches")
+st.info("This section shows the history of your article searches and their results.")
 
 runs = list_ingestion_runs.sync(client=client, workspace_id=str(workspace.field_id))
 
 if isinstance(runs, HTTPValidationError):
-    st.error(runs.detail)
+    st.error(f"Error fetching search history: {runs.detail}")
     st.stop()
 if not runs:
-    st.info("No ingestion runs found.")
+    st.info("No article searches have been performed yet.")
     st.stop()
 
 status_map: dict[IngestionRunStatus, Literal["running", "complete", "error"]] = {
@@ -149,26 +152,27 @@ for run in runs:
     assert run.created_at
     created_at_str = arrow.get(run.created_at).humanize()
 
-    # get title from run.queries_set_id
     query_set_title = (
         next((q.title for q in query_sets if q.field_id == run.queries_set_id), None)
-        or run.queries_set_id
+        or f"Unknown Configuration ({run.queries_set_id})"
     )
 
-    new_articles_found = f"Found {run.n_inserted} articles" if run.n_inserted else ""
+    new_articles_found = (
+        f"{run.n_inserted} new articles found" if run.n_inserted else "No new articles"
+    )
 
     status = st.status(
-        label=f"**{query_set_title}** - {created_at_str} - {new_articles_found}",
+        label=f"**{query_set_title}** - Started {created_at_str} - {new_articles_found}",
         state=status_map[run.status],
     )
-    status.write(f"**Status:** {run.status}")
-    status.write(f"**Time Limit:** {run.time_limit}")
-    status.write(f"**Max Results:** {run.max_results}")
+    status.write(f"**Status:** {run.status.capitalize()}")
+    status.write(f"**Search Duration:** {run.time_limit}")
+    status.write(f"**Max Results per query:** {run.max_results}")
     status.write(
-        f"**New articles found:** {run.n_inserted if run.n_inserted is not None else 'Unknown'}"
+        f"**New Articles Found:** {run.n_inserted if run.n_inserted is not None else 'Unknown'}"
     )
-    status.write(f"**Queries Set ID:** {run.queries_set_id}")
-    status.write(f"**Created At:** {run.created_at}")
-    status.write(f"**End At:** {run.end_at}")
-    status.write(f"**Successfull Queries:** {run.successfull_queries}")
-    status.write(f"**Error:** {run.error}")
+    status.write(f"**Search Start:** {run.created_at}")
+    status.write(f"**Search End:** {run.end_at or 'Not finished'}")
+    status.write(f"**Successful Searches:** {run.successfull_queries or 'Unknown'}")
+    if run.error:
+        status.error(f"**Error:** {run.error}")
