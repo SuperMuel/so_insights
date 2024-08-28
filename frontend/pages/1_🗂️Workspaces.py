@@ -8,7 +8,7 @@ from sdk.so_insights_client.api.workspaces import (
     update_workspace,
     list_workspaces,
 )
-from src.shared import create_toast, get_client
+from src.shared import create_toast, get_client, language_to_localized_str
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 import shared.language
 
@@ -29,10 +29,6 @@ st.info(
 """,
     icon="ℹ️",
 )
-
-
-def language_formatter(language: Language) -> str:
-    return shared.language.Language(language.value).to_full_name()
 
 
 def get_language_index(language: Language) -> int:
@@ -57,7 +53,7 @@ def create_new_workspace_form():
         new_workspace_language = st.selectbox(
             "Primary Language",
             options=Language,
-            format_func=language_formatter,
+            format_func=language_to_localized_str,
             index=get_language_index(Language.EN),
             help="Select the primary language for content in this workspace",
         )
@@ -96,7 +92,7 @@ def edit_workspace(workspace: Workspace):
         updated_language = st.selectbox(
             "Primary Language",
             options=Language,
-            format_func=language_formatter,
+            format_func=language_to_localized_str,
             index=get_language_index(Language(workspace.language)),
             help="Change the primary language for this workspace",
         )
@@ -139,7 +135,7 @@ def display_workspaces():
         with st.expander(workspace.name):
             st.write(f"**Description:** {workspace.description}")
             st.write(
-                f"**Language:** {language_formatter(Language(workspace.language))}"
+                f"**Language:** {language_to_localized_str(Language(workspace.language))}"
             )
             if workspace.created_at:
                 created_at = arrow.get(workspace.created_at).humanize()
@@ -171,7 +167,7 @@ if selected_workspace:
     st.subheader(f"Selected Workspace: {selected_workspace.name}")
     st.write(f"**Description:** {selected_workspace.description}")
     st.write(
-        f"**Language:** {language_formatter(Language(selected_workspace.language))}"
+        f"**Language:** {language_to_localized_str(Language(selected_workspace.language))}"
     )
 
     # Add a brief overview of what can be done within the workspace

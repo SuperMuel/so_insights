@@ -5,24 +5,26 @@ from sdk.so_insights_client.api.clustering import (
 )
 from sdk.so_insights_client.models.cluster import Cluster
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.language import Language
 from sdk.so_insights_client.models.workspace import Workspace
 from src.content_generation import create_social_media_content
 import streamlit as st
-from src.shared import select_session, select_workspace, get_client
+from src.shared import language_to_str, select_session, select_workspace, get_client
 from langchain.chat_models import init_chat_model
 
 st.set_page_config(layout="wide", page_title="Content Studio")
 
 client = get_client()
 
-if not st.session_state.get("selected_clusters"):
+if "selected_clusters" not in st.session_state:
     st.session_state["selected_clusters"] = []
+
 
 content = ""
 
 
 @st.cache_resource
-def get_llm(model_name: str = "gpt-4o-mini"):
+def get_llm(model_name: str = "gpt-4o"):
     return init_chat_model(model_name)
 
 
@@ -130,15 +132,32 @@ with st.sidebar:
     # Content parameters
     st.subheader("Content Parameters")
     with st.container(border=True):
-        length = length_selector()
-        tone = st.select_slider(
-            "Tone",
-            options=["Formal", "Neutral", "Casual"],
-        )
+        # length = length_selector()
+        # tone = st.select_slider(
+        #     "Tone",
+        #     options=["Formal", "Neutral", "Casual"],
+        # )
         language = st.selectbox(
             "Language",
-            options=["French", "English", "German", "Spanish"],
+            options=Language,
+            format_func=language_to_str,
         )
+        assert language
+
+        models_labels = {
+            "claude-3-5-sonnet-20240620": "Claude-3.5 Sonnet (Recommended)",
+            "gpt-4o-mini": "GPT-4o Mini",
+            "gpt-4o": "GPT-4o",
+            "claude-3-haiku-20240307": "Claude-3 Haiku",
+        }
+
+        model = st.selectbox(
+            "AI Model",
+            options=models_labels.keys(),
+            format_func=models_labels.get,
+        )
+
+    assert model
 
 
 # Main content
@@ -182,21 +201,30 @@ for tab, content_type in zip(selected_type, content_types):
             st.caption("Provide examples for the AI to draw inspiration from")
 
             with st.expander("Example Content"):
-                # Initialize the example count in session state if it doesn't exist
-                if f"example_count_{content_type}" not in st.session_state:
-                    st.session_state[f"example_count_{content_type}"] = 1
+                if f"examples_{content_type}" not in st.session_state:
+                    st.session_state[f"examples_{content_type}"] = [""]
 
-                # Display existing examples
-                for i in range(st.session_state[f"example_count_{content_type}"]):
-                    st.text_area(
+                # Create a temporary list to store updated examples
+                updated_examples = []
+
+                for i, example in enumerate(
+                    st.session_state[f"examples_{content_type}"]
+                ):
+                    example_key = get_example_key(content_type, i)
+                    new_example = st.text_area(
                         f"Example {i+1}",
-                        key=get_example_key(content_type, i),
+                        key=example_key,
+                        value=example,
                         height=100,
                     )
+                    updated_examples.append(new_example)
+
+                # Update session state with the new examples
+                st.session_state[f"examples_{content_type}"] = updated_examples
 
                 # Button to add more examples
                 if st.button("Add Another Example", key=f"add_example_{content_type}"):
-                    st.session_state[f"example_count_{content_type}"] += 1
+                    st.session_state[f"examples_{content_type}"].append("")
                     st.rerun()
 
             # Generate button
@@ -204,33 +232,34 @@ for tab, content_type in zip(selected_type, content_types):
                 "Generate Content",
                 key=f"generate_{content_type}",
             ):
-                # Collect all examples
+                # Collect all non-empty examples from session state
                 examples = [
-                    st.session_state[get_example_key(content_type, i)]
-                    for i in range(st.session_state[f"example_count_{content_type}"])
-                    if st.session_state[
-                        get_example_key(content_type, i)
-                    ]  # Only include non-empty examples
+                    example
+                    for example in st.session_state[f"examples_{content_type}"]
+                    if example
                 ]
 
+                # Collect all examples
                 clusters: list[Cluster] = st.session_state.selected_clusters
+
+                if not clusters:
+                    st.error("No clusters selected")
+                    continue
+
                 assert all(
                     c.overview for c in clusters
                 ), "All clusters must have an overview"
                 overviews = [c.overview for c in clusters if c.overview]
                 with st.status("Generating content..."):
                     content = create_social_media_content(
-                        llm=get_llm(),
+                        llm=get_llm(model),
                         content_type=content_type,
                         overviews=overviews,
                         examples=examples,
+                        language=language,
                     )
 
                 print(f"{examples=}")
-
-                st.info(
-                    f"Content generation to be implemented. {len(examples)} example(s) provided."
-                )
 
         with col2:
             st.subheader("Output")

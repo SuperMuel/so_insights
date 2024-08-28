@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+from babel import Locale
 from sdk.so_insights_client.api.clustering import list_clustering_sessions
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.language import Language
 from streamlit_cookies_controller import CookieController
 import streamlit as st
 from streamlit.runtime.state import WidgetCallback
@@ -115,3 +117,17 @@ def select_session(client: Client, workspace: Workspace) -> ClusteringSession:
         st.stop()
 
     return session
+
+
+def language_to_str(language: Language) -> str:
+    locale = Locale(language.value)
+    display_name = locale.get_display_name("en")
+    assert display_name
+    return display_name.title()
+
+
+def language_to_localized_str(language: Language) -> str:
+    locale = Locale(language.value)
+    display_name = locale.get_display_name(language.value)
+    assert display_name
+    return display_name.title()
