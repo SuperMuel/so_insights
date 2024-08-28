@@ -1,4 +1,5 @@
 from typing import Literal
+from st_copy_to_clipboard import st_copy_to_clipboard
 import pandas as pd
 from sdk.so_insights_client.api.clustering import (
     list_clusters_for_session,
@@ -181,7 +182,7 @@ with st.sidebar:
 
 
 # Main content
-st.title("Content Studio")
+st.title("✍️ Content Studio")
 
 
 select_clusters(workspace)
@@ -209,7 +210,7 @@ for tab, content_type in zip(selected_type, content_types):
         with col1:
             # Example content input
 
-            with st.expander("Example Content"):
+            with st.expander("📚 Example Content"):
                 st.caption("Provide examples for the AI to draw inspiration from")
                 if f"examples_{content_type}" not in st.session_state:
                     st.session_state[f"examples_{content_type}"] = [""]
@@ -275,4 +276,10 @@ for tab, content_type in zip(selected_type, content_types):
             st.subheader("Output")
 
             if stream is not None:
-                st.write_stream(stream)
+                content = st.write_stream(stream)
+                st_copy_to_clipboard(
+                    str(content),
+                    before_copy_label="📋 Copy to clipboard",
+                    after_copy_label="✅ Copied!",
+                    key=f"copy_{content_type}",
+                )
