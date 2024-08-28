@@ -6,6 +6,9 @@ from sdk.so_insights_client.api.clustering import (
 from sdk.so_insights_client.models.cluster import Cluster
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.language import Language
+from sdk.so_insights_client.models.list_clusters_for_session_relevance_levels_type_0_item import (
+    ListClustersForSessionRelevanceLevelsType0Item as RelevanceLevelsItem,
+)
 from sdk.so_insights_client.models.workspace import Workspace
 from src.content_generation import create_social_media_content
 import streamlit as st
@@ -33,12 +36,17 @@ def get_llm(model_name: str = "gpt-4o"):
 
 
 @st.cache_data
-def _get_clusters_for_session(workspace_id, session_id):
+def _get_clusters_for_session(
+    workspace_id,
+    session_id,
+    relevance_levels: list[RelevanceLevelsItem] | None = None,
+):
     with st.spinner("Fetching clusters..."):
         clusters = list_clusters_for_session.sync(
             workspace_id=workspace_id,
             client=client,
             session_id=session_id,
+            relevance_levels=relevance_levels,
         )
 
     if isinstance(clusters, HTTPValidationError):
@@ -71,16 +79,16 @@ def select_clusters(workspace: Workspace):
 
         assert workspace.field_id and session.field_id
 
-        col1, col2, col3 = st.columns(3)
-        relevant = col1.checkbox("Show relevant clusters", value=True)
-        somewhat_relevant = col2.checkbox("Show somewhat relevant clusters")
-        irrelevant = col3.checkbox("Show irrelevant clusters")
-
-        clusters = _get_clusters_for_session(workspace.field_id, session.field_id)
-
+        clusters = (
+            _get_clusters_for_session(
+                workspace.field_id,
+                session.field_id,
+                relevance_levels=[RelevanceLevelsItem.HIGHLY_RELEVANT],
+            )
+            or []
+        )
         if not clusters:
-            st.warning("No clusters found.")
-            return
+            st.warning("No clusters found in this session.")
 
         df = _get_clusters_df(clusters)
 

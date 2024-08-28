@@ -7,16 +7,39 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.cluster import Cluster
 from ...models.http_validation_error import HTTPValidationError
-from ...types import Response
+from ...models.list_clusters_for_session_relevance_levels_type_0_item import (
+    ListClustersForSessionRelevanceLevelsType0Item,
+)
+from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     workspace_id: str,
     session_id: str,
+    *,
+    relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
 ) -> Dict[str, Any]:
+    params: Dict[str, Any] = {}
+
+    json_relevance_levels: Union[List[str], None, Unset]
+    if isinstance(relevance_levels, Unset):
+        json_relevance_levels = UNSET
+    elif isinstance(relevance_levels, list):
+        json_relevance_levels = []
+        for relevance_levels_type_0_item_data in relevance_levels:
+            relevance_levels_type_0_item = relevance_levels_type_0_item_data.value
+            json_relevance_levels.append(relevance_levels_type_0_item)
+
+    else:
+        json_relevance_levels = relevance_levels
+    params["relevance_levels"] = json_relevance_levels
+
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+
     _kwargs: Dict[str, Any] = {
         "method": "get",
         "url": f"/workspaces/{workspace_id}/clustering/sessions/{session_id}/clusters",
+        "params": params,
     }
 
     return _kwargs
@@ -60,6 +83,7 @@ def sync_detailed(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
 ) -> Response[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -68,6 +92,8 @@ def sync_detailed(
     Args:
         workspace_id (str):
         session_id (str):
+        relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
+            Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -80,6 +106,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         session_id=session_id,
+        relevance_levels=relevance_levels,
     )
 
     response = client.get_httpx_client().request(
@@ -94,6 +121,7 @@ def sync(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
 ) -> Optional[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -102,6 +130,8 @@ def sync(
     Args:
         workspace_id (str):
         session_id (str):
+        relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
+            Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -115,6 +145,7 @@ def sync(
         workspace_id=workspace_id,
         session_id=session_id,
         client=client,
+        relevance_levels=relevance_levels,
     ).parsed
 
 
@@ -123,6 +154,7 @@ async def asyncio_detailed(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
 ) -> Response[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -131,6 +163,8 @@ async def asyncio_detailed(
     Args:
         workspace_id (str):
         session_id (str):
+        relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
+            Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -143,6 +177,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         session_id=session_id,
+        relevance_levels=relevance_levels,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -155,6 +190,7 @@ async def asyncio(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
 ) -> Optional[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -163,6 +199,8 @@ async def asyncio(
     Args:
         workspace_id (str):
         session_id (str):
+        relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
+            Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -177,5 +215,6 @@ async def asyncio(
             workspace_id=workspace_id,
             session_id=session_id,
             client=client,
+            relevance_levels=relevance_levels,
         )
     ).parsed
