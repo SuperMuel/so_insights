@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from typing import Iterable
 from uuid import uuid4
 from pydantic import HttpUrl
-from sdk.so_insights_client.models.workspace import Workspace
 from langchain.chains import create_history_aware_retriever
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from shared.set_of_unique_articles import SetOfUniqueArticles
@@ -61,6 +60,10 @@ if not st.session_state.get("session_id"):
 def reset_chat():
     del st.session_state["session_id"]
     history.clear()
+    print("chat reset")
+
+
+st.session_state["on_workspace_changed_chatbot"] = reset_chat
 
 
 def select_ai_model():
@@ -103,7 +106,7 @@ with st.sidebar:
     st.subheader("Parameters")
     llm = select_ai_model()
     time_limit_days = select_time_limit()
-    if st.button("🗑️ Reset Chat"):
+    if st.button("🗑️ Reset Chat", use_container_width=True):
         reset_chat()
         st.rerun()
 

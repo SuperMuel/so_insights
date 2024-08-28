@@ -6,7 +6,7 @@ import streamlit as st
 from streamlit_cookies_controller import CookieController
 
 
-def select_workspace(client, cookie_controller: CookieController) -> None:
+def select_workspace(client, cookie_controller: CookieController, on_change) -> None:
     workspaces = list_workspaces.sync(client=client)
 
     if workspaces is None:
@@ -30,6 +30,7 @@ def select_workspace(client, cookie_controller: CookieController) -> None:
         format_func=lambda w: w.name,
         index=index,
         key="workspace",
+        on_change=on_change,
     )
 
     assert selected
@@ -58,8 +59,16 @@ if __name__ == "__main__":
 
     cookie_controller = CookieController()
 
+    def on_workspace_change():
+        if chatbot_callback := st.session_state.get("on_workspace_changed_chatbot"):
+            chatbot_callback()
+
     with st.sidebar:
-        select_workspace(get_client(), cookie_controller)
+        select_workspace(
+            get_client(),
+            cookie_controller,
+            on_workspace_change,
+        )
 
     from src.shared import show_all_toasts
 

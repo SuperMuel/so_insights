@@ -36,7 +36,9 @@ def get_llm(model_name: str = "gpt-4o"):
 def _get_clusters_for_session(workspace_id, session_id):
     with st.spinner("Fetching clusters..."):
         clusters = list_clusters_for_session.sync(
-            workspace_id=workspace_id, client=client, session_id=session_id
+            workspace_id=workspace_id,
+            client=client,
+            session_id=session_id,
         )
 
     if isinstance(clusters, HTTPValidationError):
@@ -63,11 +65,16 @@ def _get_clusters_df(clusters: list[Cluster]):
 
 def select_clusters(workspace: Workspace):
     # TODO : add relevancy filter
-
     with st.form("select_clusters"):
+        st.info("Choose the topics you wish to discuss in the content. ⬇️", icon="ℹ️")
         session = select_session(client, workspace)
 
         assert workspace.field_id and session.field_id
+
+        col1, col2, col3 = st.columns(3)
+        relevant = col1.checkbox("Show relevant clusters", value=True)
+        somewhat_relevant = col2.checkbox("Show somewhat relevant clusters")
+        irrelevant = col3.checkbox("Show irrelevant clusters")
 
         clusters = _get_clusters_for_session(workspace.field_id, session.field_id)
 
@@ -169,9 +176,6 @@ with st.sidebar:
 st.title("Content Studio")
 
 
-# show cluster selection
-st.subheader("Input")
-st.write("Select the subjects you want to talk about in the content.")
 select_clusters(workspace)
 
 # Tabs for different content types
@@ -196,10 +200,9 @@ for tab, content_type in zip(selected_type, content_types):
 
         with col1:
             # Example content input
-            st.subheader("Example Content")
-            st.caption("Provide examples for the AI to draw inspiration from")
 
             with st.expander("Example Content"):
+                st.caption("Provide examples for the AI to draw inspiration from")
                 if f"examples_{content_type}" not in st.session_state:
                     st.session_state[f"examples_{content_type}"] = [""]
 

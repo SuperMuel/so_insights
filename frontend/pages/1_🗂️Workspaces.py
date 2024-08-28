@@ -53,7 +53,9 @@ def create_new_workspace_form():
         )
         assert new_workspace_language is not None
 
-        submit_button = st.form_submit_button("Create Workspace")
+        submit_button = st.form_submit_button(
+            "Create Workspace", use_container_width=True
+        )
 
         if submit_button:
             if not new_workspace_name:
@@ -95,7 +97,10 @@ def edit_workspace(workspace: Workspace):
             index=get_language_index(Language(workspace.language)),
             help="Change the primary language for this workspace",
         )
-        update_button = st.form_submit_button("Update Workspace")
+        update_button = st.form_submit_button(
+            "Update Workspace",
+            use_container_width=True,
+        )
 
         if update_button:
             confirm = st.checkbox(

@@ -19,7 +19,6 @@ workspace = get_workspace_or_stop()
 
 
 with st.sidebar:
-    st.subheader("Parameters")
     selected_session = select_session(client, workspace)
 
 st.title("Clustering Analysis")
