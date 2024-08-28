@@ -28,6 +28,7 @@ def get_llm(model_name: str = "gpt-4o"):
     return init_chat_model(model_name)
 
 
+@st.cache_data
 def _get_clusters_for_session(workspace_id, session_id):
     clusters = list_clusters_for_session.sync(
         workspace_id=workspace_id, client=client, session_id=session_id
@@ -55,52 +56,55 @@ def _get_clusters_df(clusters: list[Cluster]):
     return pd.DataFrame(x)
 
 
-@st.dialog("Select clusters", width="large")
 def select_clusters(workspace: Workspace):
     # TODO : add relevancy filter
-    session = select_session(client, workspace)
 
-    assert workspace.field_id and session.field_id
+    with st.form("select_clusters"):
+        session = select_session(client, workspace)
 
-    clusters = _get_clusters_for_session(workspace.field_id, session.field_id)
+        assert workspace.field_id and session.field_id
 
-    if not clusters:
-        st.warning("No clusters found.")
-        return
+        clusters = _get_clusters_for_session(workspace.field_id, session.field_id)
 
-    df = _get_clusters_df(clusters)
+        if not clusters:
+            st.warning("No clusters found.")
+            return
 
-    column_configuration = {
-        "image": st.column_config.ImageColumn("Image", width="small"),
-        "title": st.column_config.TextColumn("Title", width="large"),
-        "articles_count": st.column_config.NumberColumn(
-            "Articles Count",
-            width="small",
-        ),
-        "summary": st.column_config.TextColumn("Summary", width="large"),
-    }
+        df = _get_clusters_df(clusters)
 
-    event = st.dataframe(
-        df,
-        on_select="rerun",
-        column_config=column_configuration,
-        hide_index=True,
-        use_container_width=True,
-    )
+        column_configuration = {
+            "image": st.column_config.ImageColumn("Image", width="small"),
+            "title": st.column_config.TextColumn("Title", width="large"),
+            "articles_count": st.column_config.NumberColumn(
+                "Articles Count",
+                width="small",
+            ),
+            "summary": st.column_config.TextColumn("Summary", width="large"),
+        }
 
-    def cluster_from_id(cluster_id):
-        print(f"{cluster_id=}")
-        print(f"Example of one cluster id : {clusters[0].field_id}")
-        return next((cluster for cluster in clusters if cluster.field_id == cluster_id))
+        event = st.dataframe(
+            df,
+            on_select="rerun",
+            column_config=column_configuration,
+            hide_index=True,
+            use_container_width=True,
+        )
 
-    if st.button("Save"):
-        selected_clusters_ids = df.iloc[event.selection.rows].cluster_id.tolist()  # type: ignore
-        selected_clusters = [
-            cluster_from_id(cluster_id) for cluster_id in selected_clusters_ids
-        ]
+        def cluster_from_id(cluster_id):
+            print(f"{cluster_id=}")
+            print(f"Example of one cluster id : {clusters[0].field_id}")
+            return next(
+                (cluster for cluster in clusters if cluster.field_id == cluster_id)
+            )
 
-        st.session_state.selected_clusters = selected_clusters
-        st.rerun()
+        if st.form_submit_button("✅ Save Selection"):
+            selected_clusters_ids = df.iloc[event.selection.rows].cluster_id.tolist()  # type: ignore
+            selected_clusters = [
+                cluster_from_id(cluster_id) for cluster_id in selected_clusters_ids
+            ]
+
+            st.session_state.selected_clusters = selected_clusters
+            st.success(f"{len(selected_clusters)} topics selected.", icon="✅")
 
 
 def length_selector(content_type: Literal["tweet"] | None = None):
@@ -166,6 +170,11 @@ with st.sidebar:
 st.title("Content Studio")
 
 
+# show cluster selection
+st.subheader("Input")
+st.write("Select the subjects you want to talk about in the content.")
+select_clusters(workspace)
+
 # Tabs for different content types
 content_types = [
     "Tweet / X",
@@ -187,17 +196,6 @@ for tab, content_type in zip(selected_type, content_types):
         col1, col2 = st.columns([1, 1])
 
         with col1:
-            st.subheader("Input")
-            # write ids of selected clusters
-
-            for c in st.session_state.selected_clusters:
-                st.write(f"- **`{c.overview.title}`**")
-
-            # Topic selection
-            st.text(f"{len(st.session_state.selected_clusters)} clusters selected")
-            if st.button("Select Clusters", key=f"select_clusters{content_type}"):
-                select_clusters(workspace=workspace)
-
             # Example content input
             st.subheader("Example Content")
             st.caption("Provide examples for the AI to draw inspiration from")
