@@ -4,6 +4,7 @@ from sdk.so_insights_client.models.http_validation_error import HTTPValidationEr
 from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
 from sdk.so_insights_client.models.search_query_set_update import SearchQuerySetUpdate
 import shared.region
+from src.shared import create_toast, get_client, get_workspace_or_stop
 import streamlit as st
 from sdk.so_insights_client.models.search_query_set import SearchQuerySet
 from sdk.so_insights_client.api.search_query_sets import (
@@ -14,7 +15,6 @@ from sdk.so_insights_client.api.search_query_sets import (
 )
 from sdk.so_insights_client.api.ingestion_runs import list_ingestion_runs
 from sdk.so_insights_client.models import SearchQuerySetCreate, Region
-from src.shared import create_toast, get_client, select_workspace
 
 
 def region_to_full_name(region: Region) -> str:
@@ -68,23 +68,20 @@ def update_config(query_set: SearchQuerySet):
                 st.error(f"Failed to update configuration. Error: {response}")
 
 
+workspace = get_workspace_or_stop()
 client = get_client()
-
-# Sidebar for Workspace Selection
-with st.sidebar:
-    st.title("Workspace Selection")
-    workspace = select_workspace(client)
-    if not workspace:
-        st.warning("Please select a workspace to continue.")
-        st.stop()
 
 # Page Header
 st.title("Article Scraping")
 st.markdown(
     """
-    This page allows you to create and manage your search configurations. Each configuration consists of a list of search queries and a search region. 
-    Every morning, our system will find articles matching your search queries in the specified region and store them for later.
     """
+)
+st.info(
+    """This page allows you to create and manage your search configurations. Each configuration consists of a list of search queries and a search region. 
+Every morning, our system will find articles matching your search queries in the specified region and store them for later.
+""",
+    icon="ℹ️",
 )
 
 # Form for Creating a Search Query Set
@@ -156,7 +153,7 @@ for query_set in query_sets:
         st.write(f"**Search Region:** {region_to_full_name(query_set.region)}")
         st.write("**Search Queries:**")
         with st.container(border=True):
-            st.write(" • " + "\n • ".join(query_set.queries))
+            st.markdown(" ".join([f"`{query}`" for query in query_set.queries]))
 
         if st.button("🔄 Update", key=f"update_search_query_set_{query_set.field_id}"):
             update_config(query_set)

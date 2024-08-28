@@ -12,17 +12,14 @@ from sdk.so_insights_client.api.clustering import (
 )
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 
-from src.shared import get_client, select_session, select_workspace
-
-st.set_page_config(page_title="Clustering Analysis", layout="wide")
-
+from src.shared import get_client, get_workspace_or_stop, select_session
 
 client = get_client()
+workspace = get_workspace_or_stop()
 
 
 with st.sidebar:
     st.subheader("Parameters")
-    workspace = select_workspace(client)
     selected_session = select_session(client, workspace)
 
 st.title("Clustering Analysis")

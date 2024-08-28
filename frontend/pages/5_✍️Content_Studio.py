@@ -9,12 +9,16 @@ from sdk.so_insights_client.models.language import Language
 from sdk.so_insights_client.models.workspace import Workspace
 from src.content_generation import create_social_media_content
 import streamlit as st
-from src.shared import language_to_str, select_session, select_workspace, get_client
+from src.shared import (
+    get_workspace_or_stop,
+    language_to_str,
+    select_session,
+    get_client,
+)
 from langchain.chat_models import init_chat_model
 
-st.set_page_config(layout="wide", page_title="Content Studio")
-
 client = get_client()
+workspace = get_workspace_or_stop()
 
 if "selected_clusters" not in st.session_state:
     st.session_state["selected_clusters"] = []
@@ -30,9 +34,10 @@ def get_llm(model_name: str = "gpt-4o"):
 
 @st.cache_data
 def _get_clusters_for_session(workspace_id, session_id):
-    clusters = list_clusters_for_session.sync(
-        workspace_id=workspace_id, client=client, session_id=session_id
-    )
+    with st.spinner("Fetching clusters..."):
+        clusters = list_clusters_for_session.sync(
+            workspace_id=workspace_id, client=client, session_id=session_id
+        )
 
     if isinstance(clusters, HTTPValidationError):
         st.error(f"Error fetching clusters: {clusters.detail}")
@@ -91,8 +96,6 @@ def select_clusters(workspace: Workspace):
         )
 
         def cluster_from_id(cluster_id):
-            print(f"{cluster_id=}")
-            print(f"Example of one cluster id : {clusters[0].field_id}")
             return next(
                 (cluster for cluster in clusters if cluster.field_id == cluster_id)
             )
@@ -130,10 +133,6 @@ def length_selector(content_type: Literal["tweet"] | None = None):
 
 # Sidebar for workspace selection
 with st.sidebar:
-    st.subheader("Workspace Selection")
-    workspace = select_workspace(client)
-
-    # Content parameters
     st.subheader("Content Parameters")
     with st.container(border=True):
         # length = length_selector()
@@ -240,7 +239,7 @@ for tab, content_type in zip(selected_type, content_types):
                 ]
 
                 # Collect all examples
-                clusters: list[Cluster] = st.session_state.selected_clusters
+                clusters = st.session_state.selected_clusters  # type: list[Cluster]
 
                 if not clusters:
                     st.error("No clusters selected")
@@ -249,18 +248,17 @@ for tab, content_type in zip(selected_type, content_types):
                 assert all(
                     c.overview for c in clusters
                 ), "All clusters must have an overview"
-                overviews = [c.overview for c in clusters if c.overview]
-                with st.status("Generating content..."):
-                    stream = create_social_media_content(
-                        llm=get_llm(model),
-                        content_type=content_type,
-                        overviews=overviews,
-                        examples=examples,
-                        language=language,
-                        stream=True,
-                    )
 
-                print(f"{examples=}")
+                overviews = [c.overview for c in clusters if c.overview]
+
+                stream = create_social_media_content(
+                    llm=get_llm(model),
+                    content_type=content_type,
+                    overviews=overviews,
+                    examples=examples,
+                    language=language,
+                    stream=True,
+                )
 
         with col2:
             st.subheader("Output")

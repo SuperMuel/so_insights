@@ -23,3 +23,6 @@ class AppSettings(BaseSettings):
     PINECONE_INDEX: str = Field(default=...)
 
     RETRIEVER_K: int = 30
+
+    OPENAI_API_KEY: str = Field(default=...)
+    ANTHROPIC_API_KEY: str = Field(default=...)

@@ -4,11 +4,8 @@ from sdk.so_insights_client.api.clustering import list_clustering_sessions
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.language import Language
-from streamlit_cookies_controller import CookieController
 import streamlit as st
-from streamlit.runtime.state import WidgetCallback
 
-from sdk.so_insights_client.api.workspaces import list_workspaces
 from sdk.so_insights_client.client import Client
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import AppSettings
@@ -19,58 +16,11 @@ def get_client():
     return Client(base_url=AppSettings().SO_INSIGHTS_API_URL)
 
 
-controller = CookieController()
-
-
-def select_workspace(
-    client,
-    show_description: bool = False,
-    on_change: WidgetCallback | None = None,
-) -> Workspace:
-    workspaces = list_workspaces.sync(client=client)
-    if workspaces is None:
-        st.error("Workspaces not found")
+def get_workspace_or_stop() -> Workspace:
+    if not (workspace := st.session_state.get("workspace")):
+        st.error("Please select a workspace first.")
         st.stop()
-
-    if not workspaces:
-        st.warning("No workspaces found. Start by creating a new workspace.")
-        st.stop()
-
-    def format_workspace(w: Workspace):
-        description = (
-            "" if not w.description or not show_description else f" - {w.description}"
-        )
-        return f"{w.name}{description}"
-
-    index = 0
-
-    if controller.get("workspace_id"):
-        index = next(
-            (
-                i
-                for i, w in enumerate(workspaces)
-                if w.field_id == controller.get("workspace_id")
-            ),
-            0,
-        )
-
-    selected = st.selectbox(
-        "Select Workspace",
-        options=workspaces,
-        format_func=format_workspace,
-        on_change=on_change,
-        index=index,
-    )
-
-    assert selected
-
-    controller.set(
-        "workspace_id",
-        selected.field_id,
-        expires=datetime.now() + timedelta(days=365),
-    )
-
-    return selected
+    return workspace
 
 
 def create_toast(text: str, icon: str = "🚀") -> None:
