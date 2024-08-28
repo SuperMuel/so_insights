@@ -2,6 +2,7 @@ from typing import Literal
 import arrow
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
+from sdk.so_insights_client.models.search_query_set_update import SearchQuerySetUpdate
 import shared.region
 import streamlit as st
 from sdk.so_insights_client.models.search_query_set import SearchQuerySet
@@ -9,6 +10,7 @@ from sdk.so_insights_client.api.search_query_sets import (
     create_search_query_set,
     list_search_query_sets,
     delete_search_query_set,
+    update_search_query_set,
 )
 from sdk.so_insights_client.api.ingestion_runs import list_ingestion_runs
 from sdk.so_insights_client.models import SearchQuerySetCreate, Region
@@ -17,6 +19,53 @@ from src.shared import create_toast, get_client, select_workspace
 
 def region_to_full_name(region: Region) -> str:
     return shared.region.Region(region).get_full_name()
+
+
+@st.dialog("Update config")
+def update_config(query_set: SearchQuerySet):
+    with st.form(key=f"update_form_{query_set.field_id}"):
+        st.subheader("Update Configuration")
+        updated_title = st.text_input(
+            "Update Title", value=query_set.title, max_chars=30
+        )
+        updated_queries = st.text_area(
+            "Update Search Queries",
+            value="\n".join(query_set.queries),
+            height=150,
+            help="Enter one search query per line",
+        )
+        updated_region = st.selectbox(
+            "Update Search Region",
+            options=[Region.WT_WT] + [r for r in Region if r != Region.WT_WT],
+            index=0
+            if query_set.region == Region.WT_WT
+            else [r for r in Region if r != Region.WT_WT].index(query_set.region) + 1,
+            format_func=region_to_full_name,
+        )
+
+        if st.form_submit_button("Update Configuration"):
+            updated_queries_list = [
+                q.strip() for q in updated_queries.split("\n") if q.strip()
+            ]
+            update_data = SearchQuerySetUpdate(
+                title=updated_title,
+                queries=updated_queries_list,
+                region=updated_region,
+            )
+            response = update_search_query_set.sync(
+                client=client,
+                workspace_id=str(workspace.field_id),
+                search_query_set_id=str(query_set.field_id),
+                body=update_data,
+            )
+            if isinstance(response, SearchQuerySet):
+                create_toast(
+                    f"Configuration '**{updated_title}**' updated successfully!",
+                    icon="✅",
+                )
+                st.rerun()
+            else:
+                st.error(f"Failed to update configuration. Error: {response}")
 
 
 client = get_client()
@@ -108,6 +157,9 @@ for query_set in query_sets:
         st.write("**Search Queries:**")
         with st.container(border=True):
             st.write(" • " + "\n • ".join(query_set.queries))
+
+        if st.button("🔄 Update", key=f"update_search_query_set_{query_set.field_id}"):
+            update_config(query_set)
 
         if st.button(
             "🗑️ Delete Configuration",
