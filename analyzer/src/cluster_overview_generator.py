@@ -1,7 +1,6 @@
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain import hub
-from langsmith import traceable
 from shared.language import Language
 from shared.models import (
     Article,

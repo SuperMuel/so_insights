@@ -13,6 +13,7 @@ from .http_validation_error import HTTPValidationError
 from .ingestion_run import IngestionRun
 from .ingestion_run_status import IngestionRunStatus
 from .language import Language
+from .list_clusters_for_session_relevance_levels_type_0_item import ListClustersForSessionRelevanceLevelsType0Item
 from .region import Region
 from .relevancy_filter import RelevancyFilter
 from .search_query_set import SearchQuerySet
@@ -38,6 +39,7 @@ __all__ = (
     "IngestionRun",
     "IngestionRunStatus",
     "Language",
+    "ListClustersForSessionRelevanceLevelsType0Item",
     "Region",
     "RelevancyFilter",
     "SearchQuerySet",

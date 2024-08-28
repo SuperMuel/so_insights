@@ -8,14 +8,8 @@ from sdk.so_insights_client.api.workspaces import (
     update_workspace,
     list_workspaces,
 )
-from src.shared import create_toast, get_client
+from src.shared import create_toast, get_client, language_to_str
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
-import shared.language
-
-
-st.set_page_config(
-    layout="wide",
-)
 
 
 client = get_client()
@@ -29,10 +23,6 @@ st.info(
 """,
     icon="ℹ️",
 )
-
-
-def language_formatter(language: Language) -> str:
-    return shared.language.Language(language.value).to_full_name()
 
 
 def get_language_index(language: Language) -> int:
@@ -57,13 +47,15 @@ def create_new_workspace_form():
         new_workspace_language = st.selectbox(
             "Primary Language",
             options=Language,
-            format_func=language_formatter,
+            format_func=language_to_str,
             index=get_language_index(Language.EN),
             help="Select the primary language for content in this workspace",
         )
         assert new_workspace_language is not None
 
-        submit_button = st.form_submit_button("Create Workspace")
+        submit_button = st.form_submit_button(
+            "Create Workspace", use_container_width=True
+        )
 
         if submit_button:
             if not new_workspace_name:
@@ -82,6 +74,10 @@ def create_new_workspace_form():
                     st.error(f"Failed to create workspace. Error: {response}")
 
 
+with st.sidebar:
+    create_new_workspace_form()
+
+
 def edit_workspace(workspace: Workspace):
     st.subheader("✏️ Edit Workspace")
     with st.form("edit_workspace_form"):
@@ -92,15 +88,19 @@ def edit_workspace(workspace: Workspace):
             "Description",
             value=workspace.description,
             help="Modify the workspace description",
+            height=200,
         )
         updated_language = st.selectbox(
             "Primary Language",
             options=Language,
-            format_func=language_formatter,
+            format_func=language_to_str,
             index=get_language_index(Language(workspace.language)),
             help="Change the primary language for this workspace",
         )
-        update_button = st.form_submit_button("Update Workspace")
+        update_button = st.form_submit_button(
+            "Update Workspace",
+            use_container_width=True,
+        )
 
         if update_button:
             confirm = st.checkbox(
@@ -128,7 +128,7 @@ def edit_workspace(workspace: Workspace):
                 st.warning("Please confirm the update by checking the box.")
 
 
-def display_workspaces():
+def display_workspaces() -> None:
     workspaces = list_workspaces.sync(client=client)
     if not workspaces:
         st.warning("No workspaces found. Start by creating a new workspace.")
@@ -138,50 +138,24 @@ def display_workspaces():
     for workspace in workspaces:
         with st.expander(workspace.name):
             st.write(f"**Description:** {workspace.description}")
-            st.write(
-                f"**Language:** {language_formatter(Language(workspace.language))}"
-            )
+            st.write(f"**Language:** {language_to_str(Language(workspace.language))}")
             if workspace.created_at:
                 created_at = arrow.get(workspace.created_at).humanize()
                 st.write(f"**Created:** {created_at}")
             if workspace.updated_at:
                 updated_at = arrow.get(workspace.updated_at).humanize()
                 st.write(f"**Last updated:** {updated_at}")
-            # Here you could add counts of items within the workspace
-            # st.write(f"**Search Profiles:** {count_search_profiles(workspace.id)}")
-            # st.write(f"**Collected Articles:** {count_articles(workspace.id)}")
-
-            if st.button("Select this Workspace", key=f"select_{workspace.field_id}"):
-                return workspace
-
-    return None
 
 
 # Main layout
-col1, col2 = st.columns([2, 1])
+workspace = st.session_state.get("workspace")
+if not workspace:
+    st.info("Select a workspace from the sidebar or create a new one.")
+    st.stop()
+
+col1, col2 = st.columns(2)
 
 with col1:
-    selected_workspace = display_workspaces()
-
+    display_workspaces()
 with col2:
-    create_new_workspace_form()
-
-if selected_workspace:
-    st.divider()
-    st.subheader(f"Selected Workspace: {selected_workspace.name}")
-    st.write(f"**Description:** {selected_workspace.description}")
-    st.write(
-        f"**Language:** {language_formatter(Language(selected_workspace.language))}"
-    )
-
-    # Add a brief overview of what can be done within the workspace
-    st.markdown("""
-        ### What you can do in this workspace:
-        - Create and manage search profiles
-        - View collected articles
-        - Analyze content and generate insights
-    """)
-
-    edit_workspace(selected_workspace)
-else:
-    st.info("Please select a workspace from the list or create a new one.")
+    edit_workspace(workspace)

@@ -4,12 +4,11 @@ from datetime import datetime, timedelta
 from typing import Iterable
 from uuid import uuid4
 from pydantic import HttpUrl
-from sdk.so_insights_client.models.workspace import Workspace
 from langchain.chains import create_history_aware_retriever
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.app_settings import AppSettings
-from src.shared import select_workspace, get_client
+from src.shared import get_client, get_workspace_or_stop
 import streamlit as st
 from langchain.chat_models import init_chat_model
 from langchain import hub
@@ -20,7 +19,9 @@ from langchain_pinecone import PineconeVectorStore
 from langchain_voyageai import VoyageAIEmbeddings
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
-from dotenv import load_dotenv
+
+
+workspace = get_workspace_or_stop()
 
 
 @dataclass
@@ -42,9 +43,6 @@ class _ArticleDocument:
         )
 
 
-load_dotenv()
-
-
 settings = AppSettings()
 
 embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameters "_client", "_aclient"
@@ -62,14 +60,10 @@ if not st.session_state.get("session_id"):
 def reset_chat():
     del st.session_state["session_id"]
     history.clear()
+    print("chat reset")
 
 
-def _select_workspace() -> Workspace:
-    workspaces = select_workspace(client, on_change=reset_chat)
-    if not workspaces:
-        st.warning("Please select a workspace.")
-        st.stop()
-    return workspaces
+st.session_state["on_workspace_changed_chatbot"] = reset_chat
 
 
 def select_ai_model():
@@ -110,10 +104,9 @@ history = StreamlitChatMessageHistory(key="chat_history")
 
 with st.sidebar:
     st.subheader("Parameters")
-    workspace = _select_workspace()
     llm = select_ai_model()
     time_limit_days = select_time_limit()
-    if st.button("🗑️ Reset Chat"):
+    if st.button("🗑️ Reset Chat", use_container_width=True):
         reset_chat()
         st.rerun()
 

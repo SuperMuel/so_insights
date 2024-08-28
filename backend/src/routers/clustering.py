@@ -1,5 +1,5 @@
-from typing import Literal
-from fastapi import APIRouter, HTTPException
+from typing import Annotated, List, Literal
+from fastapi import APIRouter, HTTPException, Query
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.dependencies import (
     ExistingCluster,
@@ -7,6 +7,7 @@ from src.dependencies import (
     ExistingWorkspace,
 )
 from beanie.operators import In, Exists, Or
+from beanie.odm.queries.find import FindMany
 from shared.models import (
     Article,
     ClusterFeedback,
@@ -18,6 +19,28 @@ from src.schemas import ArticlePreview, ClusterWithArticles
 
 router = APIRouter(tags=["clustering"])
 
+type RelevancyFilter = Literal[RelevanceLevel, "all", "unknown"]
+
+
+def filter_clusters_with_relevancy(
+    clusters: FindMany[Cluster], relevancy_filter: RelevancyFilter
+) -> FindMany[Cluster]:
+    if relevancy_filter == "all":
+        pass
+    elif relevancy_filter == "unknown":
+        clusters = clusters.find(
+            Or(
+                Exists(Cluster.evaluation, False),
+                Cluster.evaluation == None,  # noqa: E711 # type: ignore
+            )
+        )
+    else:
+        clusters = clusters.find(
+            Exists(Cluster.evaluation),
+            Cluster.evaluation.relevance_level == relevancy_filter,  # type: ignore
+        )
+    return clusters
+
 
 @router.get(
     "/sessions",
@@ -26,7 +49,7 @@ router = APIRouter(tags=["clustering"])
 )
 async def list_clustering_sessions(workspace: ExistingWorkspace):
     """List all clustering sessions for a workspace"""
-    sessions = (
+    sessions: List[ClusteringSession] = (
         await ClusteringSession.find(ClusteringSession.workspace_id == workspace.id)
         .sort(-ClusteringSession.session_start)  # type: ignore
         .to_list()
@@ -49,16 +72,26 @@ async def get_clustering_session(session: ExistingClusteringSession):
     response_model=list[Cluster],
     operation_id="list_clusters_for_session",
 )
-async def list_clusters(session: ExistingClusteringSession):
+async def list_clusters(
+    session: ExistingClusteringSession,
+    relevance_levels: Annotated[List[RelevanceLevel] | None, Query()] = None,
+):
     """List all clusters for a specific clustering session"""
-    clusters = (
-        await Cluster.find(
-            Cluster.session_id == session.id,
-            Cluster.workspace_id == session.workspace_id,
-        )
-        .sort(-Cluster.articles_count)  # type: ignore
-        .to_list()
+    clusters = Cluster.find(
+        Cluster.session_id == session.id,
+        Cluster.workspace_id == session.workspace_id,
     )
+
+    if relevance_levels is not None:
+        clusters = clusters.find(
+            Exists(Cluster.evaluation),
+            In(Cluster.evaluation.relevance_level, relevance_levels),  # type: ignore
+        )
+
+    clusters = await clusters.sort(
+        -Cluster.articles_count,  # type: ignore
+    ).to_list()
+
     return clusters
 
 
@@ -68,9 +101,6 @@ async def list_clusters(session: ExistingClusteringSession):
 async def get_cluster(cluster: ExistingCluster):
     """Get a specific cluster"""
     return cluster
-
-
-type RelevancyFilter = Literal[RelevanceLevel, "all", "unknown"]
 
 
 @router.get(
@@ -90,20 +120,7 @@ async def list_clusters_with_articles(
         Cluster.workspace_id == session.workspace_id,
     )
 
-    if relevancy_filter == "all":
-        pass
-    elif relevancy_filter == "unknown":
-        clusters = clusters.find(
-            Or(
-                Exists(Cluster.evaluation, False),
-                Cluster.evaluation == None,  # noqa: E711 # type: ignore
-            )
-        )
-    else:
-        clusters = clusters.find(
-            Exists(Cluster.evaluation),
-            Cluster.evaluation.relevance_level == relevancy_filter,  # type: ignore
-        )
+    clusters = filter_clusters_with_relevancy(clusters, relevancy_filter)
 
     clusters = await clusters.sort(
         -Cluster.articles_count,  # type: ignore
