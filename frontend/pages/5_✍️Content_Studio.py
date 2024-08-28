@@ -6,8 +6,10 @@ from sdk.so_insights_client.api.clustering import (
 from sdk.so_insights_client.models.cluster import Cluster
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.workspace import Workspace
+from src.content_generation import create_social_media_content
 import streamlit as st
 from src.shared import select_session, select_workspace, get_client
+from langchain.chat_models import init_chat_model
 
 st.set_page_config(layout="wide", page_title="Content Studio")
 
@@ -15,6 +17,13 @@ client = get_client()
 
 if not st.session_state.get("selected_clusters"):
     st.session_state["selected_clusters"] = []
+
+content = ""
+
+
+@st.cache_resource
+def get_llm(model_name: str = "gpt-4o-mini"):
+    return init_chat_model(model_name)
 
 
 def _get_clusters_for_session(workspace_id, session_id):
@@ -83,7 +92,7 @@ def select_clusters(workspace: Workspace):
         return next((cluster for cluster in clusters if cluster.field_id == cluster_id))
 
     if st.button("Save"):
-        selected_clusters_ids = df.iloc[event.selection.rows].cluster_id.tolist()
+        selected_clusters_ids = df.iloc[event.selection.rows].cluster_id.tolist()  # type: ignore
         selected_clusters = [
             cluster_from_id(cluster_id) for cluster_id in selected_clusters_ids
         ]
@@ -140,7 +149,6 @@ st.title("Content Studio")
 content_types = [
     "Tweet / X",
     "Linkedin",
-    "Article",
     "Newsletter",
     "Blog Post",
 ]
@@ -205,18 +213,26 @@ for tab, content_type in zip(selected_type, content_types):
                     ]  # Only include non-empty examples
                 ]
 
+                clusters: list[Cluster] = st.session_state.selected_clusters
+                assert all(
+                    c.overview for c in clusters
+                ), "All clusters must have an overview"
+                overviews = [c.overview for c in clusters if c.overview]
+                with st.status("Generating content..."):
+                    content = create_social_media_content(
+                        llm=get_llm(),
+                        content_type=content_type,
+                        overviews=overviews,
+                        examples=examples,
+                    )
+
+                print(f"{examples=}")
+
                 st.info(
                     f"Content generation to be implemented. {len(examples)} example(s) provided."
                 )
 
         with col2:
             st.subheader("Output")
-            # Placeholder for generated content
-            st.text_area("Generated Content", height=300, key=f"output_{content_type}")
 
-            # Export options
-            st.download_button(
-                "Export as PDF",
-                "Placeholder data",
-                file_name=f"{content_type.lower().replace(' ', '_')}.pdf",
-            )
+            st.write(content)
