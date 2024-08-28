@@ -12,7 +12,8 @@ def create_social_media_content(
     content_type: str,
     examples: list[str],
     language: Language,
-) -> str:
+    stream: bool = False,
+):
     prompt = """You are an expert at writing {content_type}s for social media.
 You have been asked to create a {content_type} about the following topic(s):
 {titles}
@@ -56,4 +57,6 @@ Here's more information about the topics :
         "language": language_to_str(language),
     }
 
+    if stream:
+        return chain.stream(input)
     return chain.invoke(input)

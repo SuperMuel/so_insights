@@ -20,7 +20,7 @@ if "selected_clusters" not in st.session_state:
     st.session_state["selected_clusters"] = []
 
 
-content = ""
+stream = None
 
 
 @st.cache_resource
@@ -251,12 +251,13 @@ for tab, content_type in zip(selected_type, content_types):
                 ), "All clusters must have an overview"
                 overviews = [c.overview for c in clusters if c.overview]
                 with st.status("Generating content..."):
-                    content = create_social_media_content(
+                    stream = create_social_media_content(
                         llm=get_llm(model),
                         content_type=content_type,
                         overviews=overviews,
                         examples=examples,
                         language=language,
+                        stream=True,
                     )
 
                 print(f"{examples=}")
@@ -264,4 +265,5 @@ for tab, content_type in zip(selected_type, content_types):
         with col2:
             st.subheader("Output")
 
-            st.write(content)
+            if stream is not None:
+                st.write_stream(stream)
