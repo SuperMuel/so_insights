@@ -137,10 +137,12 @@ with st.sidebar:
         #     "Tone",
         #     options=["Formal", "Neutral", "Casual"],
         # )
+        assert workspace.language
         language = st.selectbox(
             "Language",
             options=Language,
             format_func=language_to_str,
+            index=list(Language).index(workspace.language),
         )
         assert language
 
