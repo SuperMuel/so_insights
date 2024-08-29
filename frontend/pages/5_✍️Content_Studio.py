@@ -177,11 +177,6 @@ with st.sidebar:
 
     st.subheader("Content Parameters")
     with st.container(border=True):
-        # length = length_selector()
-        # tone = st.select_slider(
-        #     "Tone",
-        #     options=["Formal", "Neutral", "Casual"],
-        # )
         assert workspace.language
         language = st.selectbox(
             "Language",
@@ -204,6 +199,41 @@ with st.sidebar:
             format_func=models_labels.get,
         )
 
+        examples_key = f"{workspace.field_id}_examples_{content_type}"
+        if examples_key not in st.session_state:
+            st.session_state[examples_key] = [""]
+
+        with st.popover(
+            "📚 Example Content",
+            use_container_width=True,
+        ):
+            st.caption("Provide examples for the AI to draw inspiration from")
+            if examples_key not in st.session_state:
+                st.session_state[examples_key] = [""]
+
+            # Create a temporary list to store updated examples
+            updated_examples = []
+
+            for i, example in enumerate(st.session_state[examples_key]):
+                new_example = st.text_area(
+                    f"Example {i+1}",
+                    key=f"{examples_key}_{i}",
+                    value=example,
+                    height=100,
+                )
+                updated_examples.append(new_example)
+
+            # Update session state with the new examples
+            st.session_state[examples_key] = updated_examples
+
+            # Button to add more examples
+            if st.button("➕ Add Another Example"):
+                st.session_state[examples_key].append("")
+                st.rerun()
+
+        examples_count = len([x for x in st.session_state[examples_key] if x.strip()])
+        st.caption(f"{examples_count} examples provided.")
+
     st.subheader("Image generation")
     with st.container(border=True):
         image_generation_enabled = st.toggle("Enable image generation")
@@ -220,10 +250,7 @@ with st.sidebar:
 # Main content
 st.title("✍️ Content Studio")
 
-
 select_clusters(workspace)
-
-st.divider()
 
 
 # Function to create a unique key for each example
@@ -249,34 +276,6 @@ def download_image_button(url: str):
 
 col1, col2 = st.columns([1, 1])
 
-with col1:
-    with st.expander("📚 Example Content"):
-        st.caption("Provide examples for the AI to draw inspiration from")
-        if f"examples_{content_type}" not in st.session_state:
-            st.session_state[f"examples_{content_type}"] = [""]
-
-        # Create a temporary list to store updated examples
-        updated_examples = []
-
-        for i, example in enumerate(st.session_state[f"examples_{content_type}"]):
-            example_key = get_example_key(content_type, i)
-            new_example = st.text_area(
-                f"Example {i+1}",
-                key=example_key,
-                value=example,
-                height=100,
-            )
-            updated_examples.append(new_example)
-
-        # Update session state with the new examples
-        st.session_state[f"examples_{content_type}"] = updated_examples
-
-        # Button to add more examples
-        if st.button("➕ Add Another Example", key=f"add_example_{content_type}"):
-            st.session_state[f"examples_{content_type}"].append("")
-            st.rerun()
-
-
 if st.sidebar.button(
     "✨ Generate Content",
     key=f"generate_{content_type}",
@@ -284,9 +283,7 @@ if st.sidebar.button(
     type="primary",
 ):
     # Collect all non-empty examples from session state
-    examples = [
-        example for example in st.session_state[f"examples_{content_type}"] if example
-    ]
+    examples = [example for example in st.session_state[examples_key] if example]
 
     # Collect all examples
     clusters = st.session_state.selected_clusters  # type: list[Cluster]
@@ -308,33 +305,35 @@ if st.sidebar.button(
         stream=True,
     )
 
-with col2:
-    if stream is None:
-        st.markdown(
-            "<p style='text-align: center; color: grey;'>Output will appear here</p>",
-            unsafe_allow_html=True,
-        )
-    else:
-        assert overviews
-        content = st.write_stream(stream)
+if stream is None:
+    st.markdown(
+        "<p style='text-align: center; color: grey;'>Output will appear here</p>",
+        unsafe_allow_html=True,
+    )
+else:
+    assert overviews
+
+    with col1:
+        st.subheader("📝 Generated Content")
+        with st.container(border=True):
+            content = st.write_stream(stream)
         st_copy_to_clipboard(
             str(content),
             before_copy_label="📋 Copy to clipboard",
             after_copy_label="✅ Copied!",
             key=f"copy_{content_type}",
         )
-
+    with col2:
+        st.subheader("🖼️ Generated Image")
         if image_generation_enabled:
-            with st.status("Generate Image Prompt"):
+            with st.spinner("Generating Image Prompt..."):
                 image_prompt = generate_image_prompt(
                     get_llm(model),
                     overviews,
                     extra_instructions=image_generation_extra,
                 )
-                st.write(image_prompt.prompt)
-            with st.status("Generate Image"):
+            with st.spinner("Generating Image..."):
                 url = get_img.generate_image_url(image_prompt.prompt)
-                st.write(url)
 
             st.image(url, use_column_width=True, caption=image_prompt.prompt)
             download_image_button(url)
