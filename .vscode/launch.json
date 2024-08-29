@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: FastAPI",
+            "name": "Run Backend",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/backend/src/api.py",
@@ -22,6 +22,33 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Run Frontend",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "frontend/app.py",
+                "--server.port",
+                "8000"
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/frontend"
+            },
+            "justMyCode": true
+        },
+    ],
+    "compounds": [
+        {
+            "name": "API/Frontend",
+            "configurations": [
+                "Run Backend",
+                "Run Frontend"
+            ],
+            "stopAll": true
         }
     ]
 }

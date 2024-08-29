@@ -242,6 +242,7 @@ for tab, content_type in zip(selected_type, content_types):
             if st.button(
                 "Generate Content",
                 key=f"generate_{content_type}",
+                use_container_width=True,
             ):
                 # Collect all non-empty examples from session state
                 examples = [
