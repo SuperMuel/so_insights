@@ -156,6 +156,9 @@ def length_selector(content_type: Literal["tweet"] | None = None):
     )
 
 
+image_generation_extra = None
+overviews = None
+
 # Sidebar for workspace selection
 with st.sidebar:
     st.subheader("Content Parameters")
@@ -186,6 +189,16 @@ with st.sidebar:
             options=models_labels.keys(),
             format_func=models_labels.get,
         )
+
+    st.subheader("Image generation")
+    with st.container(border=True):
+        image_generation_enabled = st.toggle("Enable image generation")
+        if image_generation_enabled:
+            image_generation_extra = st.text_area(
+                "Additionnal instructions",
+                height=100,
+                placeholder="Photorealist. Avoid overly futuristic designs.",
+            )
 
     assert model
 
@@ -306,6 +319,7 @@ for tab, content_type in zip(selected_type, content_types):
                     unsafe_allow_html=True,
                 )
             else:
+                assert overviews
                 content = st.write_stream(stream)
                 st_copy_to_clipboard(
                     str(content),
@@ -313,12 +327,18 @@ for tab, content_type in zip(selected_type, content_types):
                     after_copy_label="✅ Copied!",
                     key=f"copy_{content_type}",
                 )
-                with st.status("Generate Image Prompt"):
-                    image_prompt = generate_image_prompt(get_llm(model), overviews)
-                    st.write(image_prompt.prompt)
-                with st.status("Generate Image"):
-                    url = get_img.generate_image_url(image_prompt.prompt)
-                    st.write(url)
 
-                st.image(url, use_column_width=True)
-                download_image_button(url)
+                if image_generation_enabled:
+                    with st.status("Generate Image Prompt"):
+                        image_prompt = generate_image_prompt(
+                            get_llm(model),
+                            overviews,
+                            extra_instructions=image_generation_extra,
+                        )
+                        st.write(image_prompt.prompt)
+                    with st.status("Generate Image"):
+                        url = get_img.generate_image_url(image_prompt.prompt)
+                        st.write(url)
+
+                    st.image(url, use_column_width=True)
+                    download_image_button(url)

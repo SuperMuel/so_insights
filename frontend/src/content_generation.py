@@ -70,7 +70,9 @@ class ImagePromptOutput(BaseModel):
 
 
 def generate_image_prompt(
-    llm: BaseChatModel, overviews: list[ClusterOverview]
+    llm: BaseChatModel,
+    overviews: list[ClusterOverview],
+    extra_instructions: str | None = None,
 ) -> ImagePromptOutput:
     prompt = """You are an expert at prompting AI Image generators to create images for social media posts.
 We need an image to illustrate the following topic{s}:
@@ -80,8 +82,11 @@ We need an image to illustrate the following topic{s}:
 </topic{s}_detail{s}>
 
 Guidelines : 
-1. Avoid using text in the image.
-2. Avoid futuristic elements.
+- Avoid using text in the image.
+- Avoid futuristic elements.
+
+Additional instructions:
+{extra_instructions}
 
 First, you must brainstorm ideas for the image.
 Finally, write the prompt for the AI Image generator"""
@@ -99,6 +104,11 @@ Finally, write the prompt for the AI Image generator"""
         "topics_details": "\n\n".join(
             [f"**{o.title}**\n{o.summary}" for o in overviews]
         ),
+        "extra_instructions": "\n".join(
+            [f"- {x}" for x in extra_instructions.split("\n")]
+        )
+        if extra_instructions
+        else "",
     }
 
     return chain.invoke(input)  # type:ignore
