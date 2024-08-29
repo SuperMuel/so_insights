@@ -1,5 +1,6 @@
 from typing import Literal
 import requests
+from src.app_settings import AppSettings
 from st_copy_to_clipboard import st_copy_to_clipboard
 import pandas as pd
 from src.image_generation import GetImgAI
@@ -22,6 +23,8 @@ from src.shared import (
     get_client,
 )
 from langchain.chat_models import init_chat_model
+
+settings = AppSettings()
 
 client = get_client()
 workspace = get_workspace_or_stop()
@@ -328,7 +331,7 @@ else:
         if image_generation_enabled:
             with st.spinner("Generating Image Prompt..."):
                 image_prompt = generate_image_prompt(
-                    get_llm(model),
+                    get_llm(settings.IMAGE_PROMPT_LLM),
                     overviews,
                     extra_instructions=image_generation_extra,
                 )

@@ -31,3 +31,5 @@ class AppSettings(BaseSettings):
 
     LOGO_LIGHT_URL: str | None = None
     LOGO_DARK_URL: str | None = None
+
+    IMAGE_PROMPT_LLM: str = "gpt-4o-mini"
