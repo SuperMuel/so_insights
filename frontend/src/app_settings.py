@@ -26,3 +26,5 @@ class AppSettings(BaseSettings):
 
     OPENAI_API_KEY: str = Field(default=...)
     ANTHROPIC_API_KEY: str = Field(default=...)
+
+    GETIMG_API_KEY: str = Field(default=...)

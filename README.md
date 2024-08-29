@@ -35,6 +35,7 @@ The Frontend offers a Streamlit interface for:
 - Managing workspaces and search queries
 - Viewing ingestion results and cluster analyses
 - Interacting with a Chatbot with Retrieval-Augmented-Generation (RAG) 
+- Generating content for blog posts, Linkedin, Twitter/X, etc based on detected topics with images.
 
 ## Tech Stack
 
@@ -44,6 +45,7 @@ The Frontend offers a Streamlit interface for:
 - **Frontend Framework**: Streamlit
 - **Clustering**: scikit-learn, HDBSCAN
 - **LLMs**: LangChain with `gpt-4o-mini`
+- **Image Generation**: GetImg.ai API and Flux
 - **Vector Database**: Pinecone
 - **Dependency Management**: Poetry
 - **Deployment**: Docker and Streamlit Community Cloud

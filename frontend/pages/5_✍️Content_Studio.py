@@ -1,6 +1,8 @@
 from typing import Literal
+import requests
 from st_copy_to_clipboard import st_copy_to_clipboard
 import pandas as pd
+from src.image_generation import GetImgAI
 from sdk.so_insights_client.api.clustering import (
     list_clusters_for_session,
 )
@@ -11,7 +13,7 @@ from sdk.so_insights_client.models.list_clusters_for_session_relevance_levels_ty
     ListClustersForSessionRelevanceLevelsType0Item as RelevanceLevelsItem,
 )
 from sdk.so_insights_client.models.workspace import Workspace
-from src.content_generation import create_social_media_content
+from src.content_generation import create_social_media_content, generate_image_prompt
 import streamlit as st
 from src.shared import (
     get_workspace_or_stop,
@@ -23,6 +25,13 @@ from langchain.chat_models import init_chat_model
 
 client = get_client()
 workspace = get_workspace_or_stop()
+
+
+def create_getimg_client():
+    return GetImgAI()
+
+
+get_img = create_getimg_client()
 
 if "selected_clusters" not in st.session_state:
     st.session_state["selected_clusters"] = []
@@ -202,6 +211,21 @@ def get_example_key(content_type, index):
     return f"example_{content_type}_{index}"
 
 
+@st.cache_data
+def download_image(url: str) -> bytes:
+    return requests.get(url).content
+
+
+@st.fragment  # prevents the app from rerunning on download
+def download_image_button(url: str):
+    st.download_button(
+        "Download Image",
+        download_image(url),
+        f"{content_type}_image.jpg",
+        key=f"download_{content_type}",
+    )
+
+
 # Content for each tab
 for tab, content_type in zip(selected_type, content_types):
     with tab:
@@ -234,7 +258,9 @@ for tab, content_type in zip(selected_type, content_types):
                 st.session_state[f"examples_{content_type}"] = updated_examples
 
                 # Button to add more examples
-                if st.button("Add Another Example", key=f"add_example_{content_type}"):
+                if st.button(
+                    "➕ Add Another Example", key=f"add_example_{content_type}"
+                ):
                     st.session_state[f"examples_{content_type}"].append("")
                     st.rerun()
 
@@ -274,9 +300,12 @@ for tab, content_type in zip(selected_type, content_types):
                 )
 
         with col2:
-            st.subheader("Output")
-
-            if stream is not None:
+            if stream is None:
+                st.markdown(
+                    "<p style='text-align: center; color: grey;'>Output will appear here</p>",
+                    unsafe_allow_html=True,
+                )
+            else:
                 content = st.write_stream(stream)
                 st_copy_to_clipboard(
                     str(content),
@@ -284,3 +313,12 @@ for tab, content_type in zip(selected_type, content_types):
                     after_copy_label="✅ Copied!",
                     key=f"copy_{content_type}",
                 )
+                with st.status("Generate Image Prompt"):
+                    image_prompt = generate_image_prompt(get_llm(model), overviews)
+                    st.write(image_prompt.prompt)
+                with st.status("Generate Image"):
+                    url = get_img.generate_image_url(image_prompt.prompt)
+                    st.write(url)
+
+                st.image(url, use_column_width=True)
+                download_image_button(url)

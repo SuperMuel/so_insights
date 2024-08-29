@@ -61,7 +61,10 @@ if __name__ == "__main__":
 
     def on_workspace_change():
         if chatbot_callback := st.session_state.get("on_workspace_changed_chatbot"):
-            chatbot_callback()
+            try:
+                chatbot_callback()
+            except Exception:
+                pass
 
     with st.sidebar:
         select_workspace(

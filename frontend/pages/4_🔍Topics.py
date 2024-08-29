@@ -55,8 +55,6 @@ def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
         st.warning("No clusters found.")
         return
 
-    print([cluster.id for cluster in clusters])
-
     for cluster in clusters:
         col1, col2 = st.columns([2, 3])
 

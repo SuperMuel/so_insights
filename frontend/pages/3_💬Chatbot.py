@@ -60,7 +60,6 @@ if not st.session_state.get("session_id"):
 def reset_chat():
     del st.session_state["session_id"]
     history.clear()
-    print("chat reset")
 
 
 st.session_state["on_workspace_changed_chatbot"] = reset_chat
