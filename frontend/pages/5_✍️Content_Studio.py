@@ -159,8 +159,22 @@ def length_selector(content_type: Literal["tweet"] | None = None):
 image_generation_extra = None
 overviews = None
 
-# Sidebar for workspace selection
+content_types = {
+    "tweet": "Tweet / X",
+    "linkedin": "Linkedin",
+    "newsletter": "Newsletter",
+    "blog_post": "Blog Post",
+}
+
 with st.sidebar:
+    content_type = st.radio(
+        "Content Type",
+        list(content_types.keys()),
+        index=0,
+        format_func=lambda x: content_types[x],
+    )
+    assert content_type
+
     st.subheader("Content Parameters")
     with st.container(border=True):
         # length = length_selector()
@@ -209,14 +223,7 @@ st.title("✍️ Content Studio")
 
 select_clusters(workspace)
 
-# Tabs for different content types
-content_types = [
-    "Tweet / X",
-    "Linkedin",
-    "Newsletter",
-    "Blog Post",
-]
-selected_type = st.tabs(content_types)
+st.divider()
 
 
 # Function to create a unique key for each example
@@ -232,113 +239,102 @@ def download_image(url: str) -> bytes:
 @st.fragment  # prevents the app from rerunning on download
 def download_image_button(url: str):
     st.download_button(
-        "Download Image",
+        "📥 Download Image",
         download_image(url),
         f"{content_type}_image.jpg",
         key=f"download_{content_type}",
+        use_container_width=True,
     )
 
 
-# Content for each tab
-for tab, content_type in zip(selected_type, content_types):
-    with tab:
-        col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1, 1])
 
-        with col1:
-            # Example content input
+with col1:
+    with st.expander("📚 Example Content"):
+        st.caption("Provide examples for the AI to draw inspiration from")
+        if f"examples_{content_type}" not in st.session_state:
+            st.session_state[f"examples_{content_type}"] = [""]
 
-            with st.expander("📚 Example Content"):
-                st.caption("Provide examples for the AI to draw inspiration from")
-                if f"examples_{content_type}" not in st.session_state:
-                    st.session_state[f"examples_{content_type}"] = [""]
+        # Create a temporary list to store updated examples
+        updated_examples = []
 
-                # Create a temporary list to store updated examples
-                updated_examples = []
+        for i, example in enumerate(st.session_state[f"examples_{content_type}"]):
+            example_key = get_example_key(content_type, i)
+            new_example = st.text_area(
+                f"Example {i+1}",
+                key=example_key,
+                value=example,
+                height=100,
+            )
+            updated_examples.append(new_example)
 
-                for i, example in enumerate(
-                    st.session_state[f"examples_{content_type}"]
-                ):
-                    example_key = get_example_key(content_type, i)
-                    new_example = st.text_area(
-                        f"Example {i+1}",
-                        key=example_key,
-                        value=example,
-                        height=100,
-                    )
-                    updated_examples.append(new_example)
+        # Update session state with the new examples
+        st.session_state[f"examples_{content_type}"] = updated_examples
 
-                # Update session state with the new examples
-                st.session_state[f"examples_{content_type}"] = updated_examples
+        # Button to add more examples
+        if st.button("➕ Add Another Example", key=f"add_example_{content_type}"):
+            st.session_state[f"examples_{content_type}"].append("")
+            st.rerun()
 
-                # Button to add more examples
-                if st.button(
-                    "➕ Add Another Example", key=f"add_example_{content_type}"
-                ):
-                    st.session_state[f"examples_{content_type}"].append("")
-                    st.rerun()
 
-            # Generate button
-            if st.button(
-                "Generate Content",
-                key=f"generate_{content_type}",
-                use_container_width=True,
-            ):
-                # Collect all non-empty examples from session state
-                examples = [
-                    example
-                    for example in st.session_state[f"examples_{content_type}"]
-                    if example
-                ]
+if st.sidebar.button(
+    "✨ Generate Content",
+    key=f"generate_{content_type}",
+    use_container_width=True,
+    type="primary",
+):
+    # Collect all non-empty examples from session state
+    examples = [
+        example for example in st.session_state[f"examples_{content_type}"] if example
+    ]
 
-                # Collect all examples
-                clusters = st.session_state.selected_clusters  # type: list[Cluster]
+    # Collect all examples
+    clusters = st.session_state.selected_clusters  # type: list[Cluster]
 
-                if not clusters:
-                    st.error("No clusters selected")
-                    continue
+    if not clusters:
+        st.error("No clusters selected")
+        st.stop()
 
-                assert all(
-                    c.overview for c in clusters
-                ), "All clusters must have an overview"
+    assert all(c.overview for c in clusters), "All clusters must have an overview"
 
-                overviews = [c.overview for c in clusters if c.overview]
+    overviews = [c.overview for c in clusters if c.overview]
 
-                stream = create_social_media_content(
-                    llm=get_llm(model),
-                    content_type=content_type,
-                    overviews=overviews,
-                    examples=examples,
-                    language=language,
-                    stream=True,
+    stream = create_social_media_content(
+        llm=get_llm(model),
+        content_type=content_type,
+        overviews=overviews,
+        examples=examples,
+        language=language,
+        stream=True,
+    )
+
+with col2:
+    if stream is None:
+        st.markdown(
+            "<p style='text-align: center; color: grey;'>Output will appear here</p>",
+            unsafe_allow_html=True,
+        )
+    else:
+        assert overviews
+        content = st.write_stream(stream)
+        st_copy_to_clipboard(
+            str(content),
+            before_copy_label="📋 Copy to clipboard",
+            after_copy_label="✅ Copied!",
+            key=f"copy_{content_type}",
+        )
+
+        if image_generation_enabled:
+            with st.status("Generate Image Prompt"):
+                image_prompt = generate_image_prompt(
+                    get_llm(model),
+                    overviews,
+                    extra_instructions=image_generation_extra,
                 )
+                st.write(image_prompt.prompt)
+            with st.status("Generate Image"):
+                url = get_img.generate_image_url(image_prompt.prompt)
+                st.write(url)
 
-        with col2:
-            if stream is None:
-                st.markdown(
-                    "<p style='text-align: center; color: grey;'>Output will appear here</p>",
-                    unsafe_allow_html=True,
-                )
-            else:
-                assert overviews
-                content = st.write_stream(stream)
-                st_copy_to_clipboard(
-                    str(content),
-                    before_copy_label="📋 Copy to clipboard",
-                    after_copy_label="✅ Copied!",
-                    key=f"copy_{content_type}",
-                )
-
-                if image_generation_enabled:
-                    with st.status("Generate Image Prompt"):
-                        image_prompt = generate_image_prompt(
-                            get_llm(model),
-                            overviews,
-                            extra_instructions=image_generation_extra,
-                        )
-                        st.write(image_prompt.prompt)
-                    with st.status("Generate Image"):
-                        url = get_img.generate_image_url(image_prompt.prompt)
-                        st.write(url)
-
-                    st.image(url, use_column_width=True)
-                    download_image_button(url)
+            st.image(url, use_column_width=True, caption=image_prompt.prompt)
+            download_image_button(url)
