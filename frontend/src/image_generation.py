@@ -6,7 +6,7 @@ settings = AppSettings()
 
 
 class GetImgAI:
-    def __init__(self, steps: int = 4):
+    def __init__(self, steps: int = 6):
         self.url = "https://api.getimg.ai/v1/flux-schnell/text-to-image"
         self.payload = {
             "response_format": "url",

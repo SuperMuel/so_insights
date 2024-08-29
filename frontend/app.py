@@ -53,7 +53,6 @@ if __name__ == "__main__":
 
     theme = st_theme()
     if theme and (base := theme.get("base")):
-        print(f"{base=}")
         if base == "light" and settings.LOGO_LIGHT_URL:
             st.logo(settings.LOGO_LIGHT_URL)
         elif base == "dark" and settings.LOGO_DARK_URL:
