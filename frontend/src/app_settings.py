@@ -28,3 +28,5 @@ class AppSettings(BaseSettings):
     ANTHROPIC_API_KEY: str = Field(default=...)
 
     GETIMG_API_KEY: str = Field(default=...)
+
+    LOGO_URL: str | None = None

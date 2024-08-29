@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from sdk.so_insights_client.api.workspaces import list_workspaces
+from src.app_settings import AppSettings
 from src.shared import get_client
 import streamlit as st
 from streamlit_cookies_controller import CookieController
@@ -45,7 +46,12 @@ def select_workspace(client, cookie_controller: CookieController, on_change) -> 
 if __name__ == "__main__":
     load_dotenv()
 
+    settings = AppSettings()
+
     st.set_page_config(layout="wide")
+
+    if url := settings.LOGO_URL:
+        st.logo(url)
 
     pg = st.navigation(
         [
