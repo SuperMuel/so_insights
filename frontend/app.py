@@ -5,6 +5,7 @@ from src.app_settings import AppSettings
 from src.shared import get_client
 import streamlit as st
 from streamlit_cookies_controller import CookieController
+from streamlit_theme import st_theme
 
 
 def select_workspace(client, cookie_controller: CookieController, on_change) -> None:
@@ -50,8 +51,13 @@ if __name__ == "__main__":
 
     st.set_page_config(layout="wide")
 
-    if url := settings.LOGO_URL:
-        st.logo(url)
+    theme = st_theme()
+    if theme and (base := theme.get("base")):
+        print(f"{base=}")
+        if base == "light" and settings.LOGO_LIGHT_URL:
+            st.logo(settings.LOGO_LIGHT_URL)
+        elif base == "dark" and settings.LOGO_DARK_URL:
+            st.logo(settings.LOGO_DARK_URL)
 
     pg = st.navigation(
         [

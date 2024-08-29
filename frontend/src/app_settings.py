@@ -29,4 +29,5 @@ class AppSettings(BaseSettings):
 
     GETIMG_API_KEY: str = Field(default=...)
 
-    LOGO_URL: str | None = None
+    LOGO_LIGHT_URL: str | None = None
+    LOGO_DARK_URL: str | None = None
