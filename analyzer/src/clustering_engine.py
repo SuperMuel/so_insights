@@ -35,11 +35,18 @@ class ClusterResult(BaseModel):
 
 
 class ClusteringResult(BaseModel):
+    """The clusters found and the noise articles. Clusters are sorted by the number of articles they contain, in descending order."""
+
     clusters: list[ClusterResult]
     noise: list[ArticleEmbedding]
     clustering_duration_s: float = Field(
         ..., description="Duration of clustering in seconds"
     )
+
+    @model_validator(mode="after")
+    def sort_clusters(self) -> Self:
+        self.clusters.sort(key=lambda cluster: len(cluster.articles), reverse=True)
+        return self
 
 
 class ClusteringEngine:

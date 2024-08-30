@@ -87,6 +87,7 @@ class Analyzer:
             workspace_id=workspace.id,
             data_start=data_start,
             data_end=data_end,
+            nb_days=(data_end - data_start).days,
             articles_count=len(all_articles),
             clusters_count=len(clustering_result.clusters),
             noise_articles_ids=[
@@ -137,6 +138,9 @@ class Analyzer:
         logger.info(
             f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
         )
+
+        session.session_end = datetime.now()
+        await session.save()
 
 
 async def get_first_valid_image(articles: list[Article]) -> HttpUrl | None:

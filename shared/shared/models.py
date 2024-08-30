@@ -151,6 +151,7 @@ class ClusteringSession(Document):
 
     data_start: datetime
     data_end: datetime
+    nb_days: int
 
     metadata: Dict[str, Any]
 
