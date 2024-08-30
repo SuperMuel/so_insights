@@ -12,6 +12,7 @@ import logging
 from src.evaluator import ClusterEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
+from src.session_summary_generator import SessionSummarizer
 from src.starters_generator import ConversationStartersGenerator
 from src.vector_repository import PineconeVectorRepository
 
@@ -32,12 +33,14 @@ class Analyzer:
         overview_generator: ClusterOverviewGenerator,
         cluster_evaluator: ClusterEvaluator,
         starters_generator: ConversationStartersGenerator,
+        session_summarizer: SessionSummarizer,
     ):
         self.vector_repository = vector_repository
         self.clustering_engine = clustering_engine
         self.overview_generator = overview_generator
         self.evaluator = cluster_evaluator
         self.starters_generator = starters_generator
+        self.session_summarizer = session_summarizer
 
     async def analyze_workspace(
         self,
@@ -134,6 +137,8 @@ class Analyzer:
         await self.evaluator.evaluate_session(session)
 
         await self.starters_generator.generate_starters_for_workspace(workspace)
+
+        await self.session_summarizer.generate_summary_for_session(session)
 
         logger.info(
             f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."

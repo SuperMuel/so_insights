@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.evaluator import ClusterEvaluator
+from src.session_summary_generator import SessionSummarizer
 from src.starters_generator import ConversationStartersGenerator
 import typer
 from dotenv import load_dotenv
@@ -50,6 +51,7 @@ async def setup():
     overview_generator = ClusterOverviewGenerator(llm=gpt_4o_mini)
     cluster_evaluator = ClusterEvaluator(llm=gpt_4o_mini)
     starters_generator = ConversationStartersGenerator(llm=gpt_4o_mini)
+    session_summarizer = SessionSummarizer(llm=gpt_4o_mini)
 
     analyzer = Analyzer(
         vector_repository=vector_repository,
@@ -57,6 +59,7 @@ async def setup():
         overview_generator=overview_generator,
         cluster_evaluator=cluster_evaluator,
         starters_generator=starters_generator,
+        session_summarizer=session_summarizer,
     )
 
     return mongo_client, analyzer
@@ -178,6 +181,24 @@ def generate_starters() -> None:
         mongo_client.close()
 
     asyncio.run(_generate_starters())
+
+
+@app.command()
+def summarize_session(session_id: str) -> None:
+    async def _summarize_session():
+        mongo_client, analyzer = await setup()
+
+        session = await ClusteringSession.get(session_id)
+
+        if session is None:
+            typer.echo(f"No session found for the given id: {session_id}", err=True)
+            return
+
+        await analyzer.session_summarizer.generate_summary_for_session(session)
+
+        mongo_client.close()
+
+    asyncio.run(_summarize_session())
 
 
 @app.command()

@@ -171,6 +171,8 @@ class ClusteringSession(Document):
         description="Number of articles in clusters, excluding noise.",
     )
 
+    summary: str | None = None
+
     def pretty_print(self) -> str:
         return f"{self.data_start.strftime('%d %B %Y')} → {self.data_end.strftime('%d %B %Y')}"
 

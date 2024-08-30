@@ -6,7 +6,6 @@ import streamlit as st
 from millify import millify
 
 from sdk.so_insights_client.api.clustering import (
-    list_clustering_sessions,
     list_clusters_with_articles_for_session,
     set_cluster_feedback,
 )
@@ -22,10 +21,6 @@ with st.sidebar:
     selected_session = select_session(client, workspace)
 
 st.title("🔎 Topics detection")
-
-sessions = list_clustering_sessions.sync(
-    client=client, workspace_id=str(workspace.field_id)
-)
 
 
 def display_session_metrics(session: ClusteringSession):
@@ -43,6 +38,9 @@ def display_session_metrics(session: ClusteringSession):
 
 
 display_session_metrics(selected_session)
+
+if selected_session.summary:
+    st.info(f"**{selected_session.summary}**", icon="🔥")
 
 
 def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):

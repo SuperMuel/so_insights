@@ -34,6 +34,7 @@ class ClusteringSession:
         relevant_clusters_count (Union[None, Unset, int]):
         somewhat_relevant_clusters_count (Union[None, Unset, int]):
         irrelevant_clusters_count (Union[None, Unset, int]):
+        summary (Union[None, Unset, str]):
     """
 
     workspace_id: str
@@ -52,6 +53,7 @@ class ClusteringSession:
     relevant_clusters_count: Union[None, Unset, int] = UNSET
     somewhat_relevant_clusters_count: Union[None, Unset, int] = UNSET
     irrelevant_clusters_count: Union[None, Unset, int] = UNSET
+    summary: Union[None, Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -111,6 +113,12 @@ class ClusteringSession:
         else:
             irrelevant_clusters_count = self.irrelevant_clusters_count
 
+        summary: Union[None, Unset, str]
+        if isinstance(self.summary, Unset):
+            summary = UNSET
+        else:
+            summary = self.summary
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -139,6 +147,8 @@ class ClusteringSession:
             field_dict["somewhat_relevant_clusters_count"] = somewhat_relevant_clusters_count
         if irrelevant_clusters_count is not UNSET:
             field_dict["irrelevant_clusters_count"] = irrelevant_clusters_count
+        if summary is not UNSET:
+            field_dict["summary"] = summary
 
         return field_dict
 
@@ -229,6 +239,15 @@ class ClusteringSession:
 
         irrelevant_clusters_count = _parse_irrelevant_clusters_count(d.pop("irrelevant_clusters_count", UNSET))
 
+        def _parse_summary(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        summary = _parse_summary(d.pop("summary", UNSET))
+
         clustering_session = cls(
             workspace_id=workspace_id,
             data_start=data_start,
@@ -246,6 +265,7 @@ class ClusteringSession:
             relevant_clusters_count=relevant_clusters_count,
             somewhat_relevant_clusters_count=somewhat_relevant_clusters_count,
             irrelevant_clusters_count=irrelevant_clusters_count,
+            summary=summary,
         )
 
         clustering_session.additional_properties = d
