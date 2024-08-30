@@ -3,7 +3,7 @@ import requests
 from src.app_settings import AppSettings
 from st_copy_to_clipboard import st_copy_to_clipboard
 import pandas as pd
-from src.image_generation import GetImgAI
+from src.image_generation import GetImgAI, generate_image_prompt
 from sdk.so_insights_client.api.clustering import (
     list_clusters_for_session,
 )
@@ -14,7 +14,7 @@ from sdk.so_insights_client.models.list_clusters_for_session_relevance_levels_ty
     ListClustersForSessionRelevanceLevelsType0Item as RelevanceLevelsItem,
 )
 from sdk.so_insights_client.models.workspace import Workspace
-from src.content_generation import create_social_media_content, generate_image_prompt
+from src.content_generation import create_social_media_content
 import streamlit as st
 from src.shared import (
     get_workspace_or_stop,
@@ -244,7 +244,7 @@ with st.sidebar:
             image_generation_extra = st.text_area(
                 "Additionnal instructions",
                 height=100,
-                placeholder="Photorealist. Avoid overly futuristic designs.",
+                value="Artistic style, black and white, minimalist. Low contrast, soothing. Avoid overly futuristic elements.\nIf multiple topics provided, segment the image into multiple parts",
             )
 
     assert model
