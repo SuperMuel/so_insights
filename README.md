@@ -2,6 +2,25 @@
 
 SO Insights is a comprehensive system for collecting, analyzing, and deriving insights from large volumes of online content. It combines web scraping, topic detection using HDBSCAN and LLMs, a chatbot and content generation utilities.
 
+
+![Workspaces](assets/workspaces.png)
+- **Workspaces**: Manage multiple workspaces for different projects or topics.
+
+![Ingestion](assets/ingestion.png)
+- **Ingestion**: Collect news insights from online sources based on user-defined queries.
+
+![Topics](assets/topics.png)
+- **Topics**: Analyze and visualize the detected topics in the collected articles.
+
+![Chatbot](assets/chatbot.png)
+- **Chatbot**: Ask any question on your data.
+
+![Content Selection](assets/content_selection.png)
+- **Content Studio**: Select the topic and generate content for blog posts, Linkedin, Twitter/X, etc.
+
+![Content Generated](assets/content_generated.png)
+
+
 ## Project Components
 
 SO Insights consists of four main components:
@@ -86,3 +105,4 @@ The Frontend offers a Streamlit interface for:
 2. Run the Ingester to collect articles based on the queries.
 3. Use the Analyzer to process the collected articles and generate insights.
 4. Explore the results and interact with the data using the Frontend's interface.
+5. Generate content for blog posts, Linkedin, Twitter/X, etc based on detected topics with images.
