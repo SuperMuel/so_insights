@@ -32,7 +32,7 @@
                 "run",
                 "frontend/app.py",
                 "--server.port",
-                "8000"
+                "8501"
             ],
             "console": "integratedTerminal",
             "env": {
