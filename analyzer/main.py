@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.evaluator import ClusterEvaluator
+from src.starters_generator import ChatStartersGenerator
 import typer
 from dotenv import load_dotenv
 from pinecone.grpc import PineconeGRPC as Pinecone
@@ -43,14 +44,19 @@ async def setup():
         min_cluster_size=settings.DEFAULT_MIN_CLUSTER_SIZE,
         min_samples=settings.DEFAULT_MIN_SAMPLES,
     )
-    overview_generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
-    cluster_evaluator = ClusterEvaluator(llm=init_chat_model("gpt-4o-mini"))
+
+    gpt_4o_mini = init_chat_model("gpt-4o-mini")
+
+    overview_generator = ClusterOverviewGenerator(llm=gpt_4o_mini)
+    cluster_evaluator = ClusterEvaluator(llm=gpt_4o_mini)
+    starters_generator = ChatStartersGenerator(llm=gpt_4o_mini)
 
     analyzer = Analyzer(
         vector_repository=vector_repository,
         clustering_engine=clustering_engine,
         overview_generator=overview_generator,
         cluster_evaluator=cluster_evaluator,
+        starters_generator=starters_generator,
     )
 
     return mongo_client, analyzer
@@ -157,6 +163,21 @@ def evaluate(session_ids: list[str]):
         mongo_client.close()
 
     asyncio.run(_evaluate())
+
+
+@app.command()
+def generate_starters() -> None:
+    async def _generate_starters():
+        mongo_client, analyzer = await setup()
+
+        workspaces = await Workspace.find_all().to_list()
+
+        for workspace in workspaces:
+            await analyzer.starters_generator.generate_starters_for_workspace(workspace)
+
+        mongo_client.close()
+
+    asyncio.run(_generate_starters())
 
 
 @app.command()

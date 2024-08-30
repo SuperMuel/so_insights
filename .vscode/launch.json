@@ -5,23 +5,18 @@
             "name": "Run Backend",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/backend/src/api.py",
+            "module": "fastapi",
             "cwd": "${workspaceFolder}/backend",
             "args": [
-                "run",
-                "uvicorn",
-                "src.api:app",
-                "--reload",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8000"
+                "dev",
+                "src/api.py",
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/backend"
             },
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "consoleName": "Backend"
         },
         {
             "name": "Run Frontend",
@@ -38,7 +33,8 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/frontend"
             },
-            "justMyCode": true
+            "justMyCode": true,
+            "consoleName": "Frontend"
         },
     ],
     "compounds": [

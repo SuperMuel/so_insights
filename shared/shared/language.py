@@ -9,8 +9,8 @@ class Language(str, Enum):
     def to_full_name(self) -> str:
         match self:
             case Language.fr:
-                return "Français"
+                return "French"
             case Language.en:
                 return "English"
             case Language.de:
-                return "Deutsch"
+                return "German"

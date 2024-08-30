@@ -6,6 +6,7 @@ from uuid import uuid4
 from pydantic import HttpUrl
 from langchain.chains import create_history_aware_retriever
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
+from sdk.so_insights_client.api.starters import get_latest_starters
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.app_settings import AppSettings
 from src.shared import get_client, get_workspace_or_stop
@@ -22,6 +23,14 @@ from langchain_core.documents import Document
 
 
 workspace = get_workspace_or_stop()
+
+st.title("💬 Chat with your data")
+
+if not st.session_state.get("chat_history"):
+    st.info(
+        "Welcome to the chatbot! Here you can ask questions about your data and get insights.",
+        icon="ℹ️",
+    )
 
 
 @dataclass
@@ -59,6 +68,7 @@ if not st.session_state.get("session_id"):
 
 def reset_chat():
     del st.session_state["session_id"]
+    del st.session_state["used_starters"]
     history.clear()
 
 
@@ -127,6 +137,38 @@ def display_chat_history():
 
 
 display_chat_history()
+
+
+if "used_starters" not in st.session_state:
+    st.session_state["used_starters"] = set()
+
+
+# @st.cache_data(ttl=600)  # Cache for 10 minutes
+def fetch_starters(workspace_id: str) -> list[str]:
+    response = get_latest_starters.sync(client=client, workspace_id=workspace_id)
+    if isinstance(response, list):
+        return response
+    return []
+
+
+def show_starters(questions: list[str]) -> str | None:
+    if not questions:
+        return
+
+    questions = list(set(questions))
+
+    assert len(questions) <= 4
+    for col, question in zip(st.columns(len(questions)), questions):
+        if col.button(
+            question,
+            use_container_width=True,
+            disabled=question in st.session_state["used_starters"],
+        ):
+            st.session_state["used_starters"].add(question)
+            return question
+
+
+selected_starter = show_starters(fetch_starters(workspace.field_id))
 
 
 # @st.cache_resource()
@@ -202,7 +244,10 @@ config = RunnableConfig(
     configurable={"session_id": st.session_state.session_id},
 )
 
-if prompt := st.chat_input("What would you like to know about your data ?"):
+
+if prompt := (
+    st.chat_input("What would you like to know about your data ?") or selected_starter
+):
     st.chat_message("user").markdown(prompt)
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
@@ -214,3 +259,5 @@ if prompt := st.chat_input("What would you like to know about your data ?"):
             full_response += chunk
             message_placeholder.markdown(full_response + "▌")
         message_placeholder.markdown(full_response)
+
+    st.rerun()

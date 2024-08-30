@@ -16,3 +16,4 @@ class DBSettings(BaseSettings):
     mongodb_articles_collection: str = "articles"
     mongodb_clusters_collection: str = "clusters"
     mongodb_clustering_sessions_collection: str = "clustering_sessions"
+    mongodb_starters_collection: str = "starters"

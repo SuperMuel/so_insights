@@ -7,6 +7,7 @@ from shared.models import (
     IngestionRun,
     ClusteringSession,
     Article,
+    Starters,
 )
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
@@ -28,6 +29,7 @@ async def my_init_beanie(client):
             Cluster,
             ClusteringSession,
             Article,
+            Starters,
         ],
     )
 

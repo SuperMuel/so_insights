@@ -12,6 +12,7 @@ import logging
 from src.evaluator import ClusterEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
+from src.starters_generator import ChatStartersGenerator
 from src.vector_repository import PineconeVectorRepository
 
 logger = logging.getLogger(__name__)
@@ -30,11 +31,13 @@ class Analyzer:
         clustering_engine: ClusteringEngine,
         overview_generator: ClusterOverviewGenerator,
         cluster_evaluator: ClusterEvaluator,
+        starters_generator: ChatStartersGenerator,
     ):
         self.vector_repository = vector_repository
         self.clustering_engine = clustering_engine
         self.overview_generator = overview_generator
         self.evaluator = cluster_evaluator
+        self.starters_generator = starters_generator
 
     async def analyze_workspace(
         self,
@@ -129,6 +132,8 @@ class Analyzer:
 
         await self.evaluator.evaluate_session(session)
 
+        await self.starters_generator.generate_starters_for_workspace(workspace)
+
         logger.info(
             f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
         )
@@ -147,9 +152,9 @@ async def get_first_valid_image(articles: list[Article]) -> HttpUrl | None:
                         if content_type.startswith("image/"):
                             return article.image
             except aiohttp.ClientError:
-                continue  # Move to the next article if there's an error
+                continue
             except asyncio.TimeoutError:
-                continue  # Move to the next article if there's a timeout
+                continue
             except Exception as e:
                 logger.error(f"Error while fetching image: {e}")
                 continue

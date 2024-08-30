@@ -174,7 +174,9 @@ class ClusteringSession(Document):
         name = DBSettings().mongodb_clustering_sessions_collection
 
     async def get_sorted_clusters(
-        self, relevance_level: RelevanceLevel | None = None
+        self,
+        relevance_level: RelevanceLevel | None = None,
+        limit: int | None = None,
     ) -> list["Cluster"]:
         clusters = Cluster.find_many(Cluster.session_id == self.id)
 
@@ -186,6 +188,9 @@ class ClusteringSession(Document):
             )
 
         clusters = clusters.sort(-Cluster.articles_count)  # type: ignore
+
+        if limit:
+            clusters = clusters.limit(limit)
 
         return await clusters.to_list()
 
@@ -241,3 +246,13 @@ class Cluster(Document):
 
     async def get_articles(self) -> list[Article]:
         return await Article.find_many({"_id": {"$in": self.articles_ids}}).to_list()
+
+
+class Starters(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+    session_id: Annotated[PydanticObjectId, Indexed()]
+    starters: list[str]
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+
+    class Settings:
+        name: str = DBSettings().mongodb_starters_collection
