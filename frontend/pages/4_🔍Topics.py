@@ -21,7 +21,7 @@ workspace = get_workspace_or_stop()
 with st.sidebar:
     selected_session = select_session(client, workspace)
 
-st.title("Clustering Analysis")
+st.title("🔎 Topics detection")
 
 sessions = list_clustering_sessions.sync(
     client=client, workspace_id=str(workspace.field_id)
@@ -30,15 +30,10 @@ sessions = list_clustering_sessions.sync(
 
 def display_session_metrics(session: ClusteringSession):
     metrics = [
-        ("Total number of clusters", session.clusters_count),
-        (
-            "Number of articles assigned to clusters",
-            millify(session.clustered_articles_count, precision=2),
-        ),
-        (
-            "Number of noise articles",
-            millify(session.noise_articles_count, precision=2),
-        ),
+        ("Total number of topics", session.clusters_count),
+        ("Relevant topics", session.relevant_clusters_count),
+        ("Somewhat relevant topics", session.somewhat_relevant_clusters_count),
+        ("Irrelevant topics", session.irrelevant_clusters_count),
         ("Number of articles analysed", millify(session.articles_count, precision=2)),
     ]
 
@@ -52,7 +47,7 @@ display_session_metrics(selected_session)
 
 def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
     if not clusters:
-        st.warning("No clusters found.")
+        st.warning("No topics found.")
         return
 
     for cluster in clusters:
@@ -68,7 +63,7 @@ def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
             st.write((cluster.summary or "").replace("$", "\\$"))
             if cluster.overview_generation_error is not None:
                 st.write(
-                    f"**Could not generate an overview of this cluster : {cluster.overview_generation_error}**"
+                    f"**Could not generate an overview of this topic : {cluster.overview_generation_error}**"
                 )
 
         with col2:
@@ -102,7 +97,7 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
         st.stop()
 
     if not clusters_with_articles:
-        st.warning("No clusters found.")
+        st.warning("No topics found.")
         return
 
     display_clusters(clusters_with_articles, tab_id=str(relevancy_filter))

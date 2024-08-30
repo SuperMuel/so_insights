@@ -21,6 +21,7 @@ class ClusteringSession:
         workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
         data_start (datetime.datetime):
         data_end (datetime.datetime):
+        nb_days (int):
         metadata (ClusteringSessionMetadata):
         articles_count (int): Number of articles on which the clustering was performed, including noise.
         clusters_count (int):
@@ -30,11 +31,15 @@ class ClusteringSession:
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         session_start (Union[Unset, datetime.datetime]):
         session_end (Union[None, Unset, datetime.datetime]):
+        relevant_clusters_count (Union[None, Unset, int]):
+        somewhat_relevant_clusters_count (Union[None, Unset, int]):
+        irrelevant_clusters_count (Union[None, Unset, int]):
     """
 
     workspace_id: str
     data_start: datetime.datetime
     data_end: datetime.datetime
+    nb_days: int
     metadata: "ClusteringSessionMetadata"
     articles_count: int
     clusters_count: int
@@ -44,6 +49,9 @@ class ClusteringSession:
     field_id: Union[None, Unset, str] = UNSET
     session_start: Union[Unset, datetime.datetime] = UNSET
     session_end: Union[None, Unset, datetime.datetime] = UNSET
+    relevant_clusters_count: Union[None, Unset, int] = UNSET
+    somewhat_relevant_clusters_count: Union[None, Unset, int] = UNSET
+    irrelevant_clusters_count: Union[None, Unset, int] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -52,6 +60,8 @@ class ClusteringSession:
         data_start = self.data_start.isoformat()
 
         data_end = self.data_end.isoformat()
+
+        nb_days = self.nb_days
 
         metadata = self.metadata.to_dict()
 
@@ -83,6 +93,24 @@ class ClusteringSession:
         else:
             session_end = self.session_end
 
+        relevant_clusters_count: Union[None, Unset, int]
+        if isinstance(self.relevant_clusters_count, Unset):
+            relevant_clusters_count = UNSET
+        else:
+            relevant_clusters_count = self.relevant_clusters_count
+
+        somewhat_relevant_clusters_count: Union[None, Unset, int]
+        if isinstance(self.somewhat_relevant_clusters_count, Unset):
+            somewhat_relevant_clusters_count = UNSET
+        else:
+            somewhat_relevant_clusters_count = self.somewhat_relevant_clusters_count
+
+        irrelevant_clusters_count: Union[None, Unset, int]
+        if isinstance(self.irrelevant_clusters_count, Unset):
+            irrelevant_clusters_count = UNSET
+        else:
+            irrelevant_clusters_count = self.irrelevant_clusters_count
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -90,6 +118,7 @@ class ClusteringSession:
                 "workspace_id": workspace_id,
                 "data_start": data_start,
                 "data_end": data_end,
+                "nb_days": nb_days,
                 "metadata": metadata,
                 "articles_count": articles_count,
                 "clusters_count": clusters_count,
@@ -104,6 +133,12 @@ class ClusteringSession:
             field_dict["session_start"] = session_start
         if session_end is not UNSET:
             field_dict["session_end"] = session_end
+        if relevant_clusters_count is not UNSET:
+            field_dict["relevant_clusters_count"] = relevant_clusters_count
+        if somewhat_relevant_clusters_count is not UNSET:
+            field_dict["somewhat_relevant_clusters_count"] = somewhat_relevant_clusters_count
+        if irrelevant_clusters_count is not UNSET:
+            field_dict["irrelevant_clusters_count"] = irrelevant_clusters_count
 
         return field_dict
 
@@ -117,6 +152,8 @@ class ClusteringSession:
         data_start = isoparse(d.pop("data_start"))
 
         data_end = isoparse(d.pop("data_end"))
+
+        nb_days = d.pop("nb_days")
 
         metadata = ClusteringSessionMetadata.from_dict(d.pop("metadata"))
 
@@ -163,10 +200,40 @@ class ClusteringSession:
 
         session_end = _parse_session_end(d.pop("session_end", UNSET))
 
+        def _parse_relevant_clusters_count(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        relevant_clusters_count = _parse_relevant_clusters_count(d.pop("relevant_clusters_count", UNSET))
+
+        def _parse_somewhat_relevant_clusters_count(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        somewhat_relevant_clusters_count = _parse_somewhat_relevant_clusters_count(
+            d.pop("somewhat_relevant_clusters_count", UNSET)
+        )
+
+        def _parse_irrelevant_clusters_count(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        irrelevant_clusters_count = _parse_irrelevant_clusters_count(d.pop("irrelevant_clusters_count", UNSET))
+
         clustering_session = cls(
             workspace_id=workspace_id,
             data_start=data_start,
             data_end=data_end,
+            nb_days=nb_days,
             metadata=metadata,
             articles_count=articles_count,
             clusters_count=clusters_count,
@@ -176,6 +243,9 @@ class ClusteringSession:
             field_id=field_id,
             session_start=session_start,
             session_end=session_end,
+            relevant_clusters_count=relevant_clusters_count,
+            somewhat_relevant_clusters_count=somewhat_relevant_clusters_count,
+            irrelevant_clusters_count=irrelevant_clusters_count,
         )
 
         clustering_session.additional_properties = d

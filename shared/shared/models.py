@@ -160,6 +160,9 @@ class ClusteringSession(Document):
         description="Number of articles on which the clustering was performed, including noise.",
     )
     clusters_count: int
+    relevant_clusters_count: int | None = None
+    somewhat_relevant_clusters_count: int | None = None
+    irrelevant_clusters_count: int | None = None
 
     noise_articles_ids: list[PydanticObjectId]
     noise_articles_count: int
