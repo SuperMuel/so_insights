@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ChatStartersGenInput(BaseModel):
+class ConversationStartersGenerationInput(BaseModel):
     """Input for the chat starters generation."""
 
     n: int = Field(..., gt=0, le=4)
@@ -18,14 +18,14 @@ class ChatStartersGenInput(BaseModel):
     language: Language
 
 
-class QuestionsOutput(BaseModel):
+class _QuestionsOutput(BaseModel):
     questions: list[str]
 
 
-ChatStartersChain = Runnable[ChatStartersGenInput, QuestionsOutput]
+ChatStartersChain = Runnable[ConversationStartersGenerationInput, _QuestionsOutput]
 
 
-class ChatStartersGenerator:
+class ConversationStartersGenerator:
     """This class is responsible for generating questions (starters) about the collected data, so they can be used as starters in the chatbot."""
 
     def __init__(self, llm: BaseChatModel):
@@ -34,7 +34,7 @@ class ChatStartersGenerator:
 
     def _create_chain(self) -> ChatStartersChain:
         prompt = hub.pull("questions-gen")
-        structured_llm = self.llm.with_structured_output(QuestionsOutput)
+        structured_llm = self.llm.with_structured_output(_QuestionsOutput)
         return (
             RunnableLambda(
                 lambda input: {
@@ -52,10 +52,14 @@ class ChatStartersGenerator:
     def get_chain(self) -> ChatStartersChain:
         return self.chain
 
-    async def abatch(self, inputs: list[ChatStartersGenInput]) -> list[QuestionsOutput]:
+    async def abatch(
+        self, inputs: list[ConversationStartersGenerationInput]
+    ) -> list[_QuestionsOutput]:
         return await self.chain.abatch(inputs)
 
-    async def ainvoke(self, input: ChatStartersGenInput) -> QuestionsOutput:
+    async def ainvoke(
+        self, input: ConversationStartersGenerationInput
+    ) -> _QuestionsOutput:
         return await self.chain.ainvoke(input)
 
     async def generate_starters_for_workspace(
@@ -96,7 +100,9 @@ class ChatStartersGenerator:
             logger.warn(f"No overviews found for workspace {workspace.id}")
             return
 
-        input = ChatStartersGenInput(n=n, data=overviews, language=workspace.language)
+        input = ConversationStartersGenerationInput(
+            n=n, data=overviews, language=workspace.language
+        )
 
         output = await self.ainvoke(input)
 

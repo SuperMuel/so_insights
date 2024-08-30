@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.evaluator import ClusterEvaluator
-from src.starters_generator import ChatStartersGenerator
+from src.starters_generator import ConversationStartersGenerator
 import typer
 from dotenv import load_dotenv
 from pinecone.grpc import PineconeGRPC as Pinecone
@@ -49,7 +49,7 @@ async def setup():
 
     overview_generator = ClusterOverviewGenerator(llm=gpt_4o_mini)
     cluster_evaluator = ClusterEvaluator(llm=gpt_4o_mini)
-    starters_generator = ChatStartersGenerator(llm=gpt_4o_mini)
+    starters_generator = ConversationStartersGenerator(llm=gpt_4o_mini)
 
     analyzer = Analyzer(
         vector_repository=vector_repository,
