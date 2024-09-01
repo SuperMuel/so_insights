@@ -237,6 +237,9 @@ def repair():
                 evaluator = ClusterEvaluator(llm=llm)
                 await evaluator.evaluate_clusters(clusters_without_evaluation)
 
+            typer.echo(f"Updating relevancy counts for session: {session.id}")
+            await analyzer.update_relevancy_counts(session)
+
             typer.echo(f"Completed repairs for session: {session.id}")
 
         mongo_client.close()

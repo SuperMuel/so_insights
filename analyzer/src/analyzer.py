@@ -4,8 +4,15 @@ import aiohttp
 
 
 from beanie import PydanticObjectId
+from beanie.operators import Exists
 from pydantic import HttpUrl
-from shared.models import Article, Cluster, ClusteringSession, Workspace
+from shared.models import (
+    Article,
+    Cluster,
+    ClusterEvaluation,
+    ClusteringSession,
+    Workspace,
+)
 
 import logging
 
@@ -146,6 +153,8 @@ class Analyzer:
 
         await self.evaluator.evaluate_session(session)
 
+        await self.update_relevancy_counts(session)
+
         await asyncio.gather(
             self.starters_generator.generate_starters_for_workspace(workspace),
             self.session_summarizer.generate_summary_for_session(session),
@@ -156,6 +165,52 @@ class Analyzer:
         )
 
         session.session_end = datetime.now()
+        await session.save()
+
+    async def update_relevancy_counts(self, session: ClusteringSession):
+        evaluated_clusters = await Cluster.find(
+            Cluster.session_id == session.id,
+            Exists(Cluster.evaluation),
+            Cluster.evaluation != None,  # noqa: E711
+        ).to_list()
+
+        evaluations: list[ClusterEvaluation] = [
+            cluster.evaluation for cluster in evaluated_clusters if cluster.evaluation
+        ]
+
+        relevant_clusters_count = len(
+            [
+                evaluation
+                for evaluation in evaluations
+                if evaluation.relevance_level == "highly_relevant"
+            ]
+        )
+        somewhat_relevant_clusters_count = len(
+            [
+                evaluation
+                for evaluation in evaluations
+                if evaluation.relevance_level == "somewhat_relevant"
+            ]
+        )
+        irrelevant_clusters_count = len(
+            [
+                evaluation
+                for evaluation in evaluations
+                if evaluation.relevance_level == "not_relevant"
+            ]
+        )
+
+        assert (
+            relevant_clusters_count
+            + somewhat_relevant_clusters_count
+            + irrelevant_clusters_count
+            == len(evaluations)
+        )
+
+        session.relevant_clusters_count = relevant_clusters_count
+        session.somewhat_relevant_clusters_count = somewhat_relevant_clusters_count
+        session.irrelevant_clusters_count = irrelevant_clusters_count
+
         await session.save()
 
 
