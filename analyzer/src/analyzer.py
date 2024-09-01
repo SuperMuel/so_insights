@@ -9,6 +9,7 @@ from shared.models import Article, Cluster, ClusteringSession, Workspace
 
 import logging
 
+from src.analyzer_settings import AnalyzerSettings
 from src.evaluator import ClusterEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
@@ -17,6 +18,8 @@ from src.starters_generator import ConversationStartersGenerator
 from src.vector_repository import PineconeVectorRepository
 
 logger = logging.getLogger(__name__)
+
+settings = AnalyzerSettings()
 
 
 def id_to_str(id: PydanticObjectId | None) -> str:
@@ -67,6 +70,13 @@ class Analyzer:
 
         if not all_articles:
             logger.warn("No articles found. Skipping clustering. No session created.")
+            return
+
+        if len(all_articles) < settings.MIN_ARTICLES_FOR_CLUSTERING:
+            logger.warn(
+                "Not enough articles to cluster. Skipping clustering. No session created."
+            )
+            # TODO : add a warning to the workspace or session
             return
 
         vectors = self.vector_repository.fetch_vectors(
@@ -136,9 +146,10 @@ class Analyzer:
 
         await self.evaluator.evaluate_session(session)
 
-        await self.starters_generator.generate_starters_for_workspace(workspace)
-
-        await self.session_summarizer.generate_summary_for_session(session)
+        await asyncio.gather(
+            self.starters_generator.generate_starters_for_workspace(workspace),
+            self.session_summarizer.generate_summary_for_session(session),
+        )
 
         logger.info(
             f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
