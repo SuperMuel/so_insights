@@ -6,9 +6,11 @@ from shared.models import ClusterOverview, ClusteringSession, Workspace
 from langchain_core.runnables import Runnable, RunnableLambda
 import logging
 from langchain_core.output_parsers import StrOutputParser
+from src.analyzer_settings import AnalyzerSettings
 
 
 logger = logging.getLogger(__name__)
+settings = AnalyzerSettings()
 
 
 class SessionSummaryInput(BaseModel):
@@ -28,6 +30,17 @@ class SessionSummarizer:
 
     def format_overviews(self, overviews: list[ClusterOverview]) -> str:
         assert overviews, "Overviews must not be empty."
+
+        include_summary = (
+            len(overviews)
+            < settings.INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD
+        )
+
+        if include_summary:
+            return "\n\n".join(
+                [f"**{overview.title}**\n{overview.summary}" for overview in overviews]
+            )
+
         return "\n".join([overview.title for overview in overviews])
 
     def format_input(self, input: SessionSummaryInput) -> dict:

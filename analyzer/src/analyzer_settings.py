@@ -23,3 +23,8 @@ class AnalyzerSettings(BaseSettings):
 
     OVERVIEW_GENERATION_MAX_ARTICLES: int = 30
     OVERVIEW_GENERATION_MAX_CONCURRENCY: int = 5
+
+    # when the number of clusters found is less than this value
+    # we will also include the clusters summaries (instead of just the titles)
+    # as material for the summary of session
+    INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD: int = Field(default=10)
