@@ -33,3 +33,5 @@ class AppSettings(BaseSettings):
     LOGO_DARK_URL: str | None = None
 
     IMAGE_PROMPT_LLM: str = "gpt-4o-mini"
+
+    CLUSTERS_PER_PAGE: int = 30

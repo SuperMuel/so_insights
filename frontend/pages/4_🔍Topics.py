@@ -2,6 +2,7 @@ from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArtic
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
 from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
+from src.app_settings import AppSettings
 import streamlit as st
 from millify import millify
 
@@ -15,12 +16,15 @@ from src.shared import get_client, get_workspace_or_stop, select_session
 
 client = get_client()
 workspace = get_workspace_or_stop()
+settings = AppSettings()
 
 
 with st.sidebar:
     selected_session = select_session(client, workspace)
 
 st.title("🔎 Topics detection")
+
+CLUSTERS_PER_PAGE = settings.CLUSTERS_PER_PAGE
 
 
 def display_session_metrics(session: ClusteringSession):
@@ -82,7 +86,8 @@ def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
         st.divider()
 
 
-def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
+@st.cache_data(show_spinner="Fetching topics...")
+def fetch_clusters(relevancy_filter: RelevancyFilter):
     clusters_with_articles = list_clusters_with_articles_for_session.sync(
         client=client,
         session_id=str(selected_session.field_id),
@@ -94,11 +99,7 @@ def fetch_and_display_clusters(relevancy_filter: RelevancyFilter):
         st.error(clusters_with_articles.detail)
         st.stop()
 
-    if not clusters_with_articles:
-        st.warning("No topics found.")
-        return
-
-    display_clusters(clusters_with_articles, tab_id=str(relevancy_filter))
+    return clusters_with_articles
 
 
 tab_title_to_filter = {
@@ -113,4 +114,29 @@ tabs = st.tabs(list(tab_title_to_filter.keys()))
 
 for tab, filter in zip(tabs, tab_title_to_filter.values()):
     with tab:
-        fetch_and_display_clusters(relevancy_filter=filter)
+        clusters_with_articles = fetch_clusters(filter)
+
+        if not clusters_with_articles:
+            st.warning("No topics found.")
+            st.stop()
+
+        page = st.session_state.get(f"page_{filter}", 1)
+
+        display_clusters(
+            clusters_with_articles[
+                (page - 1) * CLUSTERS_PER_PAGE : page * CLUSTERS_PER_PAGE
+            ],
+            tab_id=str(filter),
+        )
+        new_page = st.radio(
+            "Page",
+            options=range(1, len(clusters_with_articles) // CLUSTERS_PER_PAGE + 2),
+            index=page - 1,
+            horizontal=True,
+            key=filter,
+        )
+
+        # Store the updated page number in session state
+        if new_page != page:
+            st.session_state[f"page_{filter}"] = new_page
+            st.rerun()
