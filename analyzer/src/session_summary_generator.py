@@ -36,6 +36,8 @@ class SessionSummarizer:
             < settings.INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD
         )
 
+        overviews = overviews[: settings.SESSION_SUMMARY_MAX_CLUSTERS]
+
         if include_summary:
             return "\n\n".join(
                 [f"**{overview.title}**\n{overview.summary}" for overview in overviews]

@@ -28,3 +28,5 @@ class AnalyzerSettings(BaseSettings):
     # we will also include the clusters summaries (instead of just the titles)
     # as material for the summary of session
     INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD: int = Field(default=10)
+
+    SESSION_SUMMARY_MAX_CLUSTERS: int = 400
