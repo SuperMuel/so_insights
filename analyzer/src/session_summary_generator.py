@@ -51,7 +51,9 @@ class SessionSummarizer:
 
     def _create_chain(self) -> SessionSummaryChain:
         prompt = hub.pull("big-summary")
-        return RunnableLambda(self.format_input) | prompt | self.llm | StrOutputParser()
+        return (
+            RunnableLambda(self.format_input) | prompt | self.llm | StrOutputParser()
+        ).with_config(run_name="session_summary_chain")
 
     def get_chain(self) -> SessionSummaryChain:
         return self.chain

@@ -47,7 +47,7 @@ class ConversationStartersGenerator:
             )
             | prompt
             | structured_llm
-        )
+        ).with_config(run_name="conversation_starters_chain")
 
     def get_chain(self) -> ChatStartersChain:
         return self.chain
