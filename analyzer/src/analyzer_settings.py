@@ -18,8 +18,8 @@ class AnalyzerSettings(BaseSettings):
     # minimum number of articles required to start clustering
     MIN_ARTICLES_FOR_CLUSTERING: int = 10
 
-    DEFAULT_MIN_CLUSTER_SIZE: int = 6
-    DEFAULT_MIN_SAMPLES: int = 3
+    DEFAULT_MIN_CLUSTER_SIZE: int = 3
+    DEFAULT_MIN_SAMPLES: int = 1
 
     OVERVIEW_GENERATION_MAX_ARTICLES: int = 30
     OVERVIEW_GENERATION_MAX_CONCURRENCY: int = 5

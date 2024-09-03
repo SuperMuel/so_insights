@@ -86,7 +86,6 @@ def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
         st.divider()
 
 
-@st.cache_data
 def fetch_clusters(
     relevancy_filter: RelevancyFilter,
     session_id: str,

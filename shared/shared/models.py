@@ -28,12 +28,19 @@ ModelDescription = Annotated[
 type TimeLimit = Literal["d", "w", "m", "y"]
 
 
+class HdbscanSettings(BaseModel):
+    min_cluster_size: int = 3
+    min_samples: int = 1
+
+
 class Workspace(Document):
     name: ModelTitle
     description: ModelDescription = Field(default="")
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     language: Language = Language.fr
+
+    hdbscan_settings: HdbscanSettings = HdbscanSettings()
 
     class Settings:
         name: str = DBSettings().mongodb_workspaces_collection

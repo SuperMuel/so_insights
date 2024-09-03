@@ -8,6 +8,7 @@ import hdbscan
 import numpy as np
 from pydantic import BaseModel, Field, model_validator
 from sklearn.metrics.pairwise import euclidean_distances
+from shared.models import HdbscanSettings
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,11 @@ class ClusteringResult(BaseModel):
 
 
 class ClusteringEngine:
-    def __init__(self, clusterer: hdbscan.HDBSCAN):
-        self.clusterer = clusterer
+    def _get_hdbscan(self, hdbscan_settings: HdbscanSettings) -> hdbscan.HDBSCAN:
+        return hdbscan.HDBSCAN(
+            min_cluster_size=hdbscan_settings.min_cluster_size,
+            min_samples=hdbscan_settings.min_samples,
+        )
 
     @staticmethod
     def get_cluster_center(points: np.ndarray) -> np.ndarray:
@@ -64,12 +68,16 @@ class ClusteringEngine:
         distances = euclidean_distances([center], points)[0]  # type:ignore
         return np.argsort(distances)[:n].tolist()
 
-    def perform_clustering(self, articles: list[ArticleEmbedding]) -> ClusteringResult:
+    def perform_clustering(
+        self,
+        articles: list[ArticleEmbedding],
+        hdbscan_settings: HdbscanSettings,
+    ) -> ClusteringResult:
         logger.info("Performing clustering...")
         matrix = np.array([article.embedding for article in articles])
 
         start_time = datetime.now(UTC)
-        cluster_labels = self.clusterer.fit_predict(matrix)
+        cluster_labels = self._get_hdbscan(hdbscan_settings).fit_predict(matrix)
         end_time = datetime.now(UTC)
 
         logger.info(

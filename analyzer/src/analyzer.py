@@ -95,7 +95,9 @@ class Analyzer:
 
         logger.info(f"Fetched {len(vectors)} vectors.")
 
-        clustering_result = self.clustering_engine.perform_clustering(vectors)
+        clustering_result = self.clustering_engine.perform_clustering(
+            vectors, hdbscan_settings=workspace.hdbscan_settings
+        )
 
         logger.info(
             f"Clustering finished. Found {len(clustering_result.clusters)} clusters."
@@ -119,8 +121,8 @@ class Analyzer:
             ),
             metadata={
                 "algorithm": "hdbscan",
-                "min_cluster_size": self.clustering_engine.clusterer.min_cluster_size,
-                "min_samples": self.clustering_engine.clusterer.min_samples,
+                "min_cluster_size": workspace.hdbscan_settings.min_cluster_size,
+                "min_samples": workspace.hdbscan_settings.min_samples,
                 "data_loading_time_s": data_loading_time_s,
                 "clustering_time_s": clustering_result.clustering_duration_s,
             },
