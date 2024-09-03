@@ -137,15 +137,17 @@ for tab, filter in zip(tabs, tab_title_to_filter.values()):
             ],
             tab_id=str(filter),
         )
-        new_page = st.radio(
-            "Page",
-            options=range(1, len(clusters_with_articles) // CLUSTERS_PER_PAGE + 2),
-            index=page - 1,
-            horizontal=True,
-            key=filter,
-        )
 
-        # Store the updated page number in session state
-        if new_page != page:
-            st.session_state[f"page_{filter}"] = new_page
-            st.rerun()
+        total_pages = len(clusters_with_articles) // CLUSTERS_PER_PAGE + 1
+        if total_pages > 1:
+            new_page = st.radio(
+                "Page",
+                options=range(1, total_pages + 1),
+                index=page - 1,
+                horizontal=True,
+                key=f"{filter}_pagination",
+            )
+
+            if new_page != page:
+                st.session_state[f"page_{filter}"] = new_page
+                st.rerun()
