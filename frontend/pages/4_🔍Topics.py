@@ -86,12 +86,17 @@ def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
         st.divider()
 
 
-@st.cache_data(show_spinner="Fetching topics...")
-def fetch_clusters(relevancy_filter: RelevancyFilter):
+@st.cache_data
+def fetch_clusters(
+    relevancy_filter: RelevancyFilter,
+    session_id: str,
+    workspace_id: str,
+):
+    print(f"Fetching clusters with filter {relevancy_filter}")
     clusters_with_articles = list_clusters_with_articles_for_session.sync(
         client=client,
-        session_id=str(selected_session.field_id),
-        workspace_id=str(workspace.field_id),
+        session_id=session_id,
+        workspace_id=workspace_id,
         relevancy_filter=relevancy_filter,
     )
 
@@ -114,11 +119,16 @@ tabs = st.tabs(list(tab_title_to_filter.keys()))
 
 for tab, filter in zip(tabs, tab_title_to_filter.values()):
     with tab:
-        clusters_with_articles = fetch_clusters(filter)
+        assert selected_session.field_id and workspace.field_id
+        clusters_with_articles = fetch_clusters(
+            filter,
+            selected_session.field_id,
+            workspace.field_id,
+        )
 
         if not clusters_with_articles:
             st.warning("No topics found.")
-            st.stop()
+            continue
 
         page = st.session_state.get(f"page_{filter}", 1)
 
