@@ -22,7 +22,7 @@ ModelTitle = Annotated[
 ]
 
 ModelDescription = Annotated[
-    str, StringConstraints(max_length=500, strip_whitespace=True)
+    str, StringConstraints(max_length=10000, strip_whitespace=True)
 ]
 
 type TimeLimit = Literal["d", "w", "m", "y"]
