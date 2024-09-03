@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
+import hdbscan
 
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.evaluator import ClusterEvaluator
@@ -41,9 +42,13 @@ async def setup():
     index = pc.Index(settings.PINECONE_INDEX)
     vector_repository = PineconeVectorRepository(index)
 
-    clustering_engine = ClusteringEngine(
+    clusterer = hdbscan.HDBSCAN(
         min_cluster_size=settings.DEFAULT_MIN_CLUSTER_SIZE,
         min_samples=settings.DEFAULT_MIN_SAMPLES,
+    )
+
+    clustering_engine = ClusteringEngine(
+        clusterer=clusterer,
     )
 
     gpt_4o_mini = init_chat_model("gpt-4o-mini")

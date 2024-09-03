@@ -119,8 +119,8 @@ class Analyzer:
             ),
             metadata={
                 "algorithm": "hdbscan",
-                "min_cluster_size": self.clustering_engine.min_cluster_size,
-                "min_samples": self.clustering_engine.min_samples,
+                "min_cluster_size": self.clustering_engine.clusterer.min_cluster_size,
+                "min_samples": self.clustering_engine.clusterer.min_samples,
                 "data_loading_time_s": data_loading_time_s,
                 "clustering_time_s": clustering_result.clustering_duration_s,
             },

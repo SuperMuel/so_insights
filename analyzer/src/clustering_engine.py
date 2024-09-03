@@ -50,14 +50,8 @@ class ClusteringResult(BaseModel):
 
 
 class ClusteringEngine:
-    def __init__(self, min_cluster_size: int, min_samples: int):
-        self.min_cluster_size = min_cluster_size
-        self.min_samples = min_samples
-
-        self.clusterer = hdbscan.HDBSCAN(
-            min_cluster_size=self.min_cluster_size,
-            min_samples=self.min_samples,
-        )
+    def __init__(self, clusterer: hdbscan.HDBSCAN):
+        self.clusterer = clusterer
 
     @staticmethod
     def get_cluster_center(points: np.ndarray) -> np.ndarray:
