@@ -160,7 +160,9 @@ def display_workspaces() -> None:
     st.subheader("Your Workspaces")
     for workspace in workspaces:
         with st.expander(workspace.name):
-            st.write(f"**Description:** {workspace.description}")
+            st.write("**Description:**" + " - " if not workspace.description else "")
+            if workspace.description:
+                st.code(workspace.description, language="markdown")
             st.write(f"**Language:** {language_to_str(Language(workspace.language))}")
             if workspace.created_at:
                 created_at = arrow.get(workspace.created_at).humanize()
