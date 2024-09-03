@@ -1,4 +1,5 @@
 import arrow
+from sdk.so_insights_client.models.hdbscan_settings import HdbscanSettings
 from sdk.so_insights_client.models.language import Language
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
 import streamlit as st
@@ -97,6 +98,23 @@ def edit_workspace(workspace: Workspace):
             index=get_language_index(Language(workspace.language)),
             help="Change the primary language for this workspace",
         )
+
+        with st.expander("Advanced Settings"):
+            assert workspace.hdbscan_settings
+            st.write("HDBSCAN Settings")
+            updated_min_cluster_size = st.number_input(
+                "Minimum Cluster Size",
+                min_value=2,
+                value=workspace.hdbscan_settings.min_cluster_size,  # type:ignore
+                help="The minimum size of clusters; must be at least 2.",
+            )
+            updated_min_samples = st.number_input(
+                "Minimum Samples",
+                min_value=1,
+                value=workspace.hdbscan_settings.min_samples,  # type:ignore
+                help="The number of samples in a neighborhood for a point to be considered a core point.",
+            )
+
         update_button = st.form_submit_button(
             "Update Workspace",
             use_container_width=True,
@@ -109,10 +127,15 @@ def edit_workspace(workspace: Workspace):
                 help="Please confirm that you want to update this workspace",
             )
             if confirm:
+                updated_hdbscan_settings = HdbscanSettings(
+                    min_cluster_size=updated_min_cluster_size,
+                    min_samples=updated_min_samples,
+                )
                 workspace_update = WorkspaceUpdate(
                     name=updated_name,
                     description=updated_description,
                     language=updated_language,
+                    hdbscan_settings=updated_hdbscan_settings,
                 )
                 response = update_workspace.sync(
                     client=client,

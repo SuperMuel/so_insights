@@ -4,6 +4,7 @@ from pydantic import BaseModel, HttpUrl
 from shared.models import (
     Cluster,
     ClusterEvaluation,
+    HdbscanSettings,
     Language,
     ModelDescription,
     ModelTitle,
@@ -24,6 +25,7 @@ class WorkspaceUpdate(BaseModel):
     name: ModelTitle | None
     description: ModelDescription | None
     language: Language | None
+    hdbscan_settings: HdbscanSettings | None
 
     class Config:
         extra = "forbid"

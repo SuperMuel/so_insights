@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.http_validation_error import HTTPValidationError
+from ...models.workspace import Workspace
 from ...types import Response
 
 
@@ -22,7 +23,11 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[HTTPValidationError]:
+) -> Optional[Union[HTTPValidationError, Workspace]]:
+    if response.status_code == HTTPStatus.OK:
+        response_200 = Workspace.from_dict(response.json())
+
+        return response_200
     if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
         response_422 = HTTPValidationError.from_dict(response.json())
 
@@ -35,7 +40,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[HTTPValidationError]:
+) -> Response[Union[HTTPValidationError, Workspace]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -48,7 +53,7 @@ def sync_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Response[HTTPValidationError]:
+) -> Response[Union[HTTPValidationError, Workspace]]:
     """Get Workspace
 
     Args:
@@ -59,7 +64,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[HTTPValidationError]
+        Response[Union[HTTPValidationError, Workspace]]
     """
 
     kwargs = _get_kwargs(
@@ -77,7 +82,7 @@ def sync(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Optional[HTTPValidationError]:
+) -> Optional[Union[HTTPValidationError, Workspace]]:
     """Get Workspace
 
     Args:
@@ -88,7 +93,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        HTTPValidationError
+        Union[HTTPValidationError, Workspace]
     """
 
     return sync_detailed(
@@ -101,7 +106,7 @@ async def asyncio_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Response[HTTPValidationError]:
+) -> Response[Union[HTTPValidationError, Workspace]]:
     """Get Workspace
 
     Args:
@@ -112,7 +117,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[HTTPValidationError]
+        Response[Union[HTTPValidationError, Workspace]]
     """
 
     kwargs = _get_kwargs(
@@ -128,7 +133,7 @@ async def asyncio(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Optional[HTTPValidationError]:
+) -> Optional[Union[HTTPValidationError, Workspace]]:
     """Get Workspace
 
     Args:
@@ -139,7 +144,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        HTTPValidationError
+        Union[HTTPValidationError, Workspace]
     """
 
     return (

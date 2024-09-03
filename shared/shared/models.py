@@ -39,8 +39,7 @@ class Workspace(Document):
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     language: Language = Language.fr
-
-    hdbscan_settings: HdbscanSettings = HdbscanSettings()
+    hdbscan_settings: HdbscanSettings = Field(default_factory=HdbscanSettings)
 
     class Settings:
         name: str = DBSettings().mongodb_workspaces_collection
