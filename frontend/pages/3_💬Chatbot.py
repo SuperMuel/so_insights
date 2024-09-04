@@ -237,7 +237,9 @@ search_kwargs = {
 }
 
 
-chain = create_chain(docsearch.as_retriever(search_kwargs=search_kwargs))
+chain = create_chain(docsearch.as_retriever(search_kwargs=search_kwargs)).with_config(
+    run_name="chatbot_chain"
+)
 
 config = RunnableConfig(
     metadata={"workspace_id": workspace.field_id},

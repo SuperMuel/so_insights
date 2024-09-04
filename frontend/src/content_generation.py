@@ -16,7 +16,9 @@ def create_social_media_content(
 ):
     prompt_template = hub.pull("simple-content-gen")
 
-    chain = prompt_template | llm | StrOutputParser()
+    chain = (prompt_template | llm | StrOutputParser()).with_config(
+        run_name="content_gen_chain"
+    )
 
     input = {
         "content_type": content_type,
