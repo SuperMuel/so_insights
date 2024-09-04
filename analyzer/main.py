@@ -1,6 +1,10 @@
 import asyncio
+from beanie.odm.queries.update import (
+    UpdateResponse,
+)
 import logging
 from datetime import datetime, timedelta
+from beanie.operators import Set
 
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.evaluator import ClusterEvaluator
@@ -16,7 +20,7 @@ from src.vector_repository import PineconeVectorRepository
 from langchain.chat_models import init_chat_model
 
 from shared.db import get_client, my_init_beanie
-from shared.models import Cluster, ClusteringSession, Workspace
+from shared.models import AnalysisTask, Cluster, ClusteringSession, Workspace
 
 load_dotenv()
 
@@ -251,6 +255,67 @@ def repair():
         mongo_client.close()
 
     asyncio.run(_repair())
+
+
+@app.command()
+def watch(
+    interval: int = typer.Option(
+        60, "--interval", "-i", help="Check interval in seconds"
+    ),
+):
+    """Watch for pending analysis tasks and execute them."""
+
+    async def _watch():
+        mongo_client, analyzer = await setup()
+
+        logger.info(f"Starting watch loop. Checking every {interval} seconds.")
+
+        while True:
+            task = await AnalysisTask.find_one(
+                AnalysisTask.status == "pending"
+            ).update_one(
+                Set({AnalysisTask.status: "running"}),
+                response_type=UpdateResponse.NEW_DOCUMENT,
+            )
+
+            assert isinstance(task, AnalysisTask) or task is None
+
+            if not task:
+                try:
+                    await asyncio.sleep(interval)
+                except KeyboardInterrupt:
+                    logger.info("Detected keyboard interrupt. Exiting.")
+                    break
+                continue
+
+            logger.info(f"Processing task {task.id} for workspace {task.workspace_id}")
+
+            task.status = "running"  # TODO : find a way to ensure that at this point the task is not already being processed by another worker
+            await task.save()
+
+            workspace = await Workspace.get(task.workspace_id)
+            assert workspace
+
+            try:
+                session = await analyzer.analyze_workspace(
+                    workspace,
+                    data_start=task.data_start,
+                    data_end=task.data_end,
+                )
+                assert session
+                task.status = "completed"
+                task.session_id = session.id
+                await task.save()
+
+                logger.info(f"Completed task {task.id}")
+
+            except Exception as e:
+                logger.error(f"Error processing task {task.id}: {str(e)}")
+                task.status = "failed"
+                task.error = str(e)
+                await task.save()
+
+    asyncio.run(_watch())
 
 
 if __name__ == "__main__":

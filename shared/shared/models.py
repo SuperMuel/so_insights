@@ -165,16 +165,19 @@ class AnalysisTask(Document):
     error: str | None = None
     session_id: PydanticObjectId | None = None
 
+    data_start: PastDatetime
+    data_end: datetime
+
     class Settings:
         name = DBSettings().mongodb_analysis_tasks_collection
 
 
 class ClusteringSession(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    session_start: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    session_end: datetime | None = None
+    session_start: PastDatetime = Field(default_factory=utc_datetime_factory)
+    session_end: PastDatetime | None = None
 
-    data_start: datetime
+    data_start: PastDatetime
     data_end: datetime
     nb_days: int
 

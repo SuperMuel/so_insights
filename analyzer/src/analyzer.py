@@ -57,7 +57,7 @@ class Analyzer:
         workspace: Workspace,
         data_start: datetime,
         data_end: datetime,
-    ):
+    ) -> ClusteringSession | None:
         session_start = datetime.now()
         assert workspace.id
         logger.info(
@@ -168,6 +168,8 @@ class Analyzer:
 
         session.session_end = datetime.now()
         await session.save()
+
+        return session
 
     async def update_relevancy_counts(self, session: ClusteringSession):
         evaluated_clusters = await Cluster.find(
