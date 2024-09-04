@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from enum import Enum
 from beanie.odm.queries.find import FindMany
 from typing import Annotated, Any, Dict, Literal
 
@@ -158,10 +159,17 @@ class Article(Document):
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
 
 
+class Status(str, Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+
+
 class AnalysisTask(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    status: Literal["pending", "running", "completed", "failed"]
+    status: Status = Status.pending
     error: str | None = None
     session_id: PydanticObjectId | None = None
 

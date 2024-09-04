@@ -20,7 +20,7 @@ from src.vector_repository import PineconeVectorRepository
 from langchain.chat_models import init_chat_model
 
 from shared.db import get_client, my_init_beanie
-from shared.models import AnalysisTask, Cluster, ClusteringSession, Workspace
+from shared.models import AnalysisTask, Cluster, ClusteringSession, Status, Workspace
 
 load_dotenv()
 
@@ -272,9 +272,9 @@ def watch(
 
         while True:
             task = await AnalysisTask.find_one(
-                AnalysisTask.status == "pending"
+                AnalysisTask.status == Status.pending
             ).update_one(
-                Set({AnalysisTask.status: "running"}),
+                Set({AnalysisTask.status: Status.running}),
                 response_type=UpdateResponse.NEW_DOCUMENT,
             )
 
@@ -290,9 +290,6 @@ def watch(
 
             logger.info(f"Processing task {task.id} for workspace {task.workspace_id}")
 
-            task.status = "running"  # TODO : find a way to ensure that at this point the task is not already being processed by another worker
-            await task.save()
-
             workspace = await Workspace.get(task.workspace_id)
             assert workspace
 
@@ -303,7 +300,7 @@ def watch(
                     data_end=task.data_end,
                 )
                 assert session
-                task.status = "completed"
+                task.status = Status.completed
                 task.session_id = session.id
                 await task.save()
 
@@ -311,7 +308,7 @@ def watch(
 
             except Exception as e:
                 logger.error(f"Error processing task {task.id}: {str(e)}")
-                task.status = "failed"
+                task.status = Status.failed
                 task.error = str(e)
                 await task.save()
 

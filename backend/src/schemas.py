@@ -81,3 +81,8 @@ class ClusterWithArticles(BaseModel):
             first_image=cluster.first_image,
             articles=previews,
         )
+
+
+class AnalysisTaskCreate(BaseModel):
+    data_start: datetime
+    data_end: datetime
