@@ -84,7 +84,7 @@ class IngestionRun(Document):
     max_results: int = Field(..., ge=1, le=100)
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     end_at: PastDatetime | None = None
-    status: Literal["running", "completed", "failed"]
+    status: Literal["pending", "running", "completed", "failed"]
     successfull_queries: int | None = None
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
@@ -156,6 +156,17 @@ class Article(Document):
 
 
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
+
+
+class AnalysisTask(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    status: Literal["pending", "running", "completed", "failed"]
+    error: str | None = None
+    session_id: PydanticObjectId | None = None
+
+    class Settings:
+        name = DBSettings().mongodb_analysis_tasks_collection
 
 
 class ClusteringSession(Document):
