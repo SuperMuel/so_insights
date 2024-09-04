@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from beanie.odm.queries.find import FindMany
 from typing import Annotated, Any, Dict, Literal
 
 from beanie import Document, Indexed, PydanticObjectId
@@ -43,6 +44,13 @@ class Workspace(Document):
 
     class Settings:
         name: str = DBSettings().mongodb_workspaces_collection
+
+    def get_sorted_sessions(self) -> FindMany["ClusteringSession"]:
+        return ClusteringSession.find(
+            ClusteringSession.workspace_id == self.id,
+        ).sort(
+            -ClusteringSession.data_end  # type:ignore
+        )
 
 
 class SearchQuerySet(Document):
@@ -262,7 +270,6 @@ class Cluster(Document):
 
 class Starters(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    session_id: Annotated[PydanticObjectId, Indexed()]
     starters: list[str]
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 

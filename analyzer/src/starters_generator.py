@@ -2,7 +2,11 @@ from langchain.chat_models.base import BaseChatModel
 from langchain import hub
 from pydantic import BaseModel, Field
 from shared.language import Language
-from shared.models import ClusterOverview, ClusteringSession, Starters, Workspace
+from shared.models import (
+    ClusterOverview,
+    Starters,
+    Workspace,
+)
 from langchain_core.runnables import Runnable, RunnableLambda
 import logging
 
@@ -72,29 +76,22 @@ class ConversationStartersGenerator:
             f"Generating chat starters for workspace {workspace.id} ({workspace.name})"
         )
 
-        # find last ClusteringSession of workspace
-        last_session = (
-            await ClusteringSession.find(
-                ClusteringSession.workspace_id == workspace.id,
-            )
-            .sort(-ClusteringSession.data_end)  # type: ignore
-            .first_or_none()
-        )
-
-        if not last_session:
+        sessions = await workspace.get_sorted_sessions().to_list()
+        if not sessions:
             logger.info(f"No clustering sessions found for workspace {workspace.id}")
             return
 
-        # get biggest N clusters of session
+        overviews: list[ClusterOverview] = []
 
-        clusters = await last_session.get_sorted_clusters(limit=n)
+        for session in sessions:
+            clusters = await session.get_sorted_clusters(
+                relevance_level="highly_relevant"
+            )
+            _overviews = [c.overview for c in clusters if c.overview]
+            overviews.extend(_overviews[: n - len(overviews)])
 
-        if not clusters:
-            logger.info(f"No clusters found for workspace {workspace.id}")
-            return
-
-        # get overviews of clusters
-        overviews = [cluster.overview for cluster in clusters if cluster.overview]
+            if len(overviews) >= n:
+                break
 
         if not overviews:
             logger.warn(f"No overviews found for workspace {workspace.id}")
@@ -106,11 +103,9 @@ class ConversationStartersGenerator:
 
         output = await self.ainvoke(input)
 
-        assert workspace.id and last_session.id
-
+        assert workspace.id
         starters = await Starters(
             workspace_id=workspace.id,
-            session_id=last_session.id,
             starters=output.questions,
         ).save()
 

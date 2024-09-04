@@ -212,6 +212,8 @@ def repair():
 
         for session in sessions:
             typer.echo(f"Repairing session: {session.id} ({session.pretty_print()})")
+            workspace = await Workspace.get(session.workspace_id)
+            assert workspace
 
             # Get all clusters for the session
             clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
@@ -233,9 +235,16 @@ def repair():
                 )
                 evaluator = ClusterEvaluator(llm=llm)
                 await evaluator.evaluate_clusters(clusters_without_evaluation)
+                await analyzer.starters_generator.generate_starters_for_workspace(
+                    workspace
+                )
 
             typer.echo(f"Updating relevancy counts for session: {session.id}")
             await analyzer.update_relevancy_counts(session)
+
+            if not session.summary:
+                typer.echo(f"Generating summary for session: {session.id}")
+                await analyzer.session_summarizer.generate_summary_for_session(session)
 
             typer.echo(f"Completed repairs for session: {session.id}")
 
