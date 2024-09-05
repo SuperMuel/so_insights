@@ -100,11 +100,14 @@ def analyze_all(
         workspaces = await Workspace.find_all().to_list()
 
         for workspace in workspaces:
-            await analyzer.analyze_workspace(
-                workspace,
-                data_start=datetime.now() - timedelta(days=days),
-                data_end=datetime.now(),
-            )
+            try:
+                await analyzer.analyze_workspace(
+                    workspace,
+                    data_start=datetime.now() - timedelta(days=days),
+                    data_end=datetime.now(),
+                )
+            except Exception as e:
+                logger.error(f"Error analyzing workspace {workspace.id}: {str(e)}")
 
         mongo_client.close()
 
@@ -299,12 +302,11 @@ def watch(
                     data_start=task.data_start,
                     data_end=task.data_end,
                 )
-                assert session
                 task.status = Status.completed
                 task.session_id = session.id
-                await task.save()
-
                 logger.info(f"Completed task {task.id}")
+
+                await task.save()
 
             except Exception as e:
                 logger.error(f"Error processing task {task.id}: {str(e)}")

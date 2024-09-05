@@ -57,7 +57,7 @@ class Analyzer:
         workspace: Workspace,
         data_start: datetime,
         data_end: datetime,
-    ) -> ClusteringSession | None:
+    ) -> ClusteringSession:
         session_start = datetime.now()
         assert workspace.id
         logger.info(
@@ -76,15 +76,10 @@ class Analyzer:
             logger.warn("High number of articles !")
 
         if not all_articles:
-            logger.warn("No articles found. Skipping clustering. No session created.")
-            return
+            raise ValueError("No articles found.")
 
         if len(all_articles) < settings.MIN_ARTICLES_FOR_CLUSTERING:
-            logger.warn(
-                "Not enough articles to cluster. Skipping clustering. No session created."
-            )
-            # TODO : add a warning to the workspace or session
-            return
+            raise ValueError("Not enough articles to cluster.")
 
         vectors = self.vector_repository.fetch_vectors(
             [id_to_str(article.id) for article in all_articles],
