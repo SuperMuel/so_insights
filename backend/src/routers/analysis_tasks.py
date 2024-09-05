@@ -8,14 +8,13 @@ from src.schemas import AnalysisTaskCreate
 
 router = APIRouter(tags=["analysis-tasks"])
 
-router.post(
+
+@router.post(
     "/",
     response_model=AnalysisTask,
     status_code=status.HTTP_201_CREATED,
     operation_id="create_analysis_task",
 )
-
-
 async def create_analysis_task(task: AnalysisTaskCreate, workspace: ExistingWorkspace):
     assert workspace.id
     new_task = AnalysisTask(

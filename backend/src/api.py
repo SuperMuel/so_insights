@@ -9,6 +9,7 @@ from shared.db import get_client, my_init_beanie
 
 from src.api_settings import APISettings
 from src.routers import (
+    analysis_tasks,
     clustering,
     ingestion_runs,
     search_query_sets,
@@ -79,6 +80,11 @@ app.include_router(
 app.include_router(
     starters.router,
     prefix="/workspaces/{workspace_id}/starters",
+)
+
+app.include_router(
+    analysis_tasks.router,
+    prefix="/workspaces/{workspace_id}/analysis-tasks",
 )
 
 if __name__ == "__main__":

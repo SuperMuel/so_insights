@@ -1,7 +1,17 @@
+from datetime import date, datetime, timedelta
+from sdk.so_insights_client.models.analysis_task_create import AnalysisTaskCreate
 from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
 from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
+from sdk.so_insights_client.models.analysis_task import AnalysisTask
+from sdk.so_insights_client.api.analysis_tasks import (
+    create_analysis_task,
+    get_analysis_task,
+    list_analysis_tasks,
+)
+
+
 from src.app_settings import AppSettings
 import streamlit as st
 from millify import millify
@@ -12,7 +22,7 @@ from sdk.so_insights_client.api.clustering import (
 )
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 
-from src.shared import get_client, get_workspace_or_stop, select_session
+from src.shared import create_toast, get_client, get_workspace_or_stop, select_session
 
 client = get_client()
 workspace = get_workspace_or_stop()
@@ -21,6 +31,48 @@ settings = AppSettings()
 
 with st.sidebar:
     selected_session = select_session(client, workspace)
+
+    st.divider()
+
+    st.subheader("Create New Analysis")
+
+    with st.form("create_analysis_task"):
+        # TODO : add pre-defined date ranges (e.g. last 7 days, last 30 days)
+        start_date, end_date = st.date_input(  # type: ignore
+            "Date range",
+            [date.today() - timedelta(days=7), date.today()],
+            min_value=date.today() - timedelta(days=365),
+            max_value=date.today(),
+        )
+        assert isinstance(start_date, date) and isinstance(end_date, date)
+
+        start_date = datetime.combine(start_date, datetime.min.time())
+        end_date = datetime.combine(end_date, datetime.max.time())
+
+        submit_button = st.form_submit_button(
+            "Create Analysis Task", use_container_width=True
+        )
+
+        if submit_button:
+            task = create_analysis_task.sync(
+                workspace_id=str(workspace.field_id),
+                client=client,
+                body=AnalysisTaskCreate(
+                    data_start=start_date,
+                    data_end=end_date,
+                ),
+            )
+            if isinstance(task, HTTPValidationError):
+                st.error(f"Failed to create analysis task: {task.detail}")
+            elif not task:
+                st.error("Failed to create analysis task")
+            else:
+                create_toast(
+                    "Analysis task created successfully!",
+                    icon="✅",
+                )
+                st.rerun()
+
 
 st.title("🔎 Topics detection")
 
