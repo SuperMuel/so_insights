@@ -262,7 +262,7 @@ def repair():
 @app.command()
 def watch(
     interval: int = typer.Option(
-        60, "--interval", "-i", help="Check interval in seconds"
+        10, "--interval", "-i", help="Check interval in seconds"
     ),
 ):
     """Watch for pending analysis tasks and execute them."""
