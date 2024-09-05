@@ -10,6 +10,7 @@ The SO Insights Ingester is a crucial component of the SO Insights project, desi
 - Storage in MongoDB for structured data
 - Indexing in Pinecone for vector search capabilities
 - Command-line interface
+- Watching for tasks and executing them
 
 ## Prerequisites
 
@@ -62,20 +63,7 @@ The Ingester provides several command-line interfaces:
    poetry run python main.py upsert-all
    ```
 
-## Architecture
-
-The Ingester follows a modular architecture:
-
-- `main.py`: Entry point and CLI commands
-- `src/ingester_settings.py`: Configuration management
-- `src/search.py`: Web search functionality
-- `src/util.py`: Utility functions
-- `../shared/`: Shared models and utilities
-
-## Testing
-
-To run tests:
-
-```
-poetry run pytest
-```
+5. Watch for tasks and execute them in the background:
+   ```
+   poetry run python main.py watch
+   ```

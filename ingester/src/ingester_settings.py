@@ -31,3 +31,5 @@ class IngesterSettings(BaseSettings):
     # TEMPORARY: these parameters will be in the IngestionSchedule model
     MAX_RESULTS: int = 30
     DEFAULT_TIME_LIMIT: Literal["d", "w", "m", "y"] = "d"
+
+    POLLING_INTERVAL_S: int = 10

@@ -437,7 +437,10 @@ def upsert_all():
 @app.command()
 def watch(
     interval: int = typer.Option(
-        10, "--interval", "-i", help="Check interval in seconds"
+        settings.POLLING_INTERVAL_S,
+        "--interval",
+        "-i",
+        help="Check interval in seconds",
     ),
 ):
     """Watch for pending ingestion runs and execute them."""

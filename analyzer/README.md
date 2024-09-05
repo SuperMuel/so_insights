@@ -11,6 +11,7 @@ The SO Insights Analyzer is a powerful component of the SO Insights project, des
 - Evaluation of clusters based on user preferences using LLMs
 - Asynchronous design
 - Command line interface
+- Watching for tasks and executing them
 
 ## Prerequisites
 
@@ -62,9 +63,14 @@ The Analyzer provides several command-line interfaces:
    poetry run analyzer evaluate <session_id1> <session_id2> ...
    ```
 
-5. Repair missing overviews and evaluations:
+5. Repair missing overviews, evaluations and session_summaries:
    ```
    poetry run analyzer repair
+   ```
+
+6. Watch for tasks and execute them in the background:
+   ```
+   poetry run python main.py watch
    ```
 
 ## Architecture

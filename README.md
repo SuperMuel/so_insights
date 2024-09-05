@@ -35,6 +35,7 @@ SO Insights consists of four main components:
 The Ingester component is responsible for:
 - Performing web searches to online news sources based on user predefined queries
 - Storing articles in MongoDB and indexing them in Pinecone
+- Watching for tasks and executing them in the background
 
 ### Analyzer
 
@@ -42,6 +43,7 @@ The Analyzer component handles:
 - Clustering of articles using HDBSCAN algorithm
 - Generating titles summaries for clusters using LLMs
 - Evaluating the relevance and quality of clusters based on user preferences
+- Watching for tasks and executing them in the background
 
 ### Backend
 
@@ -52,6 +54,7 @@ The Backend provides:
 
 The Frontend offers a Streamlit interface for:
 - Managing workspaces and search queries
+- Manually triggering ingestion and analysis tasks
 - Viewing ingestion results and cluster analyses
 - Interacting with a Chatbot with Retrieval-Augmented-Generation (RAG) 
 - Generating content for blog posts, Linkedin, Twitter/X, etc based on detected topics with images.
@@ -89,20 +92,20 @@ The Frontend offers a Streamlit interface for:
 - **Ingester**
    ```
     docker build -t so-insights-ingester -f Dockerfile.ingester .
-    docker run --env-file ./ingester/.env so-insights-ingester .
+    docker run --env-file ./ingester/.env so-insights-ingester watch
     ```
 - **Analyzer**
     ```
      docker build -t so-insights-analyzer -f Dockerfile.analyzer .
-     docker run --env-file ./analyzer/.env so-insights-analyzer .
+     docker run --env-file ./analyzer/.env so-insights-analyzer watch
      ```
 
 
 
 ## Usage
 
-1. Use the Frontend to create workspaces and set up search queries.
-2. Run the Ingester to collect articles based on the queries.
-3. Use the Analyzer to process the collected articles and generate insights.
+1. Deploy the Ingester and Analyzer components to watch for tasks.
+2. Use the Frontend to create workspaces and set up search queries.
+3. Manually trigger ingestion and analysis tasks or wait for the scheduled tasks to run.
 4. Explore the results and interact with the data using the Frontend's interface.
 5. Generate content for blog posts, Linkedin, Twitter/X, etc based on detected topics with images.

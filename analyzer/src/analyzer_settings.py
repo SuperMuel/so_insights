@@ -30,3 +30,5 @@ class AnalyzerSettings(BaseSettings):
     INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD: int = Field(default=10)
 
     SESSION_SUMMARY_MAX_CLUSTERS: int = 400
+
+    POLLING_INTERVAL_S: int = 10
