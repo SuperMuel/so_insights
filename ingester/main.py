@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from itertools import batched
+from typing import Optional
 
 import typer
 from beanie import BulkWriter, PydanticObjectId, UpdateResponse
@@ -338,7 +339,7 @@ def create_ingestion_task(
 
 @app.command()
 def create_ingestion_tasks(
-    workspace_id: str | None = typer.Option(
+    workspace_id: Optional[str] = typer.Option(
         None,
         "-w",
         "--workspace-id",

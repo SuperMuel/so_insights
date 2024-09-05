@@ -1,4 +1,5 @@
 from datetime import datetime
+from beanie import PydanticObjectId
 from pydantic import BaseModel, HttpUrl
 
 from shared.models import (
@@ -8,6 +9,7 @@ from shared.models import (
     Language,
     ModelDescription,
     ModelTitle,
+    TimeLimit,
 )
 from shared.region import Region
 
@@ -86,3 +88,9 @@ class ClusterWithArticles(BaseModel):
 class AnalysisTaskCreate(BaseModel):
     data_start: datetime
     data_end: datetime
+
+
+class IngestionRunCreate(BaseModel):
+    time_limit: TimeLimit
+    max_results: int
+    search_query_set_id: PydanticObjectId
