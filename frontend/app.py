@@ -60,11 +60,11 @@ if __name__ == "__main__":
 
     pg = st.navigation(
         [
-            st.Page("pages/1_🗂️Workspaces.py"),
-            st.Page("pages/2_📥Ingestion.py"),
-            st.Page("pages/3_💬Chatbot.py"),
-            st.Page("pages/4_🔍Topics.py"),
-            st.Page("pages/5_✍️Content_Studio.py"),
+            st.Page("src/pages/workspaces.py", title="Workspaces", icon="📂"),
+            st.Page("src/pages/ingestion.py", title="Ingestion", icon="📥"),
+            st.Page("src/pages/topics.py", title="Topics", icon="🔎"),
+            st.Page("src/pages/content_studio.py", title="Content Studio", icon="✍️"),
+            st.Page("src/pages/chatbot.py", title="Chatbot", icon="💬"),
         ]
     )
 

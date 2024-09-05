@@ -143,7 +143,6 @@ def fetch_clusters(
     session_id: str,
     workspace_id: str,
 ):
-    print(f"Fetching clusters with filter {relevancy_filter}")
     clusters_with_articles = list_clusters_with_articles_for_session.sync(
         client=client,
         session_id=session_id,
