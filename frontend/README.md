@@ -5,9 +5,10 @@ A Streamlit-based web interface for the SO Insights project, providing access to
 ## Features
 
 - Workspace management
-- Data ingestion interface
+- Data sources management
 - Chatbot for data interaction
 - Topic analysis visualization
+- Content generation based on detected topics
 
 ## Prerequisites
 
@@ -39,11 +40,8 @@ A Streamlit-based web interface for the SO Insights project, providing access to
 ## Project Structure
 
 - `app.py`: Main entry point
-- `pages/`: Individual pages for different features
 - `src/`: Utility functions and settings
 - `sdk/`: Generated API client for backend communication
-
-
 
 ## Generating Backend SDK
 
@@ -60,11 +58,3 @@ To update the backend SDK used by the frontend:
    ```
 
 This command will generate the SDK based on the current backend API and place it in the `frontend/sdk` directory.
-
-
-
-
-
-
-
-
