@@ -14,6 +14,7 @@ from .clustering_session_metadata import ClusteringSessionMetadata
 from .hdbscan_settings import HdbscanSettings
 from .http_validation_error import HTTPValidationError
 from .ingestion_run import IngestionRun
+from .ingestion_run_create import IngestionRunCreate
 from .ingestion_run_status import IngestionRunStatus
 from .language import Language
 from .list_clusters_for_session_relevance_levels_type_0_item import ListClustersForSessionRelevanceLevelsType0Item
@@ -44,6 +45,7 @@ __all__ = (
     "HdbscanSettings",
     "HTTPValidationError",
     "IngestionRun",
+    "IngestionRunCreate",
     "IngestionRunStatus",
     "Language",
     "ListClustersForSessionRelevanceLevelsType0Item",
