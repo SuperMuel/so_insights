@@ -3,10 +3,9 @@ import logging
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from itertools import batched
-from typing import Literal
 
 import typer
-from beanie import BulkWriter, PydanticObjectId
+from beanie import BulkWriter, PydanticObjectId, UpdateResponse
 from beanie.odm.operators.update.general import Set
 from dotenv import load_dotenv
 from duckduckgo_search import AsyncDDGS
@@ -98,52 +97,6 @@ async def mark_articles_as_vector_indexed(articles: list[Article]):
     logger.info("Marked as vector indexed.")
 
 
-async def check_search_query_set_eligibility(search_query_set: SearchQuerySet) -> bool:
-    if not search_query_set.queries:
-        logger.info(
-            f"Skipping search query set {search_query_set.id} because it has no queries"
-        )
-        return False
-
-    last_run = await search_query_set.find_last_finished_run()
-
-    if last_run is not None:
-        if last_run.is_running():
-            logger.warning(
-                f"Skipping search query set {search_query_set.id} because the last run is not finished"
-            )
-            return False
-        if has_recent_run(last_run, timedelta(hours=settings.MIN_HOURS_BETWEEN_RUNS)):
-            logger.info(
-                f"Skipping search query set {search_query_set.id} because the last run was less than {settings.MIN_HOURS_BETWEEN_RUNS} hours ago"
-            )
-            return False
-
-    return True
-
-
-async def create_ingestion_run(
-    search_query_set: SearchQuerySet,
-    time_limit: TimeLimit,
-    status: Literal["running", "completed", "failed"],
-) -> IngestionRun:
-    """Creates and insert an IngestionRun for this SearchQuerySet"""
-    assert search_query_set.id
-    run = await IngestionRun(
-        workspace_id=search_query_set.workspace_id,
-        queries_set_id=search_query_set.id,
-        status=status,
-        time_limit=time_limit,
-        max_results=settings.MAX_RESULTS,
-    ).insert()
-
-    logger.info(
-        f"Created ingestion run {run.id} for search query set {search_query_set.id}"
-    )
-
-    return run
-
-
 async def perform_search_and_deduplicate_results(
     ddgs: AsyncDDGS, search_query_set: SearchQuerySet, run: IngestionRun
 ) -> tuple[int, list[BaseArticle]]:
@@ -211,21 +164,23 @@ async def index_articles_in_vector_db(
         )
 
 
-async def handle_search_query_set(
-    search_query_set: SearchQuerySet,
+async def handle_ingestion_run(
     ddgs: AsyncDDGS,
     get_pinecone_index,
-    time_limit: TimeLimit = settings.DEFAULT_TIME_LIMIT,
+    run: IngestionRun,
 ):
-    assert search_query_set.id
+    search_query_set = await SearchQuerySet.get(run.queries_set_id)
+    assert search_query_set
+
+    assert run.status in ["pending", "running"]
+
+    if run.status == "pending":
+        run.status = "running"
+        await run.replace()
 
     logger.info(
         f"Processing search query set {search_query_set.id} "
-        f"({search_query_set.title}, {len(search_query_set.queries)} queries, {time_limit=})"
-    )
-
-    run = await create_ingestion_run(
-        search_query_set, time_limit=time_limit, status="running"
+        f"({search_query_set.title}, {len(search_query_set.queries)} queries, {run.time_limit=})"
     )
 
     try:
@@ -249,36 +204,6 @@ async def handle_search_query_set(
         await run.replace()
 
     logger.info(f"Finished processing search query set {search_query_set.id}")
-
-
-async def handle_all_search_query_sets(
-    ddgs: AsyncDDGS,
-    get_pinecone_index,
-    time_limit: TimeLimit = settings.DEFAULT_TIME_LIMIT,
-):
-    search_query_sets = await SearchQuerySet.find(
-        SearchQuerySet.deleted == False  # noqa: E712
-    ).to_list()
-
-    logger.info(f"Processing {len(search_query_sets)} search query sets")
-
-    for i, search_query_set in enumerate(search_query_sets):
-        if not await check_search_query_set_eligibility(search_query_set):
-            continue
-
-        logger.info(
-            f"Processing search query set {search_query_set.title} ({search_query_set.id}) ({i + 1}/{len(search_query_sets)})"
-        )
-        await handle_search_query_set(
-            search_query_set=search_query_set,
-            ddgs=ddgs,
-            get_pinecone_index=get_pinecone_index,
-            time_limit=time_limit,
-        )
-
-        logger.info(f"Finished processing search query set {search_query_set.id}")
-
-    logger.info("Finished processing all search query sets")
 
 
 async def upsert_articles_of_workspace(
@@ -374,13 +299,16 @@ class TimeLimitEnum(str, Enum):
 
 
 @app.command()
-def run_one(
+def create_ingestion_task(
     search_query_set_id: str,
     time_limit: TimeLimitEnum = typer.Option(
         TimeLimitEnum.from_literal(settings.DEFAULT_TIME_LIMIT), "-t", "--time-limit"
     ),
+    max_results: int = typer.Option(
+        settings.MAX_RESULTS, "-m", "--max-results", help="Maximum number of results"
+    ),
 ):
-    """Run ingestion for a single SearchQuerySet"""
+    """Create ingestion tasks for a single SearchQuerySet"""
 
     async def single_run():
         mongo_client, ddgs, get_pinecone_index = await setup()
@@ -389,12 +317,18 @@ def run_one(
         if not search_query_set:
             typer.echo(f"SearchQuerySet with id {search_query_set_id} not found.")
             return
+        assert search_query_set.id
 
-        await handle_search_query_set(
-            search_query_set,
-            ddgs,
-            get_pinecone_index,
+        run = await IngestionRun(
+            workspace_id=search_query_set.workspace_id,
+            queries_set_id=search_query_set.id,
             time_limit=time_limit.to_literal(),
+            status="pending",
+            max_results=max_results,
+        ).create()
+
+        logger.info(
+            f"Created ingestion run {run.id} for search query set {search_query_set.id}"
         )
 
         mongo_client.close()
@@ -402,29 +336,62 @@ def run_one(
     asyncio.run(single_run())
 
 
-# TODO : add a command to run all ingestions for a single workspace
-
-
 @app.command()
-def run_all(
+def create_ingestion_tasks(
+    workspace_id: str | None = typer.Option(
+        None,
+        "-w",
+        "--workspace-id",
+        help="To create ingestion tasks for a specific workspace. If not provided, tasks will be created for all workspaces.",
+    ),
     time_limit: TimeLimitEnum = typer.Option(
         TimeLimitEnum.from_literal(settings.DEFAULT_TIME_LIMIT), "-t", "--time-limit"
     ),
+    max_results: int = typer.Option(
+        settings.MAX_RESULTS, "-m", "--max-results", help="Maximum number of results"
+    ),
 ):
-    """Run ingestion for all SearchQuerySets"""
+    """Create ingestion tasks for all SearchQuerySets of a workspace or all workspaces"""
 
-    async def all_runs():
+    async def create_runs():
         mongo_client, ddgs, get_pinecone_index = await setup()
 
-        await handle_all_search_query_sets(
-            ddgs,
-            get_pinecone_index,
-            time_limit.to_literal(),
-        )
+        if workspace_id:
+            workspace = await Workspace.get(workspace_id)
+            if not workspace:
+                typer.echo(f"Workspace with id {workspace_id} not found.")
+                return
+            workspaces = [workspace]
+        else:
+            workspaces = await Workspace.find_all().to_list()
+
+        for workspace in workspaces:
+            assert workspace.id
+            logger.info(
+                f"Creating ingestion tasks for workspace {workspace.id} ({workspace.name})"
+            )
+            query_sets = await SearchQuerySet.find(
+                SearchQuerySet.workspace_id == workspace.id
+            ).to_list()
+
+            for query_set in query_sets:
+                assert query_set.id
+
+                run = await IngestionRun(
+                    workspace_id=workspace.id,
+                    queries_set_id=query_set.id,
+                    time_limit=time_limit.to_literal(),
+                    status="pending",
+                    max_results=max_results,
+                ).create()
+
+                logger.info(
+                    f"Created ingestion run {run.id} for search query set {query_set.id}"
+                )
 
         mongo_client.close()
 
-    asyncio.run(all_runs())
+    asyncio.run(create_runs())
 
 
 @app.command()
@@ -464,6 +431,46 @@ def upsert_all():
         mongo_client.close()
 
     asyncio.run(upsert_all_articles())
+
+
+@app.command()
+def watch(
+    interval: int = typer.Option(
+        10, "--interval", "-i", help="Check interval in seconds"
+    ),
+):
+    """Watch for pending ingestion runs and execute them."""
+
+    async def _watch():
+        mongo_client, ddgs, get_pinecone_index = await setup()
+
+        logger.info(f"Starting watch loop. Checking every {interval} seconds.")
+
+        while True:
+            pending_run = await IngestionRun.find_one(
+                IngestionRun.status == "pending"
+            ).update_one(
+                Set({IngestionRun.status: "running"}),
+                response_type=UpdateResponse.NEW_DOCUMENT,
+            )
+
+            assert isinstance(pending_run, IngestionRun) or pending_run is None
+
+            if not pending_run:
+                await asyncio.sleep(interval)
+                continue
+
+            logger.info(
+                f"Processing ingestion run {pending_run.id} for workspace {pending_run.workspace_id}"
+            )
+
+            await handle_ingestion_run(
+                ddgs=ddgs,
+                get_pinecone_index=get_pinecone_index,
+                run=pending_run,
+            )
+
+    asyncio.run(_watch())
 
 
 if __name__ == "__main__":

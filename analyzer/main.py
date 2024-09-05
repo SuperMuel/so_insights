@@ -246,10 +246,9 @@ def repair():
                     workspace
                 )
 
-            typer.echo(f"Updating relevancy counts for session: {session.id}")
             await analyzer.update_relevancy_counts(session)
 
-            if not session.summary:
+            if not session.summary or clusters_without_evaluation:
                 typer.echo(f"Generating summary for session: {session.id}")
                 await analyzer.session_summarizer.generate_summary_for_session(session)
 

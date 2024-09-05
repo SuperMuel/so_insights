@@ -50,7 +50,7 @@ with st.sidebar:
         end_date = datetime.combine(end_date, datetime.max.time())
 
         submit_button = st.form_submit_button(
-            "Create Analysis Task", use_container_width=True
+            "Start analysis", use_container_width=True
         )
 
         if submit_button:
