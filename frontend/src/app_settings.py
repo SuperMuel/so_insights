@@ -35,3 +35,5 @@ class AppSettings(BaseSettings):
     IMAGE_PROMPT_LLM: str = "gpt-4o-mini"
 
     CLUSTERS_PER_PAGE: int = 30
+
+    INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S: int = 15

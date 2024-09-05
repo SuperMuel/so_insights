@@ -1,6 +1,29 @@
+from typing import Literal
+import arrow
+from sdk.so_insights_client.api.ingestion_runs import (
+    create_ingestion_run,
+    list_ingestion_runs,
+)
+from sdk.so_insights_client.api.search_query_sets import (
+    create_search_query_set,
+    delete_search_query_set,
+    list_search_query_sets,
+    update_search_query_set,
+)
 from sdk.so_insights_client.models.hdbscan_settings import HdbscanSettings
+from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.ingestion_run import IngestionRun
+from sdk.so_insights_client.models.ingestion_run_create import IngestionRunCreate
+from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
 from sdk.so_insights_client.models.language import Language
+from sdk.so_insights_client.models.region import Region
+from sdk.so_insights_client.models.search_query_set import SearchQuerySet
+from sdk.so_insights_client.models.search_query_set_create import SearchQuerySetCreate
+from sdk.so_insights_client.models.search_query_set_update import SearchQuerySetUpdate
+from sdk.so_insights_client.models.time_limit import TimeLimit
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
+import shared.region
+from src.app_settings import AppSettings
 import streamlit as st
 
 from sdk.so_insights_client.api.workspaces import (
@@ -11,17 +34,11 @@ from src.shared import create_toast, get_client, language_to_str
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 
 
+settings = AppSettings()
+
 client = get_client()
 
 st.title("My Workspace")
-st.info(
-    """
-    A workspace is a container for your research projects. It helps you organize your 
-    search profiles, collected articles, and analyses. Each workspace can have its own 
-    language setting, which affects how the system processes and analyzes the content.
-""",
-    icon="ℹ️",
-)
 
 
 def _get_language_index(language: Language) -> int:
@@ -29,10 +46,17 @@ def _get_language_index(language: Language) -> int:
     return values.index(language)
 
 
+def region_to_full_name(region: Region) -> str:
+    return shared.region.Region(region).get_full_name()
+
+
 @st.dialog("Create a new workspace")
 def _create_new_workspace():
-    st.header("Create a New Workspace")
-    with st.form("new_workspace_form", clear_on_submit=True):
+    with st.form(
+        "new_workspace_form",
+        clear_on_submit=True,
+        border=False,
+    ):
         new_workspace_name = st.text_input(
             "Workspace Name*",
             placeholder="E.g., AI Research 2024",
@@ -53,7 +77,7 @@ def _create_new_workspace():
         )
         assert new_workspace_language is not None
 
-        if st.form_submit_button("➕ sCreate Workspace", use_container_width=True):
+        if st.form_submit_button("➕ Create Workspace", use_container_width=True):
             if not new_workspace_name:
                 st.error("Workspace name is required.")
             else:
@@ -136,8 +160,333 @@ def _edit_workspace_form(workspace: Workspace):
                 st.warning("Please confirm the update by checking the box.")
 
 
-# Main layout
+def _fetch_query_sets(workspace: Workspace) -> list[SearchQuerySet]:
+    query_sets = list_search_query_sets.sync(
+        client=client, workspace_id=str(workspace.field_id)
+    )
+
+    if isinstance(query_sets, HTTPValidationError) or query_sets is None:
+        st.error(
+            f"Error fetching configurations. {query_sets.detail if query_sets else ''}"
+        )
+        return []
+
+    return query_sets
+
+
+@st.dialog("Update config")
+def update_config(workspace: Workspace, query_set: SearchQuerySet):
+    with st.form(
+        key=f"update_form_{query_set.field_id}",
+        border=False,
+    ):
+        st.subheader("Update Configuration")
+        updated_title = st.text_input(
+            "Update Title", value=query_set.title, max_chars=30
+        )
+        updated_queries = st.text_area(
+            "Update Search Queries",
+            value="\n".join(query_set.queries),
+            height=300,
+            help="Enter one search query per line",
+        )
+        updated_region = st.selectbox(
+            "Update Search Region",
+            options=[Region.WT_WT] + [r for r in Region if r != Region.WT_WT],
+            index=0
+            if query_set.region == Region.WT_WT
+            else [r for r in Region if r != Region.WT_WT].index(query_set.region) + 1,
+            format_func=region_to_full_name,
+        )
+
+        if st.form_submit_button("Update Configuration"):
+            updated_queries_list = [
+                q.strip() for q in updated_queries.split("\n") if q.strip()
+            ]
+            update_data = SearchQuerySetUpdate(
+                title=updated_title,
+                queries=updated_queries_list,
+                region=updated_region,
+            )
+            response = update_search_query_set.sync(
+                client=client,
+                workspace_id=str(workspace.field_id),
+                search_query_set_id=str(query_set.field_id),
+                body=update_data,
+            )
+            if isinstance(response, SearchQuerySet):
+                create_toast(
+                    f"Configuration '**{updated_title}**' updated successfully!",
+                    icon="✅",
+                )
+                st.rerun()
+            else:
+                st.error(f"Failed to update configuration. Error: {response}")
+
+
+@st.dialog("Create Ingestion Run")
+def create_new_ingestion_run(workspace: Workspace, query_set: SearchQuerySet):
+    assert query_set.field_id
+    with st.form(key=f"create_ingestion_run_{query_set.field_id}"):
+        st.subheader(f"Create Ingestion Run for '{query_set.title}'")
+        time_limit = st.select_slider(
+            "Time Limit",
+            options=[TimeLimit.D, TimeLimit.W, TimeLimit.M, TimeLimit.Y],
+            value=TimeLimit.W,
+            format_func=lambda x: {
+                "d": "1 Day",
+                "w": "1 Week",
+                "m": "1 Month",
+                "y": "1 Year",
+            }[x],
+        )
+
+        assert isinstance(time_limit, TimeLimit)
+
+        max_results = st.slider(
+            "Max Results per Query",
+            min_value=5,
+            max_value=100,
+            value=30,
+            step=5,
+            help="Maximum number of articles to fetch per search query. Note : Higher values may return irrelevant results.",
+        )
+        assert isinstance(max_results, int)
+
+        if st.form_submit_button("Start Ingestion Process"):
+            new_ingestion_run = IngestionRunCreate(
+                time_limit=time_limit,
+                max_results=max_results,
+                search_query_set_id=query_set.field_id,
+            )
+            response = create_ingestion_run.sync(
+                client=client,
+                workspace_id=str(workspace.field_id),
+                body=new_ingestion_run,
+            )
+            if isinstance(response, HTTPValidationError):
+                st.error(f"Failed to create ingestion run. Error: {response.detail}")
+            elif not response:
+                st.error("Failed to create ingestion run")
+            else:
+                create_toast(
+                    f"Ingestion run for '**{query_set.title}**' created successfully!",
+                    icon="🚀",
+                )
+                st.rerun()
+
+
+def _show_one_data_source(workspace: Workspace, query_set: SearchQuerySet):
+    with st.expander(f"**{query_set.title}**"):
+        st.metric("Region", region_to_full_name(query_set.region))
+        st.write(f"**Search Queries ({len(query_set.queries)}):**")
+
+        with st.container(border=True):
+            st.markdown(" ".join([f"`{query}`" for query in query_set.queries]))
+
+        col1, col2, col3 = st.columns([1, 1, 1])
+
+        with col1:
+            if st.button(
+                "✏️ Edit",
+                key=f"update_search_query_set_{query_set.field_id}",
+                use_container_width=True,
+            ):
+                update_config(workspace, query_set)
+
+        with col2:
+            if st.button(
+                "🗑️ Delete Configuration",
+                key=f"delete_search_query_set_{query_set.field_id}",
+                use_container_width=True,
+            ):
+                if st.checkbox(
+                    "Confirm deletion", key=f"confirm_delete_{query_set.field_id}"
+                ):
+                    delete_search_query_set.sync(
+                        client=client,
+                        workspace_id=str(workspace.field_id),
+                        search_query_set_id=str(query_set.field_id),
+                    )
+                    create_toast(
+                        f"Configuration '**{query_set.title}**' deleted successfully!",
+                        icon="🗑️",
+                    )
+                    st.rerun()
+                else:
+                    st.warning("Please confirm deletion by checking the box.")
+        with col3:
+            if st.button(
+                "🚀 Start Ingestion Run",
+                key=f"create_ingestion_run_{query_set.field_id}",
+                use_container_width=True,
+            ):
+                create_new_ingestion_run(workspace, query_set)
+
+
+@st.dialog("Create New Data Source")
+def _create_new_data_source(workspace: Workspace):
+    with st.form(
+        "create_search_query_set",
+        clear_on_submit=True,
+        border=False,
+    ):
+        query_set_title = st.text_input(
+            "Configuration Title*",
+            placeholder="AI Trends 2024",
+            max_chars=30,
+        )
+
+        queries_input = st.text_area(
+            "Search Queries*",
+            placeholder="Enter one search query per line. Example :\n\nArtificial Intelligence\nMachine Learning\nDeep Learning\nOpenAI\nChatGPT",
+            height=200,
+            help="Each line will be used as a separate search query",
+        )
+
+        region = st.selectbox(
+            "Search Region*",
+            options=[Region.WT_WT] + [r for r in Region if r != Region.WT_WT],
+            format_func=region_to_full_name,
+            help="Select the region to focus your search on",
+        )
+
+        if st.form_submit_button("Submit"):
+            if not query_set_title or not queries_input:
+                st.error("Please fill in both the title and search queries.")
+            else:
+                queries = [
+                    query.strip()
+                    for query in queries_input.splitlines()
+                    if query.strip()
+                ]
+                new_query_set = SearchQuerySetCreate(
+                    title=query_set_title,
+                    queries=queries,
+                    region=region or Region.WT_WT,
+                )
+
+                response = create_search_query_set.sync(
+                    client=client,
+                    workspace_id=str(workspace.field_id),
+                    body=new_query_set,
+                )
+
+                if isinstance(response, SearchQuerySet):
+                    st.success(
+                        f"Search Configuration '**{query_set_title}**' created successfully!"
+                    )
+                    st.rerun()
+                else:
+                    st.error(
+                        f"Failed to create search configuration. Error: {response}"
+                    )
+
+
+def _data_sources_section(workspace: Workspace):
+    col1, col2 = st.columns([3, 1])
+    col1.subheader("📰 Data sources")
+    if col2.button(
+        "➕ New Data Source",
+        use_container_width=True,
+    ):
+        _create_new_data_source(workspace)
+
+    query_sets = _fetch_query_sets(workspace)
+    if not query_sets:
+        st.warning("No data sources found. Add a new data source to get started.")
+        return
+
+    st.info(
+        """Add data sources to your workspace to collect articles for analysis.""",
+        icon="ℹ️",
+    )
+
+    for query_set in query_sets:
+        _show_one_data_source(workspace, query_set)
+
+
+def _fetch_ingestion_runs(workspace: Workspace) -> list[IngestionRun]:
+    runs = list_ingestion_runs.sync(client=client, workspace_id=str(workspace.field_id))
+
+    if isinstance(runs, HTTPValidationError) or runs is None:
+        st.error(f"Error fetching search history. {runs.detail if runs else ''}")
+        return []
+
+    return runs
+
+
+@st.fragment(run_every=settings.INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S)
+def _history_section(workspace: Workspace):
+    col1, col2 = st.columns([3, 1])
+    col1.subheader("🕘 History")
+    if col2.button(
+        "🔄 Refresh",
+        use_container_width=True,
+    ):
+        st.rerun(scope="fragment")
+
+    runs = _fetch_ingestion_runs(workspace)
+
+    if not runs:
+        st.warning(
+            "No article searches have been performed yet. You can manually trigger a new search from the 'Data Sources' section by clicking on 'Start Ingestion Run' for a configuration. Alternatively, you can wait for an automatic search to be triggered by the system."
+        )
+        return
+
+    query_sets = _fetch_query_sets(workspace)
+
+    status_map: dict[IngestionRunStatus, Literal["running", "complete", "error"]] = {
+        IngestionRunStatus.PENDING: "running",
+        IngestionRunStatus.RUNNING: "running",
+        IngestionRunStatus.COMPLETED: "complete",
+        IngestionRunStatus.FAILED: "error",
+    }
+
+    time_limit_map = {
+        TimeLimit.D: "Last 24 Hours",
+        TimeLimit.W: "Last Week",
+        TimeLimit.M: "Last Month",
+        TimeLimit.Y: "Last Year",
+    }
+
+    for run in runs:
+        created_at_str = arrow.get(run.created_at).humanize() if run.created_at else ""
+        print(created_at_str)
+
+        query_set_title = (
+            next(
+                (q.title for q in query_sets if q.field_id == run.queries_set_id),
+                None,
+            )
+            or f"Unknown Configuration ({run.queries_set_id})"
+        )
+
+        new_articles_found = (
+            f"- {run.n_inserted} new articles found" if run.n_inserted else ""
+        )
+
+        with st.status(
+            label=f"**{query_set_title}** - {created_at_str} {new_articles_found}",
+            state=status_map[run.status],
+        ):
+            st.write(
+                f"Started at: {run.created_at.strftime('%Y-%m-%d %H:%M:%S') if run.created_at else 'Unknown'}"
+            )
+            st.write(
+                f"Ended at: {run.end_at.strftime('%Y-%m-%d %H:%M:%S') if run.end_at else 'Not finished'}"
+            )
+            st.write("Search settings:")
+            with st.container(border=True):
+                st.write(f"**Time limit:** {time_limit_map[run.time_limit]}")
+                st.write(f"**Max results per query:** {run.max_results}")
+
+            if run.error:
+                st.error(f"**Error:** {run.error}")
+
+
 workspace = st.session_state.get("workspace")
+
 if not workspace:
     st.info("Select a workspace from the sidebar or create a new one.")
 else:
@@ -149,3 +498,20 @@ else:
 
         st.subheader("My Workspace")
         _edit_workspace_form(workspace)
+
+    st.info(
+        """
+        A workspace is a container for your research projects. It helps you organize your 
+        search profiles, collected articles, and analyses. Each workspace can have its own 
+        language setting, which affects how the system processes and analyzes the content.
+    """,
+        icon="ℹ️",
+    )
+
+    st.divider()
+
+    _data_sources_section(workspace)
+
+    st.divider()
+
+    _history_section(workspace)

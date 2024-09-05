@@ -4,11 +4,8 @@ from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArtic
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
 from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
-from sdk.so_insights_client.models.analysis_task import AnalysisTask
 from sdk.so_insights_client.api.analysis_tasks import (
     create_analysis_task,
-    get_analysis_task,
-    list_analysis_tasks,
 )
 
 
@@ -30,10 +27,6 @@ settings = AppSettings()
 
 
 with st.sidebar:
-    selected_session = select_session(client, workspace)
-
-    st.divider()
-
     st.subheader("Create New Analysis")
 
     with st.form("create_analysis_task"):
@@ -72,6 +65,10 @@ with st.sidebar:
                     icon="✅",
                 )
                 st.rerun()
+
+    st.divider()
+
+    selected_session = select_session(client, workspace)
 
 
 st.title("🔎 Topics detection")

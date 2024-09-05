@@ -68,7 +68,7 @@ _FULL_NAMES = {
     "ue-es": "United States (es)",
     "ve-es": "Venezuela",
     "vn-vi": "Vietnam",
-    "wt-wt": "No region",
+    "wt-wt": "Worldwide",
 }
 
 
