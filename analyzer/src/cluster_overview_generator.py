@@ -118,7 +118,16 @@ class ClusterOverviewGenerator:
                 cluster.overview_generation_error = None
             await cluster.save()
 
-        logger.info(f"Finished generating overviews for {len(clusters)} clusters")
+        exceptions = [
+            overview for overview in overviews if isinstance(overview, Exception)
+        ]
+
+        if exceptions:
+            raise RuntimeError(
+                f"Failed to generate overviews for {len(exceptions)} clusters."
+            )
+
+        logger.info(f"Finished generating overviews for {len(clusters)} clusters.")
 
     async def generate_overviews_for_session(
         self,
