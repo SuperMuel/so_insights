@@ -13,7 +13,7 @@ from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 
 client = get_client()
 
-st.title("Workspace Management")
+st.title("My Workspace")
 st.info(
     """
     A workspace is a container for your research projects. It helps you organize your 
@@ -30,9 +30,9 @@ def _get_language_index(language: Language) -> int:
 
 
 @st.dialog("Create a new workspace")
-def create_new_workspace():
+def _create_new_workspace():
     st.header("Create a New Workspace")
-    with st.form("new_workspace_form"):
+    with st.form("new_workspace_form", clear_on_submit=True):
         new_workspace_name = st.text_input(
             "Workspace Name*",
             placeholder="E.g., AI Research 2024",
@@ -40,7 +40,7 @@ def create_new_workspace():
         )
         new_workspace_description = st.text_area(
             "Workspace Description",
-            help="Provide a detailed description of your interests",
+            help="The description allows the AI to understand the context of your research. It should be detailed and informative.",
             placeholder="E.g. : As an AI consultant, I want to analyze the effectiveness of chatbots in improving customer service response times, so that I can recommend solutions that enhance user satisfaction and operational efficiency.",
             height=200,
         )
@@ -70,16 +70,13 @@ def create_new_workspace():
                     st.error(f"Failed to create workspace. Error: {response}")
 
 
-@st.dialog("Edit workspace")
-def edit_workspace(workspace: Workspace):
+def _edit_workspace_form(workspace: Workspace):
     with st.form("edit_workspace_form"):
-        updated_name = st.text_input(
-            "Name", value=workspace.name, help="Update the workspace name"
-        )
+        updated_name = st.text_input(label="Name", value=workspace.name)
         updated_description = st.text_area(
             "Description",
             value=workspace.description,
-            help="Modify the workspace description",
+            help="The description allows the AI to understand the context of your research. It should be detailed and informative.",
             height=200,
         )
         updated_language = st.selectbox(
@@ -87,7 +84,6 @@ def edit_workspace(workspace: Workspace):
             options=Language,
             format_func=language_to_str,
             index=_get_language_index(Language(workspace.language)),
-            help="Change the primary language for this workspace",
         )
 
         with st.expander("Advanced Settings"):
@@ -140,14 +136,16 @@ def edit_workspace(workspace: Workspace):
                 st.warning("Please confirm the update by checking the box.")
 
 
-if st.sidebar.button("➕Create New Workspace", use_container_width=True):
-    create_new_workspace()
-
 # Main layout
 workspace = st.session_state.get("workspace")
 if not workspace:
     st.info("Select a workspace from the sidebar or create a new one.")
-    st.stop()
+else:
+    with st.sidebar:
+        if st.sidebar.button("➕Create New Workspace", use_container_width=True):
+            _create_new_workspace()
 
-if workspace and st.sidebar.button("✏️Edit Workspace", use_container_width=True):
-    edit_workspace(workspace)
+        st.divider()
+
+        st.subheader("My Workspace")
+        _edit_workspace_form(workspace)
