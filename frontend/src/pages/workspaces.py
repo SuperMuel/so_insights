@@ -1,4 +1,3 @@
-import arrow
 from sdk.so_insights_client.models.hdbscan_settings import HdbscanSettings
 from sdk.so_insights_client.models.language import Language
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
@@ -7,7 +6,6 @@ import streamlit as st
 from sdk.so_insights_client.api.workspaces import (
     create_workspace,
     update_workspace,
-    list_workspaces,
 )
 from src.shared import create_toast, get_client, language_to_str
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
@@ -26,12 +24,13 @@ st.info(
 )
 
 
-def get_language_index(language: Language) -> int:
+def _get_language_index(language: Language) -> int:
     values = list(Language)
     return values.index(language)
 
 
-def create_new_workspace_form():
+@st.dialog("Create a new workspace")
+def create_new_workspace():
     st.header("Create a New Workspace")
     with st.form("new_workspace_form"):
         new_workspace_name = st.text_input(
@@ -49,16 +48,12 @@ def create_new_workspace_form():
             "Primary Language",
             options=Language,
             format_func=language_to_str,
-            index=get_language_index(Language.EN),
+            index=_get_language_index(Language.EN),
             help="Select the primary language for content in this workspace",
         )
         assert new_workspace_language is not None
 
-        submit_button = st.form_submit_button(
-            "Create Workspace", use_container_width=True
-        )
-
-        if submit_button:
+        if st.form_submit_button("➕ sCreate Workspace", use_container_width=True):
             if not new_workspace_name:
                 st.error("Workspace name is required.")
             else:
@@ -75,12 +70,8 @@ def create_new_workspace_form():
                     st.error(f"Failed to create workspace. Error: {response}")
 
 
-with st.sidebar:
-    create_new_workspace_form()
-
-
+@st.dialog("Edit workspace")
 def edit_workspace(workspace: Workspace):
-    st.subheader("✏️ Edit Workspace")
     with st.form("edit_workspace_form"):
         updated_name = st.text_input(
             "Name", value=workspace.name, help="Update the workspace name"
@@ -95,7 +86,7 @@ def edit_workspace(workspace: Workspace):
             "Primary Language",
             options=Language,
             format_func=language_to_str,
-            index=get_language_index(Language(workspace.language)),
+            index=_get_language_index(Language(workspace.language)),
             help="Change the primary language for this workspace",
         )
 
@@ -115,14 +106,12 @@ def edit_workspace(workspace: Workspace):
                 help="The number of samples in a neighborhood for a point to be considered a core point.",
             )
 
-        update_button = st.form_submit_button(
-            "Update Workspace",
+        if st.form_submit_button(
+            "✏️ Update Workspace",
             use_container_width=True,
-        )
-
-        if update_button:
+        ):
             confirm = st.checkbox(
-                "Confirm update",
+                label="Confirm update",
                 value=False,
                 help="Please confirm that you want to update this workspace",
             )
@@ -151,26 +140,8 @@ def edit_workspace(workspace: Workspace):
                 st.warning("Please confirm the update by checking the box.")
 
 
-def display_workspaces() -> None:
-    workspaces = list_workspaces.sync(client=client)
-    if not workspaces:
-        st.warning("No workspaces found. Start by creating a new workspace.")
-        return None
-
-    st.subheader("Your Workspaces")
-    for workspace in workspaces:
-        with st.expander(workspace.name):
-            st.write("**Description:**" + " - " if not workspace.description else "")
-            if workspace.description:
-                st.code(workspace.description, language="markdown")
-            st.write(f"**Language:** {language_to_str(Language(workspace.language))}")
-            if workspace.created_at:
-                created_at = arrow.get(workspace.created_at).humanize()
-                st.write(f"**Created:** {created_at}")
-            if workspace.updated_at:
-                updated_at = arrow.get(workspace.updated_at).humanize()
-                st.write(f"**Last updated:** {updated_at}")
-
+if st.sidebar.button("➕Create New Workspace", use_container_width=True):
+    create_new_workspace()
 
 # Main layout
 workspace = st.session_state.get("workspace")
@@ -178,9 +149,5 @@ if not workspace:
     st.info("Select a workspace from the sidebar or create a new one.")
     st.stop()
 
-col1, col2 = st.columns(2)
-
-with col1:
-    display_workspaces()
-with col2:
+if workspace and st.sidebar.button("✏️Edit Workspace", use_container_width=True):
     edit_workspace(workspace)
