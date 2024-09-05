@@ -1,5 +1,7 @@
 """Contains all the data models used in inputs/outputs"""
 
+from .analysis_task import AnalysisTask
+from .analysis_task_create import AnalysisTaskCreate
 from .article_preview import ArticlePreview
 from .cluster import Cluster
 from .cluster_evaluation import ClusterEvaluation
@@ -12,6 +14,7 @@ from .clustering_session_metadata import ClusteringSessionMetadata
 from .hdbscan_settings import HdbscanSettings
 from .http_validation_error import HTTPValidationError
 from .ingestion_run import IngestionRun
+from .ingestion_run_create import IngestionRunCreate
 from .ingestion_run_status import IngestionRunStatus
 from .language import Language
 from .list_clusters_for_session_relevance_levels_type_0_item import ListClustersForSessionRelevanceLevelsType0Item
@@ -20,6 +23,7 @@ from .relevancy_filter import RelevancyFilter
 from .search_query_set import SearchQuerySet
 from .search_query_set_create import SearchQuerySetCreate
 from .search_query_set_update import SearchQuerySetUpdate
+from .status import Status
 from .time_limit import TimeLimit
 from .validation_error import ValidationError
 from .workspace import Workspace
@@ -27,6 +31,8 @@ from .workspace_create import WorkspaceCreate
 from .workspace_update import WorkspaceUpdate
 
 __all__ = (
+    "AnalysisTask",
+    "AnalysisTaskCreate",
     "ArticlePreview",
     "Cluster",
     "ClusterEvaluation",
@@ -39,6 +45,7 @@ __all__ = (
     "HdbscanSettings",
     "HTTPValidationError",
     "IngestionRun",
+    "IngestionRunCreate",
     "IngestionRunStatus",
     "Language",
     "ListClustersForSessionRelevanceLevelsType0Item",
@@ -47,6 +54,7 @@ __all__ = (
     "SearchQuerySet",
     "SearchQuerySetCreate",
     "SearchQuerySetUpdate",
+    "Status",
     "TimeLimit",
     "ValidationError",
     "Workspace",

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from enum import Enum
 from beanie.odm.queries.find import FindMany
 from typing import Annotated, Any, Dict, Literal
 
@@ -84,7 +85,7 @@ class IngestionRun(Document):
     max_results: int = Field(..., ge=1, le=100)
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     end_at: PastDatetime | None = None
-    status: Literal["running", "completed", "failed"]
+    status: Literal["pending", "running", "completed", "failed"]
     successfull_queries: int | None = None
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
@@ -158,12 +159,33 @@ class Article(Document):
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
 
 
+class Status(str, Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+
+
+class AnalysisTask(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    status: Status = Status.pending
+    error: str | None = None
+    session_id: PydanticObjectId | None = None
+
+    data_start: PastDatetime
+    data_end: datetime
+
+    class Settings:
+        name = DBSettings().mongodb_analysis_tasks_collection
+
+
 class ClusteringSession(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    session_start: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    session_end: datetime | None = None
+    session_start: PastDatetime = Field(default_factory=utc_datetime_factory)
+    session_end: PastDatetime | None = None
 
-    data_start: datetime
+    data_start: PastDatetime
     data_end: datetime
     nb_days: int
 

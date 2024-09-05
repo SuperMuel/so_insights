@@ -1,8 +1,10 @@
 from typing import Literal
 import arrow
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.ingestion_run_create import IngestionRunCreate
 from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
 from sdk.so_insights_client.models.search_query_set_update import SearchQuerySetUpdate
+from sdk.so_insights_client.models.time_limit import TimeLimit
 import shared.region
 from src.shared import create_toast, get_client, get_workspace_or_stop
 import streamlit as st
@@ -13,7 +15,10 @@ from sdk.so_insights_client.api.search_query_sets import (
     delete_search_query_set,
     update_search_query_set,
 )
-from sdk.so_insights_client.api.ingestion_runs import list_ingestion_runs
+from sdk.so_insights_client.api.ingestion_runs import (
+    create_ingestion_run,
+    list_ingestion_runs,
+)
 from sdk.so_insights_client.models import SearchQuerySetCreate, Region
 
 
@@ -66,6 +71,58 @@ def update_config(query_set: SearchQuerySet):
                 st.rerun()
             else:
                 st.error(f"Failed to update configuration. Error: {response}")
+
+
+@st.dialog("Create Ingestion Run")
+def create_new_ingestion_run(query_set: SearchQuerySet):
+    assert query_set.field_id
+    with st.form(key=f"create_ingestion_run_{query_set.field_id}"):
+        st.subheader(f"Create Ingestion Run for '{query_set.title}'")
+        time_limit = st.select_slider(
+            "Time Limit",
+            options=[TimeLimit.D, TimeLimit.W, TimeLimit.M, TimeLimit.Y],
+            value=TimeLimit.W,
+            format_func=lambda x: {
+                "d": "1 Day",
+                "w": "1 Week",
+                "m": "1 Month",
+                "y": "1 Year",
+            }[x],
+        )
+
+        assert isinstance(time_limit, TimeLimit)
+
+        max_results = st.slider(
+            "Max Results per Query",
+            min_value=5,
+            max_value=100,
+            value=30,
+            step=5,
+            help="Maximum number of articles to fetch per search query. Note : Higher values may return irrelevant results.",
+        )
+        assert isinstance(max_results, int)
+
+        if st.form_submit_button("Start Ingestion Process"):
+            new_ingestion_run = IngestionRunCreate(
+                time_limit=time_limit,
+                max_results=max_results,
+                search_query_set_id=query_set.field_id,
+            )
+            response = create_ingestion_run.sync(
+                client=client,
+                workspace_id=str(workspace.field_id),
+                body=new_ingestion_run,
+            )
+            if isinstance(response, HTTPValidationError):
+                st.error(f"Failed to create ingestion run. Error: {response.detail}")
+            elif not response:
+                st.error("Failed to create ingestion run")
+            else:
+                create_toast(
+                    f"Ingestion run for '**{query_set.title}**' created successfully!",
+                    icon="🚀",
+                )
+                st.rerun()
 
 
 workspace = get_workspace_or_stop()
@@ -155,28 +212,43 @@ for query_set in query_sets:
         with st.container(border=True):
             st.markdown(" ".join([f"`{query}`" for query in query_set.queries]))
 
-        if st.button("🔄 Update", key=f"update_search_query_set_{query_set.field_id}"):
-            update_config(query_set)
-
-        if st.button(
-            "🗑️ Delete Configuration",
-            key=f"delete_search_query_set_{query_set.field_id}",
-        ):
-            if st.checkbox(
-                "Confirm deletion", key=f"confirm_delete_{query_set.field_id}"
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button(
+                "✏️ Edit",
+                key=f"update_search_query_set_{query_set.field_id}",
+                use_container_width=True,
             ):
-                delete_search_query_set.sync(
-                    client=client,
-                    workspace_id=str(workspace.field_id),
-                    search_query_set_id=str(query_set.field_id),
-                )
-                create_toast(
-                    f"Configuration '**{query_set.title}**' deleted successfully!",
-                    icon="🗑️",
-                )
-                st.rerun()
-            else:
-                st.warning("Please confirm deletion by checking the box.")
+                update_config(query_set)
+
+        with col2:
+            if st.button(
+                "🗑️ Delete Configuration",
+                key=f"delete_search_query_set_{query_set.field_id}",
+                use_container_width=True,
+            ):
+                if st.checkbox(
+                    "Confirm deletion", key=f"confirm_delete_{query_set.field_id}"
+                ):
+                    delete_search_query_set.sync(
+                        client=client,
+                        workspace_id=str(workspace.field_id),
+                        search_query_set_id=str(query_set.field_id),
+                    )
+                    create_toast(
+                        f"Configuration '**{query_set.title}**' deleted successfully!",
+                        icon="🗑️",
+                    )
+                    st.rerun()
+                else:
+                    st.warning("Please confirm deletion by checking the box.")
+        with col3:
+            if st.button(
+                "🚀 Start Ingestion Run",
+                key=f"create_ingestion_run_{query_set.field_id}",
+                use_container_width=True,
+            ):
+                create_new_ingestion_run(query_set)
 
 # Show list of ingestion runs
 st.subheader("Recent Article Searches")
@@ -192,6 +264,7 @@ if not runs:
     st.stop()
 
 status_map: dict[IngestionRunStatus, Literal["running", "complete", "error"]] = {
+    IngestionRunStatus.PENDING: "running",
     IngestionRunStatus.RUNNING: "running",
     IngestionRunStatus.COMPLETED: "complete",
     IngestionRunStatus.FAILED: "error",

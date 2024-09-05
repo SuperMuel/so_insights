@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class IngestionRunStatus(str, Enum):
+class Status(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     PENDING = "pending"
