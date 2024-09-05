@@ -22,6 +22,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 
 
+# TODO : verify that the workspace contains data before running the chatbot
+
 workspace = get_workspace_or_stop()
 
 st.title("💬 Chat with your data")
