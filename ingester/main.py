@@ -175,9 +175,12 @@ async def handle_ingestion_run(
 
     assert run.status in ["pending", "running"]
 
+    run.start_at = datetime.now(timezone.utc)
+
     if run.status == "pending":
         run.status = "running"
-        await run.replace()
+
+    await run.replace()
 
     logger.info(
         f"Processing search query set {search_query_set.id} "
@@ -442,15 +445,22 @@ def watch(
         "-i",
         help="Check interval in seconds",
     ),
+    max_runtime: int = typer.Option(
+        settings.MAX_RUNTIME_S,
+        "--max-runtime",
+        "-r",
+        help="Maximum runtime in seconds before exiting",
+    ),
 ):
     """Watch for pending ingestion runs and execute them."""
 
     async def _watch():
         mongo_client, ddgs, get_pinecone_index = await setup()
 
-        logger.info(f"Starting watch loop. Checking every {interval} seconds.")
+        logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
+        start_time = datetime.now()
 
-        while True:
+        while (datetime.now() - start_time).total_seconds() < max_runtime:
             pending_run = await IngestionRun.find_one(
                 IngestionRun.status == "pending"
             ).update_one(
@@ -473,6 +483,13 @@ def watch(
                 get_pinecone_index=get_pinecone_index,
                 run=pending_run,
             )
+
+            if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                logger.info("Reached maximum runtime. Exiting.")
+                break
+
+        logger.info("Watch function completed successfully.")
+        mongo_client.close()
 
     asyncio.run(_watch())
 

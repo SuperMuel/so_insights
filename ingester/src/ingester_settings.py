@@ -32,4 +32,6 @@ class IngesterSettings(BaseSettings):
     MAX_RESULTS: int = 30
     DEFAULT_TIME_LIMIT: Literal["d", "w", "m", "y"] = "d"
 
+    # Watcher settings
     POLLING_INTERVAL_S: int = 10
+    MAX_RUNTIME_S: int = 30 * 60  # 30 minutes

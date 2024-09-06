@@ -31,4 +31,6 @@ class AnalyzerSettings(BaseSettings):
 
     SESSION_SUMMARY_MAX_CLUSTERS: int = 400
 
+    # Watcher settings
     POLLING_INTERVAL_S: int = 10
+    MAX_RUNTIME_S: int = 30 * 60  # 30 minutes

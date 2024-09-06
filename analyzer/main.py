@@ -267,15 +267,22 @@ def watch(
         "-i",
         help="Check interval in seconds",
     ),
+    max_runtime: int = typer.Option(
+        settings.MAX_RUNTIME_S,
+        "--max-runtime",
+        "-r",
+        help="Maximum runtime in seconds before exiting",
+    ),
 ):
     """Watch for pending analysis tasks and execute them."""
 
     async def _watch():
         mongo_client, analyzer = await setup()
 
-        logger.info(f"Starting watch loop. Checking every {interval} seconds.")
+        logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
+        start_time = datetime.now()
 
-        while True:
+        while (datetime.now() - start_time).total_seconds() < max_runtime:
             task = await AnalysisTask.find_one(
                 AnalysisTask.status == Status.pending
             ).update_one(
@@ -286,10 +293,9 @@ def watch(
             assert isinstance(task, AnalysisTask) or task is None
 
             if not task:
-                try:
-                    await asyncio.sleep(interval)
-                except KeyboardInterrupt:
-                    logger.info("Detected keyboard interrupt. Exiting.")
+                await asyncio.sleep(interval)
+                if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                    logger.info("Reached maximum runtime. Exiting.")
                     break
                 continue
 
@@ -315,6 +321,13 @@ def watch(
                 task.status = Status.failed
                 task.error = str(e)
                 await task.save()
+
+            if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                logger.info("Reached maximum runtime. Exiting.")
+                break
+
+        logger.info("Watch function completed successfully.")
+        mongo_client.close()
 
     asyncio.run(_watch())
 
