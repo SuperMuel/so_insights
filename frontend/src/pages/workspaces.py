@@ -1,4 +1,6 @@
+from collections import defaultdict
 from typing import Literal
+import pandas as pd
 import arrow
 from sdk.so_insights_client.api.ingestion_runs import (
     create_ingestion_run,
@@ -420,6 +422,25 @@ def _fetch_ingestion_runs(workspace: Workspace) -> list[IngestionRun]:
     return runs
 
 
+def _create_articles_found_chart(runs: list[IngestionRun]):
+    graph_data = defaultdict(int)
+    for run in runs:
+        if run.end_at and isinstance(run.n_inserted, int):
+            date = run.end_at.date()
+            graph_data[date] += run.n_inserted
+
+    # Convert to pandas DataFrame and sort by date
+    df = pd.DataFrame(
+        [(date, count) for date, count in graph_data.items()],
+        columns=["date", "articles"],
+    )
+    df = df.sort_values("date")
+
+    # Add the graph
+    st.subheader("Articles Found Per Day")
+    st.line_chart(df, x="date", y="articles", height=300)
+
+
 @st.fragment(run_every=settings.INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S)
 def _history_section(workspace: Workspace):
     col1, col2 = st.columns([3, 1])
@@ -431,6 +452,8 @@ def _history_section(workspace: Workspace):
         st.rerun(scope="fragment")
 
     runs = _fetch_ingestion_runs(workspace)
+
+    _create_articles_found_chart(runs)
 
     if not runs:
         st.warning(
@@ -486,10 +509,16 @@ def _history_section(workspace: Workspace):
         status.write(
             f"**Started at:** {run.start_at.strftime('%Y-%m-%d %H:%M:%S') if run.start_at else 'Not started'}"
         )
-        print(run.start_at)
         status.write(
             f"**Ended at:** {run.end_at.strftime('%Y-%m-%d %H:%M:%S') if run.end_at else 'Not finished'}"
         )
+
+        if run.start_at and run.end_at:
+            humanized_duration = arrow.get(run.end_at).humanize(
+                arrow.get(run.start_at), only_distance=True
+            )
+            status.write(f"**Duration:** {humanized_duration}")
+
         status.write("**Search settings:**")
         with status.container(border=True):
             st.write(f"**Time limit:** {time_limit_map[run.time_limit]}")
