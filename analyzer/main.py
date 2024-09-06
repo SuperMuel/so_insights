@@ -21,7 +21,7 @@ from src.vector_repository import PineconeVectorRepository
 from langchain.chat_models import init_chat_model
 
 from shared.db import get_client, my_init_beanie
-from shared.models import AnalysisTask, Cluster, ClusteringSession, Status, Workspace
+from shared.models import Cluster, ClusteringSession, Status, Workspace
 import uvicorn
 
 load_dotenv()
@@ -69,51 +69,31 @@ async def setup():
 
 
 @app.command()
-def analyze(
-    workspace_id: str,
+def create_analysis_tasks(
+    workspace_ids: list[str],
     days: int = typer.Option(2, "--days", "-d", help="Number of days to analyze"),
 ):
-    async def _clusterize():
+    async def _create_analysis_tasks():
         mongo_client, analyzer = await setup()
 
-        workspace = await Workspace.get(workspace_id)
+        for workspace_id in workspace_ids:
+            workspace = await Workspace.get(workspace_id)
 
-        if workspace is None:
-            typer.echo("No cluster found for the given workspace.", err=True)
-        else:
-            await analyzer.analyze_workspace(
-                workspace,
-                data_start=datetime.now() - timedelta(days=days),
-                data_end=datetime.now(),
-            )
-
-        mongo_client.close()
-
-    asyncio.run(_clusterize())
-
-
-@app.command()
-def analyze_all(
-    days: int = typer.Option(2, "--days", "-d", help="Number of days to analyze"),
-):
-    async def _clusterize():
-        mongo_client, analyzer = await setup()
-
-        workspaces = await Workspace.find_all().to_list()
-
-        for workspace in workspaces:
-            try:
-                await analyzer.analyze_workspace(
-                    workspace,
+            if workspace is None:
+                typer.echo("No cluster found for the given workspace.", err=True)
+            else:
+                assert workspace.id
+                session = await ClusteringSession(
+                    workspace_id=workspace.id,
                     data_start=datetime.now() - timedelta(days=days),
                     data_end=datetime.now(),
-                )
-            except Exception as e:
-                logger.error(f"Error analyzing workspace {workspace.id}: {str(e)}")
+                    nb_days=days,
+                ).save()
+                typer.echo(f"Session {session.id} created for workspace {workspace_id}")
 
         mongo_client.close()
 
-    asyncio.run(_clusterize())
+    asyncio.run(_create_analysis_tasks())
 
 
 @app.command()
@@ -292,7 +272,7 @@ def watch(
         help="Maximum runtime in seconds before exiting",
     ),
 ):
-    """Watch for pending analysis tasks and execute them."""
+    """Watch for pending clustering sessions and execute them."""
 
     async def _watch():
         mongo_client, analyzer = await setup()
@@ -303,16 +283,16 @@ def watch(
         server_task = asyncio.create_task(run_server())
         try:
             while (datetime.now() - start_time).total_seconds() < max_runtime:
-                task = await AnalysisTask.find_one(
-                    AnalysisTask.status == Status.pending
+                session = await ClusteringSession.find_one(
+                    ClusteringSession.status == Status.pending
                 ).update_one(
-                    Set({AnalysisTask.status: Status.running}),
+                    Set({ClusteringSession.status: Status.running}),
                     response_type=UpdateResponse.NEW_DOCUMENT,
                 )
 
-                assert isinstance(task, AnalysisTask) or task is None
+                assert isinstance(session, ClusteringSession) or session is None
 
-                if not task:
+                if not session:
                     await asyncio.sleep(interval)
                     if (datetime.now() - start_time).total_seconds() >= max_runtime:
                         logger.info("Reached maximum runtime. Exiting.")
@@ -320,29 +300,11 @@ def watch(
                     continue
 
                 logger.info(
-                    f"Processing task {task.id} for workspace {task.workspace_id}"
+                    f"Processing session {session.id} for workspace {session.workspace_id}"
                 )
 
-                workspace = await Workspace.get(task.workspace_id)
-                assert workspace
-
-                try:
-                    session = await analyzer.analyze_workspace(
-                        workspace,
-                        data_start=task.data_start,
-                        data_end=task.data_end,
-                    )
-                    task.status = Status.completed
-                    task.session_id = session.id
-                    logger.info(f"Completed task {task.id}")
-
-                    await task.save()
-
-                except Exception as e:
-                    logger.error(f"Error processing task {task.id}: {str(e)}")
-                    task.status = Status.failed
-                    task.error = str(e)
-                    await task.save()
+                updated_session = await analyzer.handle_session(session)
+                logger.info(f"Completed session {updated_session.id}")
 
                 if (datetime.now() - start_time).total_seconds() >= max_runtime:
                     logger.info("Reached maximum runtime. Exiting.")

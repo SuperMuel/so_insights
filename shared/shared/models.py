@@ -167,44 +167,34 @@ class Status(str, Enum):
     failed = "failed"
 
 
-class AnalysisTask(Document):
-    workspace_id: Annotated[PydanticObjectId, Indexed()]
-    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    status: Status = Status.pending
-    error: str | None = None
-    session_id: PydanticObjectId | None = None
-
-    data_start: PastDatetime
-    data_end: datetime
-
-    class Settings:
-        name = DBSettings().mongodb_analysis_tasks_collection
-
-
 class ClusteringSession(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    session_start: PastDatetime = Field(default_factory=utc_datetime_factory)
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    session_start: PastDatetime | None = None
     session_end: PastDatetime | None = None
+
+    status: Status = Status.pending
+    error: str | None = None
 
     data_start: PastDatetime
     data_end: datetime
     nb_days: int
 
-    metadata: Dict[str, Any]
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    articles_count: int = Field(
-        ...,
+    articles_count: int | None = Field(
+        default=None,
         description="Number of articles on which the clustering was performed, including noise.",
     )
-    clusters_count: int
+    clusters_count: int | None = None
     relevant_clusters_count: int | None = None
     somewhat_relevant_clusters_count: int | None = None
     irrelevant_clusters_count: int | None = None
 
-    noise_articles_ids: list[PydanticObjectId]
-    noise_articles_count: int
-    clustered_articles_count: int = Field(
-        ...,
+    noise_articles_ids: list[PydanticObjectId] | None = None
+    noise_articles_count: int | None = None
+    clustered_articles_count: int | None = Field(
+        default=None,
         description="Number of articles in clusters, excluding noise.",
     )
 

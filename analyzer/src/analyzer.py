@@ -1,16 +1,15 @@
 import asyncio
 from datetime import datetime
-import aiohttp
 
 
 from beanie import PydanticObjectId
 from beanie.operators import Exists
-from pydantic import HttpUrl
 from shared.models import (
     Article,
     Cluster,
     ClusterEvaluation,
     ClusteringSession,
+    Status,
     Workspace,
 )
 
@@ -22,6 +21,7 @@ from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
 from src.session_summary_generator import SessionSummarizer
 from src.starters_generator import ConversationStartersGenerator
+from src.util import get_first_valid_image
 from src.vector_repository import PineconeVectorRepository
 
 logger = logging.getLogger(__name__)
@@ -52,117 +52,131 @@ class Analyzer:
         self.starters_generator = starters_generator
         self.session_summarizer = session_summarizer
 
-    async def analyze_workspace(
-        self,
-        workspace: Workspace,
-        data_start: datetime,
-        data_end: datetime,
-    ) -> ClusteringSession:
-        session_start = datetime.now()
-        assert workspace.id
-        logger.info(
-            f"Analyzing workspace '{workspace.name}' on period {data_start} -> {data_end}"
-        )
+    async def handle_session(self, session: ClusteringSession) -> ClusteringSession:
+        try:
+            assert session.status in [
+                Status.pending,
+                Status.running,
+            ]  # Session can already be set to be running to avoid multiple processing
 
-        all_articles = await Article.find(
-            Article.workspace_id == workspace.id,
-            Article.date >= data_start,
-            Article.date <= data_end,
-        ).to_list()
+            if session.status == Status.pending:
+                session.status = Status.running
 
-        logger.info(f"Found {len(all_articles)} articles.")
+            session.session_start = datetime.now()
 
-        if len(all_articles) > 10_000:
-            logger.warn("High number of articles !")
+            await session.save()
 
-        if not all_articles:
-            raise ValueError("No articles found.")
+            logger.info(f"Handling clustering session '{session.id}'")
 
-        if len(all_articles) < settings.MIN_ARTICLES_FOR_CLUSTERING:
-            raise ValueError("Not enough articles to cluster.")
+            workspace = await Workspace.get(session.workspace_id)
+            if not workspace:
+                raise ValueError("Workspace not found")
 
-        vectors = self.vector_repository.fetch_vectors(
-            [id_to_str(article.id) for article in all_articles],
-            namespace=id_to_str(workspace.id),
-        )
+            all_articles = await Article.find(
+                Article.workspace_id == session.workspace_id,
+                Article.date >= session.data_start,
+                Article.date <= session.data_end,
+            ).to_list()
 
-        data_loading_time_s = (datetime.now() - session_start).total_seconds()
+            logger.info(f"Found {len(all_articles)} articles.")
 
-        logger.info(f"Fetched {len(vectors)} vectors.")
+            if len(all_articles) > 10_000:
+                logger.warning("High number of articles!")
 
-        clustering_result = self.clustering_engine.perform_clustering(
-            vectors, hdbscan_settings=workspace.hdbscan_settings
-        )
+            if not all_articles:
+                raise ValueError("No articles found.")
 
-        logger.info(
-            f"Clustering finished. Found {len(clustering_result.clusters)} clusters."
-        )
+            if len(all_articles) < settings.MIN_ARTICLES_FOR_CLUSTERING:
+                raise ValueError("Not enough articles to cluster.")
 
-        session: ClusteringSession = await ClusteringSession(
-            session_start=session_start,
-            session_end=datetime.now(),
-            workspace_id=workspace.id,
-            data_start=data_start,
-            data_end=data_end,
-            nb_days=(data_end - data_start).days,
-            articles_count=len(all_articles),
-            clusters_count=len(clustering_result.clusters),
-            noise_articles_ids=[
+            vectors = self.vector_repository.fetch_vectors(
+                [id_to_str(article.id) for article in all_articles],
+                namespace=id_to_str(session.workspace_id),
+            )
+
+            data_loading_time_s = (
+                datetime.now() - session.session_start
+            ).total_seconds()
+
+            logger.info(f"Fetched {len(vectors)} vectors.")
+
+            clustering_result = self.clustering_engine.perform_clustering(
+                vectors, hdbscan_settings=workspace.hdbscan_settings
+            )
+
+            logger.info(
+                f"Clustering finished. Found {len(clustering_result.clusters)} clusters."
+            )
+
+            session.articles_count = len(all_articles)
+            session.clusters_count = len(clustering_result.clusters)
+            session.noise_articles_ids = [
                 PydanticObjectId(article.id) for article in clustering_result.noise
-            ],
-            noise_articles_count=len(clustering_result.noise),
-            clustered_articles_count=sum(
-                len(cluster.articles) for cluster in clustering_result.clusters
-            ),
-            metadata={
-                "algorithm": "hdbscan",
-                "min_cluster_size": workspace.hdbscan_settings.min_cluster_size,
-                "min_samples": workspace.hdbscan_settings.min_samples,
-                "data_loading_time_s": data_loading_time_s,
-                "clustering_time_s": clustering_result.clustering_duration_s,
-            },
-        ).insert()
-
-        assert session.id
-
-        clusters = []
-
-        for cluster_result in clustering_result.clusters:
-            articles_ids = [
-                PydanticObjectId(article.id) for article in cluster_result.articles
             ]
-            cluster: Cluster = await Cluster(
-                workspace_id=workspace.id,
-                session_id=session.id,
-                articles_ids=articles_ids,
-                articles_count=len(cluster_result.articles),
-                first_image=await get_first_valid_image(
-                    [article for article in all_articles if article.id in articles_ids]
-                ),
-            ).insert()
+            session.noise_articles_count = len(clustering_result.noise)
+            session.clustered_articles_count = sum(
+                len(cluster.articles) for cluster in clustering_result.clusters
+            )
+            session.metadata.update(
+                {
+                    "algorithm": "hdbscan",
+                    "min_cluster_size": workspace.hdbscan_settings.min_cluster_size,
+                    "min_samples": workspace.hdbscan_settings.min_samples,
+                    "data_loading_time_s": data_loading_time_s,
+                    "clustering_time_s": clustering_result.clustering_duration_s,
+                }
+            )
+            await session.save()
 
-            clusters.append(cluster)
+            assert session.id
 
-        logger.info(f"Generating overviews for {len(clusters)} clusters.")
-        await self.overview_generator.generate_overviews_for_session(session)
+            clusters = []
+            for cluster_result in clustering_result.clusters:
+                articles_ids = [
+                    PydanticObjectId(article.id) for article in cluster_result.articles
+                ]
+                cluster: Cluster = await Cluster(
+                    workspace_id=session.workspace_id,
+                    session_id=session.id,
+                    articles_ids=articles_ids,
+                    articles_count=len(cluster_result.articles),
+                    first_image=await get_first_valid_image(
+                        [
+                            article
+                            for article in all_articles
+                            if article.id in articles_ids
+                        ]
+                    ),
+                ).insert()
+                clusters.append(cluster)
 
-        logger.info(f"Evaluating {len(clusters)} clusters.")
+            logger.info(f"Generating overviews for {len(clusters)} clusters.")
+            await self.overview_generator.generate_overviews_for_session(session)
 
-        await self.evaluator.evaluate_session(session)
+            logger.info(f"Evaluating {len(clusters)} clusters.")
+            await self.evaluator.evaluate_session(session)
 
-        await self.update_relevancy_counts(session)
+            await self.update_relevancy_counts(session)
 
-        await asyncio.gather(
-            self.starters_generator.generate_starters_for_workspace(workspace),
-            self.session_summarizer.generate_summary_for_session(session),
-        )
+            await asyncio.gather(
+                self.starters_generator.generate_starters_for_workspace(workspace),
+                self.session_summarizer.generate_summary_for_session(session),
+            )
 
-        logger.info(
-            f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
-        )
+            logger.info(
+                f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
+            )
 
-        session.session_end = datetime.now()
-        await session.save()
+            session.status = Status.completed
+            session.session_end = datetime.now()
+            await session.save()
+
+        except Exception as e:
+            logger.exception(f"Error handling clustering session: {e}")
+            session.status = Status.failed
+            session.error = str(e)
+            session.session_end = datetime.now()
+            await session.save()
 
         return session
 
@@ -211,25 +225,3 @@ class Analyzer:
         session.irrelevant_clusters_count = irrelevant_clusters_count
 
         await session.save()
-
-
-async def get_first_valid_image(articles: list[Article]) -> HttpUrl | None:
-    timeout = aiohttp.ClientTimeout(total=5)  # 5 seconds timeout for the entire request
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        for article in articles:
-            if not article.image:
-                continue
-            try:
-                async with session.head(str(article.image)) as response:
-                    if response.status == 200:
-                        content_type = response.headers.get("Content-Type", "")
-                        if content_type.startswith("image/"):
-                            return article.image
-            except aiohttp.ClientError:
-                continue
-            except asyncio.TimeoutError:
-                continue
-            except Exception as e:
-                logger.error(f"Error while fetching image: {e}")
-                continue
-    return None
