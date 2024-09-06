@@ -5,15 +5,16 @@
             "name": "Run Backend",
             "type": "debugpy",
             "request": "launch",
-            "module": "fastapi",
+            "module": "uvicorn",
             "cwd": "${workspaceFolder}/backend",
             "args": [
-                "dev",
-                "src/api.py",
+                "src.api:app",
+                "--reload",
+                "--reload-dir",
+                "${workspaceFolder}/shared",
+                "--reload-dir",
+                "${workspaceFolder}/backend"
             ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/backend"
-            },
             "console": "integratedTerminal",
             "justMyCode": true,
             "consoleName": "Backend"
