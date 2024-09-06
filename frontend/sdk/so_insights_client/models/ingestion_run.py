@@ -5,7 +5,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
-from ..models.ingestion_run_status import IngestionRunStatus
+from ..models.status import Status
 from ..models.time_limit import TimeLimit
 from ..types import UNSET, Unset
 
@@ -20,11 +20,11 @@ class IngestionRun:
         queries_set_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
         time_limit (TimeLimit):
         max_results (int):
-        status (IngestionRunStatus):
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         created_at (Union[Unset, datetime.datetime]):
         start_at (Union[None, Unset, datetime.datetime]):
         end_at (Union[None, Unset, datetime.datetime]):
+        status (Union[Unset, Status]):  Default: Status.PENDING.
         successfull_queries (Union[None, Unset, int]):
         error (Union[None, Unset, str]):
         n_inserted (Union[None, Unset, int]):
@@ -34,11 +34,11 @@ class IngestionRun:
     queries_set_id: str
     time_limit: TimeLimit
     max_results: int
-    status: IngestionRunStatus
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     start_at: Union[None, Unset, datetime.datetime] = UNSET
     end_at: Union[None, Unset, datetime.datetime] = UNSET
+    status: Union[Unset, Status] = Status.PENDING
     successfull_queries: Union[None, Unset, int] = UNSET
     error: Union[None, Unset, str] = UNSET
     n_inserted: Union[None, Unset, int] = UNSET
@@ -52,8 +52,6 @@ class IngestionRun:
         time_limit = self.time_limit.value
 
         max_results = self.max_results
-
-        status = self.status.value
 
         field_id: Union[None, Unset, str]
         if isinstance(self.field_id, Unset):
@@ -81,6 +79,10 @@ class IngestionRun:
         else:
             end_at = self.end_at
 
+        status: Union[Unset, str] = UNSET
+        if not isinstance(self.status, Unset):
+            status = self.status.value
+
         successfull_queries: Union[None, Unset, int]
         if isinstance(self.successfull_queries, Unset):
             successfull_queries = UNSET
@@ -107,7 +109,6 @@ class IngestionRun:
                 "queries_set_id": queries_set_id,
                 "time_limit": time_limit,
                 "max_results": max_results,
-                "status": status,
             }
         )
         if field_id is not UNSET:
@@ -118,6 +119,8 @@ class IngestionRun:
             field_dict["start_at"] = start_at
         if end_at is not UNSET:
             field_dict["end_at"] = end_at
+        if status is not UNSET:
+            field_dict["status"] = status
         if successfull_queries is not UNSET:
             field_dict["successfull_queries"] = successfull_queries
         if error is not UNSET:
@@ -137,8 +140,6 @@ class IngestionRun:
         time_limit = TimeLimit(d.pop("time_limit"))
 
         max_results = d.pop("max_results")
-
-        status = IngestionRunStatus(d.pop("status"))
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -190,6 +191,13 @@ class IngestionRun:
 
         end_at = _parse_end_at(d.pop("end_at", UNSET))
 
+        _status = d.pop("status", UNSET)
+        status: Union[Unset, Status]
+        if isinstance(_status, Unset):
+            status = UNSET
+        else:
+            status = Status(_status)
+
         def _parse_successfull_queries(data: object) -> Union[None, Unset, int]:
             if data is None:
                 return data
@@ -222,11 +230,11 @@ class IngestionRun:
             queries_set_id=queries_set_id,
             time_limit=time_limit,
             max_results=max_results,
-            status=status,
             field_id=field_id,
             created_at=created_at,
             start_at=start_at,
             end_at=end_at,
+            status=status,
             successfull_queries=successfull_queries,
             error=error,
             n_inserted=n_inserted,
