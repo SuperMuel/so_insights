@@ -5,6 +5,7 @@ from enum import Enum
 from itertools import batched
 from typing import Optional
 
+from fastapi import FastAPI
 import typer
 from beanie import BulkWriter, PydanticObjectId, UpdateResponse
 from beanie.odm.operators.update.general import Set
@@ -19,6 +20,7 @@ from src.search import BaseArticle, perform_search
 
 from shared.db import get_client, my_init_beanie
 from shared.models import Article, IngestionRun, SearchQuerySet, TimeLimit, Workspace
+import uvicorn
 
 load_dotenv()
 
@@ -437,6 +439,22 @@ def upsert_all():
     asyncio.run(upsert_all_articles())
 
 
+api = FastAPI()
+
+
+@api.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
+async def run_server():
+    config = uvicorn.Config(
+        app=api, host="0.0.0.0", port=settings.PORT, log_level="info"
+    )
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
 @app.command()
 def watch(
     interval: int = typer.Option(
@@ -457,39 +475,47 @@ def watch(
     async def _watch():
         mongo_client, ddgs, get_pinecone_index = await setup()
 
+        server_task = asyncio.create_task(run_server())
+
         logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
         start_time = datetime.now()
 
-        while (datetime.now() - start_time).total_seconds() < max_runtime:
-            pending_run = await IngestionRun.find_one(
-                IngestionRun.status == "pending"
-            ).update_one(
-                Set({IngestionRun.status: "running"}),
-                response_type=UpdateResponse.NEW_DOCUMENT,
-            )
+        try:
+            while (datetime.now() - start_time).total_seconds() < max_runtime:
+                pending_run = await IngestionRun.find_one(
+                    IngestionRun.status == "pending"
+                ).update_one(
+                    Set({IngestionRun.status: "running"}),
+                    response_type=UpdateResponse.NEW_DOCUMENT,
+                )
 
-            assert isinstance(pending_run, IngestionRun) or pending_run is None
+                assert isinstance(pending_run, IngestionRun) or pending_run is None
 
-            if not pending_run:
-                await asyncio.sleep(interval)
-                continue
+                if not pending_run:
+                    await asyncio.sleep(interval)
+                    continue
 
-            logger.info(
-                f"Processing ingestion run {pending_run.id} for workspace {pending_run.workspace_id}"
-            )
+                logger.info(
+                    f"Processing ingestion run {pending_run.id} for workspace {pending_run.workspace_id}"
+                )
 
-            await handle_ingestion_run(
-                ddgs=ddgs,
-                get_pinecone_index=get_pinecone_index,
-                run=pending_run,
-            )
+                await handle_ingestion_run(
+                    ddgs=ddgs,
+                    get_pinecone_index=get_pinecone_index,
+                    run=pending_run,
+                )
 
-            if (datetime.now() - start_time).total_seconds() >= max_runtime:
-                logger.info("Reached maximum runtime. Exiting.")
-                break
-
-        logger.info("Watch function completed successfully.")
-        mongo_client.close()
+                if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                    logger.info("Reached maximum runtime. Exiting.")
+                    break
+        finally:
+            logger.info("Watch function completed. Shutting down server.")
+            server_task.cancel()
+            try:
+                await server_task
+            except asyncio.CancelledError:
+                pass
+            mongo_client.close()
 
     asyncio.run(_watch())
 

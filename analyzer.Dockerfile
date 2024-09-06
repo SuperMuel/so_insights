@@ -21,5 +21,7 @@ WORKDIR /app/analyzer
 # Install project dependencies
 RUN poetry install --only main
 
+EXPOSE ${PORT}
+
 # Set the entrypoint to the main.py script
 ENTRYPOINT ["poetry", "run", "python", "main.py"]

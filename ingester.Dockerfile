@@ -21,4 +21,6 @@ WORKDIR /app/ingester
 # Install project dependencies
 RUN poetry install --only main
 
+EXPOSE ${PORT}
+
 ENTRYPOINT ["poetry", "run", "python", "main.py"]

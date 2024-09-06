@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from beanie.operators import Set
 
+from fastapi import FastAPI
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.evaluator import ClusterEvaluator
 from src.session_summary_generator import SessionSummarizer
@@ -21,6 +22,7 @@ from langchain.chat_models import init_chat_model
 
 from shared.db import get_client, my_init_beanie
 from shared.models import AnalysisTask, Cluster, ClusteringSession, Status, Workspace
+import uvicorn
 
 load_dotenv()
 
@@ -259,6 +261,22 @@ def repair():
     asyncio.run(_repair())
 
 
+api = FastAPI()
+
+
+@api.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
+async def run_server():
+    config = uvicorn.Config(
+        app=api, host="0.0.0.0", port=settings.PORT, log_level="info"
+    )
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
 @app.command()
 def watch(
     interval: int = typer.Option(
@@ -282,52 +300,62 @@ def watch(
         logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
         start_time = datetime.now()
 
-        while (datetime.now() - start_time).total_seconds() < max_runtime:
-            task = await AnalysisTask.find_one(
-                AnalysisTask.status == Status.pending
-            ).update_one(
-                Set({AnalysisTask.status: Status.running}),
-                response_type=UpdateResponse.NEW_DOCUMENT,
-            )
+        server_task = asyncio.create_task(run_server())
+        try:
+            while (datetime.now() - start_time).total_seconds() < max_runtime:
+                task = await AnalysisTask.find_one(
+                    AnalysisTask.status == Status.pending
+                ).update_one(
+                    Set({AnalysisTask.status: Status.running}),
+                    response_type=UpdateResponse.NEW_DOCUMENT,
+                )
 
-            assert isinstance(task, AnalysisTask) or task is None
+                assert isinstance(task, AnalysisTask) or task is None
 
-            if not task:
-                await asyncio.sleep(interval)
+                if not task:
+                    await asyncio.sleep(interval)
+                    if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                        logger.info("Reached maximum runtime. Exiting.")
+                        break
+                    continue
+
+                logger.info(
+                    f"Processing task {task.id} for workspace {task.workspace_id}"
+                )
+
+                workspace = await Workspace.get(task.workspace_id)
+                assert workspace
+
+                try:
+                    session = await analyzer.analyze_workspace(
+                        workspace,
+                        data_start=task.data_start,
+                        data_end=task.data_end,
+                    )
+                    task.status = Status.completed
+                    task.session_id = session.id
+                    logger.info(f"Completed task {task.id}")
+
+                    await task.save()
+
+                except Exception as e:
+                    logger.error(f"Error processing task {task.id}: {str(e)}")
+                    task.status = Status.failed
+                    task.error = str(e)
+                    await task.save()
+
                 if (datetime.now() - start_time).total_seconds() >= max_runtime:
                     logger.info("Reached maximum runtime. Exiting.")
                     break
-                continue
 
-            logger.info(f"Processing task {task.id} for workspace {task.workspace_id}")
-
-            workspace = await Workspace.get(task.workspace_id)
-            assert workspace
-
+        finally:
+            logger.info("Watch function completed. Shutting down server.")
+            server_task.cancel()
             try:
-                session = await analyzer.analyze_workspace(
-                    workspace,
-                    data_start=task.data_start,
-                    data_end=task.data_end,
-                )
-                task.status = Status.completed
-                task.session_id = session.id
-                logger.info(f"Completed task {task.id}")
-
-                await task.save()
-
-            except Exception as e:
-                logger.error(f"Error processing task {task.id}: {str(e)}")
-                task.status = Status.failed
-                task.error = str(e)
-                await task.save()
-
-            if (datetime.now() - start_time).total_seconds() >= max_runtime:
-                logger.info("Reached maximum runtime. Exiting.")
-                break
-
-        logger.info("Watch function completed successfully.")
-        mongo_client.close()
+                await server_task
+            except asyncio.CancelledError:
+                pass
+            mongo_client.close()
 
     asyncio.run(_watch())
 
