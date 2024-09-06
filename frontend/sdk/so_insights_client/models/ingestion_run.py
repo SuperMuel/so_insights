@@ -23,6 +23,7 @@ class IngestionRun:
         status (IngestionRunStatus):
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         created_at (Union[Unset, datetime.datetime]):
+        start_at (Union[None, Unset, datetime.datetime]):
         end_at (Union[None, Unset, datetime.datetime]):
         successfull_queries (Union[None, Unset, int]):
         error (Union[None, Unset, str]):
@@ -36,6 +37,7 @@ class IngestionRun:
     status: IngestionRunStatus
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
+    start_at: Union[None, Unset, datetime.datetime] = UNSET
     end_at: Union[None, Unset, datetime.datetime] = UNSET
     successfull_queries: Union[None, Unset, int] = UNSET
     error: Union[None, Unset, str] = UNSET
@@ -62,6 +64,14 @@ class IngestionRun:
         created_at: Union[Unset, str] = UNSET
         if not isinstance(self.created_at, Unset):
             created_at = self.created_at.isoformat()
+
+        start_at: Union[None, Unset, str]
+        if isinstance(self.start_at, Unset):
+            start_at = UNSET
+        elif isinstance(self.start_at, datetime.datetime):
+            start_at = self.start_at.isoformat()
+        else:
+            start_at = self.start_at
 
         end_at: Union[None, Unset, str]
         if isinstance(self.end_at, Unset):
@@ -104,6 +114,8 @@ class IngestionRun:
             field_dict["_id"] = field_id
         if created_at is not UNSET:
             field_dict["created_at"] = created_at
+        if start_at is not UNSET:
+            field_dict["start_at"] = start_at
         if end_at is not UNSET:
             field_dict["end_at"] = end_at
         if successfull_queries is not UNSET:
@@ -143,6 +155,23 @@ class IngestionRun:
             created_at = UNSET
         else:
             created_at = isoparse(_created_at)
+
+        def _parse_start_at(data: object) -> Union[None, Unset, datetime.datetime]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                start_at_type_0 = isoparse(data)
+
+                return start_at_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union[None, Unset, datetime.datetime], data)
+
+        start_at = _parse_start_at(d.pop("start_at", UNSET))
 
         def _parse_end_at(data: object) -> Union[None, Unset, datetime.datetime]:
             if data is None:
@@ -196,6 +225,7 @@ class IngestionRun:
             status=status,
             field_id=field_id,
             created_at=created_at,
+            start_at=start_at,
             end_at=end_at,
             successfull_queries=successfull_queries,
             error=error,

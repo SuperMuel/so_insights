@@ -84,6 +84,7 @@ class IngestionRun(Document):
     time_limit: TimeLimit
     max_results: int = Field(..., ge=1, le=100)
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+    start_at: PastDatetime | None = None
     end_at: PastDatetime | None = None
     status: Literal["pending", "running", "completed", "failed"]
     successfull_queries: int | None = None

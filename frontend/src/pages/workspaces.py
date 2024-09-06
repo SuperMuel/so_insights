@@ -225,7 +225,11 @@ def update_config(workspace: Workspace, query_set: SearchQuerySet):
 
 
 @st.dialog("Create Ingestion Run")
-def create_new_ingestion_run(workspace: Workspace, query_set: SearchQuerySet):
+def create_new_ingestion_run(
+    workspace: Workspace,
+    query_set: SearchQuerySet,
+    # TODO : add a checkbox to toggle the automatic ingestion run on create, with a d/w/m/y option
+):
     assert query_set.field_id
     with st.form(key=f"create_ingestion_run_{query_set.field_id}"):
         st.subheader(f"Create Ingestion Run for '{query_set.title}'")
@@ -451,8 +455,12 @@ def _history_section(workspace: Workspace):
     }
 
     for run in runs:
-        created_at_str = arrow.get(run.created_at).humanize() if run.created_at else ""
-        print(created_at_str)
+        if run.end_at:
+            date_str = f"Completed {arrow.get(run.end_at).humanize()}"
+        elif run.start_at:
+            date_str = f"Started {arrow.get(run.start_at).humanize()}"
+        else:
+            date_str = "Not started"
 
         query_set_title = (
             next(
@@ -463,26 +471,32 @@ def _history_section(workspace: Workspace):
         )
 
         new_articles_found = (
-            f"- {run.n_inserted} new articles found" if run.n_inserted else ""
+            f"- {run.n_inserted} new articles found"
+            if run.n_inserted is not None
+            else ""
         )
 
-        with st.status(
-            label=f"**{query_set_title}** - {created_at_str} {new_articles_found}",
+        status = st.status(
+            label=f"**{query_set_title}** - {date_str} {new_articles_found}",
             state=status_map[run.status],
-        ):
-            st.write(
-                f"Started at: {run.created_at.strftime('%Y-%m-%d %H:%M:%S') if run.created_at else 'Unknown'}"
-            )
-            st.write(
-                f"Ended at: {run.end_at.strftime('%Y-%m-%d %H:%M:%S') if run.end_at else 'Not finished'}"
-            )
-            st.write("Search settings:")
-            with st.container(border=True):
-                st.write(f"**Time limit:** {time_limit_map[run.time_limit]}")
-                st.write(f"**Max results per query:** {run.max_results}")
+        )
+        status.write(
+            f"**Created at:** {run.created_at.strftime('%Y-%m-%d %H:%M:%S') if run.created_at else 'Not started'}"
+        )
+        status.write(
+            f"**Started at:** {run.start_at.strftime('%Y-%m-%d %H:%M:%S') if run.start_at else 'Not started'}"
+        )
+        print(run.start_at)
+        status.write(
+            f"**Ended at:** {run.end_at.strftime('%Y-%m-%d %H:%M:%S') if run.end_at else 'Not finished'}"
+        )
+        status.write("**Search settings:**")
+        with status.container(border=True):
+            st.write(f"**Time limit:** {time_limit_map[run.time_limit]}")
+            st.write(f"**Max results per query:** {run.max_results}")
 
-            if run.error:
-                st.error(f"**Error:** {run.error}")
+        if run.error:
+            status.error(f"**Error:** {run.error}")
 
 
 workspace = st.session_state.get("workspace")
