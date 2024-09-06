@@ -1,6 +1,6 @@
 from datetime import datetime
 from beanie import PydanticObjectId
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, PastDatetime
 
 from shared.models import (
     Cluster,
@@ -85,12 +85,16 @@ class ClusterWithArticles(BaseModel):
         )
 
 
-class AnalysisTaskCreate(BaseModel):
-    data_start: datetime
-    data_end: datetime
-
-
 class IngestionRunCreate(BaseModel):
     time_limit: TimeLimit
     max_results: int
     search_query_set_id: PydanticObjectId
+
+
+class ClusteringSessionCreate(BaseModel):
+    workspace_id: PydanticObjectId
+    data_start: PastDatetime
+    data_end: datetime
+
+    class Config:
+        extra = "forbid"

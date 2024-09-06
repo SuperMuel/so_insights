@@ -15,7 +15,7 @@ from shared.models import (
     Cluster,
     RelevanceLevel,
 )
-from src.schemas import ArticlePreview, ClusterWithArticles
+from src.schemas import ArticlePreview, ClusterWithArticles, ClusteringSessionCreate
 
 router = APIRouter(tags=["clustering"])
 
@@ -180,3 +180,24 @@ async def delete_cluster_feedback(
 
     cluster.feedback = None
     return await cluster.save()
+
+
+@router.post(
+    "/sessions",
+    response_model=ClusteringSession,
+    operation_id="create_clustering_session",
+)
+async def create_clustering_session(
+    workspace: ExistingWorkspace, session_create: ClusteringSessionCreate
+):
+    """Create a new pending clustering session"""
+    assert workspace.id
+
+    session = ClusteringSession(
+        workspace_id=workspace.id,
+        data_start=session_create.data_start,
+        data_end=session_create.data_end,
+        nb_days=(session_create.data_end - session_create.data_start).days,
+    )
+
+    return await session.insert()

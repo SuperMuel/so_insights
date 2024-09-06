@@ -5,6 +5,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.status import Status
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -22,18 +23,22 @@ class ClusteringSession:
         data_start (datetime.datetime):
         data_end (datetime.datetime):
         nb_days (int):
-        metadata (ClusteringSessionMetadata):
-        articles_count (int): Number of articles on which the clustering was performed, including noise.
-        clusters_count (int):
-        noise_articles_ids (List[str]):
-        noise_articles_count (int):
-        clustered_articles_count (int): Number of articles in clusters, excluding noise.
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
-        session_start (Union[Unset, datetime.datetime]):
+        created_at (Union[Unset, datetime.datetime]):
+        session_start (Union[None, Unset, datetime.datetime]):
         session_end (Union[None, Unset, datetime.datetime]):
+        status (Union[Unset, Status]):  Default: Status.PENDING.
+        error (Union[None, Unset, str]):
+        metadata (Union[Unset, ClusteringSessionMetadata]):
+        articles_count (Union[None, Unset, int]): Number of articles on which the clustering was performed, including
+            noise.
+        clusters_count (Union[None, Unset, int]):
         relevant_clusters_count (Union[None, Unset, int]):
         somewhat_relevant_clusters_count (Union[None, Unset, int]):
         irrelevant_clusters_count (Union[None, Unset, int]):
+        noise_articles_ids (Union[List[str], None, Unset]):
+        noise_articles_count (Union[None, Unset, int]):
+        clustered_articles_count (Union[None, Unset, int]): Number of articles in clusters, excluding noise.
         summary (Union[None, Unset, str]):
     """
 
@@ -41,18 +46,21 @@ class ClusteringSession:
     data_start: datetime.datetime
     data_end: datetime.datetime
     nb_days: int
-    metadata: "ClusteringSessionMetadata"
-    articles_count: int
-    clusters_count: int
-    noise_articles_ids: List[str]
-    noise_articles_count: int
-    clustered_articles_count: int
     field_id: Union[None, Unset, str] = UNSET
-    session_start: Union[Unset, datetime.datetime] = UNSET
+    created_at: Union[Unset, datetime.datetime] = UNSET
+    session_start: Union[None, Unset, datetime.datetime] = UNSET
     session_end: Union[None, Unset, datetime.datetime] = UNSET
+    status: Union[Unset, Status] = Status.PENDING
+    error: Union[None, Unset, str] = UNSET
+    metadata: Union[Unset, "ClusteringSessionMetadata"] = UNSET
+    articles_count: Union[None, Unset, int] = UNSET
+    clusters_count: Union[None, Unset, int] = UNSET
     relevant_clusters_count: Union[None, Unset, int] = UNSET
     somewhat_relevant_clusters_count: Union[None, Unset, int] = UNSET
     irrelevant_clusters_count: Union[None, Unset, int] = UNSET
+    noise_articles_ids: Union[List[str], None, Unset] = UNSET
+    noise_articles_count: Union[None, Unset, int] = UNSET
+    clustered_articles_count: Union[None, Unset, int] = UNSET
     summary: Union[None, Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -65,27 +73,23 @@ class ClusteringSession:
 
         nb_days = self.nb_days
 
-        metadata = self.metadata.to_dict()
-
-        articles_count = self.articles_count
-
-        clusters_count = self.clusters_count
-
-        noise_articles_ids = self.noise_articles_ids
-
-        noise_articles_count = self.noise_articles_count
-
-        clustered_articles_count = self.clustered_articles_count
-
         field_id: Union[None, Unset, str]
         if isinstance(self.field_id, Unset):
             field_id = UNSET
         else:
             field_id = self.field_id
 
-        session_start: Union[Unset, str] = UNSET
-        if not isinstance(self.session_start, Unset):
+        created_at: Union[Unset, str] = UNSET
+        if not isinstance(self.created_at, Unset):
+            created_at = self.created_at.isoformat()
+
+        session_start: Union[None, Unset, str]
+        if isinstance(self.session_start, Unset):
+            session_start = UNSET
+        elif isinstance(self.session_start, datetime.datetime):
             session_start = self.session_start.isoformat()
+        else:
+            session_start = self.session_start
 
         session_end: Union[None, Unset, str]
         if isinstance(self.session_end, Unset):
@@ -94,6 +98,32 @@ class ClusteringSession:
             session_end = self.session_end.isoformat()
         else:
             session_end = self.session_end
+
+        status: Union[Unset, str] = UNSET
+        if not isinstance(self.status, Unset):
+            status = self.status.value
+
+        error: Union[None, Unset, str]
+        if isinstance(self.error, Unset):
+            error = UNSET
+        else:
+            error = self.error
+
+        metadata: Union[Unset, Dict[str, Any]] = UNSET
+        if not isinstance(self.metadata, Unset):
+            metadata = self.metadata.to_dict()
+
+        articles_count: Union[None, Unset, int]
+        if isinstance(self.articles_count, Unset):
+            articles_count = UNSET
+        else:
+            articles_count = self.articles_count
+
+        clusters_count: Union[None, Unset, int]
+        if isinstance(self.clusters_count, Unset):
+            clusters_count = UNSET
+        else:
+            clusters_count = self.clusters_count
 
         relevant_clusters_count: Union[None, Unset, int]
         if isinstance(self.relevant_clusters_count, Unset):
@@ -113,6 +143,27 @@ class ClusteringSession:
         else:
             irrelevant_clusters_count = self.irrelevant_clusters_count
 
+        noise_articles_ids: Union[List[str], None, Unset]
+        if isinstance(self.noise_articles_ids, Unset):
+            noise_articles_ids = UNSET
+        elif isinstance(self.noise_articles_ids, list):
+            noise_articles_ids = self.noise_articles_ids
+
+        else:
+            noise_articles_ids = self.noise_articles_ids
+
+        noise_articles_count: Union[None, Unset, int]
+        if isinstance(self.noise_articles_count, Unset):
+            noise_articles_count = UNSET
+        else:
+            noise_articles_count = self.noise_articles_count
+
+        clustered_articles_count: Union[None, Unset, int]
+        if isinstance(self.clustered_articles_count, Unset):
+            clustered_articles_count = UNSET
+        else:
+            clustered_articles_count = self.clustered_articles_count
+
         summary: Union[None, Unset, str]
         if isinstance(self.summary, Unset):
             summary = UNSET
@@ -127,26 +178,38 @@ class ClusteringSession:
                 "data_start": data_start,
                 "data_end": data_end,
                 "nb_days": nb_days,
-                "metadata": metadata,
-                "articles_count": articles_count,
-                "clusters_count": clusters_count,
-                "noise_articles_ids": noise_articles_ids,
-                "noise_articles_count": noise_articles_count,
-                "clustered_articles_count": clustered_articles_count,
             }
         )
         if field_id is not UNSET:
             field_dict["_id"] = field_id
+        if created_at is not UNSET:
+            field_dict["created_at"] = created_at
         if session_start is not UNSET:
             field_dict["session_start"] = session_start
         if session_end is not UNSET:
             field_dict["session_end"] = session_end
+        if status is not UNSET:
+            field_dict["status"] = status
+        if error is not UNSET:
+            field_dict["error"] = error
+        if metadata is not UNSET:
+            field_dict["metadata"] = metadata
+        if articles_count is not UNSET:
+            field_dict["articles_count"] = articles_count
+        if clusters_count is not UNSET:
+            field_dict["clusters_count"] = clusters_count
         if relevant_clusters_count is not UNSET:
             field_dict["relevant_clusters_count"] = relevant_clusters_count
         if somewhat_relevant_clusters_count is not UNSET:
             field_dict["somewhat_relevant_clusters_count"] = somewhat_relevant_clusters_count
         if irrelevant_clusters_count is not UNSET:
             field_dict["irrelevant_clusters_count"] = irrelevant_clusters_count
+        if noise_articles_ids is not UNSET:
+            field_dict["noise_articles_ids"] = noise_articles_ids
+        if noise_articles_count is not UNSET:
+            field_dict["noise_articles_count"] = noise_articles_count
+        if clustered_articles_count is not UNSET:
+            field_dict["clustered_articles_count"] = clustered_articles_count
         if summary is not UNSET:
             field_dict["summary"] = summary
 
@@ -165,18 +228,6 @@ class ClusteringSession:
 
         nb_days = d.pop("nb_days")
 
-        metadata = ClusteringSessionMetadata.from_dict(d.pop("metadata"))
-
-        articles_count = d.pop("articles_count")
-
-        clusters_count = d.pop("clusters_count")
-
-        noise_articles_ids = cast(List[str], d.pop("noise_articles_ids"))
-
-        noise_articles_count = d.pop("noise_articles_count")
-
-        clustered_articles_count = d.pop("clustered_articles_count")
-
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
                 return data
@@ -186,12 +237,29 @@ class ClusteringSession:
 
         field_id = _parse_field_id(d.pop("_id", UNSET))
 
-        _session_start = d.pop("session_start", UNSET)
-        session_start: Union[Unset, datetime.datetime]
-        if isinstance(_session_start, Unset):
-            session_start = UNSET
+        _created_at = d.pop("created_at", UNSET)
+        created_at: Union[Unset, datetime.datetime]
+        if isinstance(_created_at, Unset):
+            created_at = UNSET
         else:
-            session_start = isoparse(_session_start)
+            created_at = isoparse(_created_at)
+
+        def _parse_session_start(data: object) -> Union[None, Unset, datetime.datetime]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                session_start_type_0 = isoparse(data)
+
+                return session_start_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union[None, Unset, datetime.datetime], data)
+
+        session_start = _parse_session_start(d.pop("session_start", UNSET))
 
         def _parse_session_end(data: object) -> Union[None, Unset, datetime.datetime]:
             if data is None:
@@ -209,6 +277,47 @@ class ClusteringSession:
             return cast(Union[None, Unset, datetime.datetime], data)
 
         session_end = _parse_session_end(d.pop("session_end", UNSET))
+
+        _status = d.pop("status", UNSET)
+        status: Union[Unset, Status]
+        if isinstance(_status, Unset):
+            status = UNSET
+        else:
+            status = Status(_status)
+
+        def _parse_error(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        error = _parse_error(d.pop("error", UNSET))
+
+        _metadata = d.pop("metadata", UNSET)
+        metadata: Union[Unset, ClusteringSessionMetadata]
+        if isinstance(_metadata, Unset):
+            metadata = UNSET
+        else:
+            metadata = ClusteringSessionMetadata.from_dict(_metadata)
+
+        def _parse_articles_count(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        articles_count = _parse_articles_count(d.pop("articles_count", UNSET))
+
+        def _parse_clusters_count(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        clusters_count = _parse_clusters_count(d.pop("clusters_count", UNSET))
 
         def _parse_relevant_clusters_count(data: object) -> Union[None, Unset, int]:
             if data is None:
@@ -239,6 +348,41 @@ class ClusteringSession:
 
         irrelevant_clusters_count = _parse_irrelevant_clusters_count(d.pop("irrelevant_clusters_count", UNSET))
 
+        def _parse_noise_articles_ids(data: object) -> Union[List[str], None, Unset]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, list):
+                    raise TypeError()
+                noise_articles_ids_type_0 = cast(List[str], data)
+
+                return noise_articles_ids_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union[List[str], None, Unset], data)
+
+        noise_articles_ids = _parse_noise_articles_ids(d.pop("noise_articles_ids", UNSET))
+
+        def _parse_noise_articles_count(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        noise_articles_count = _parse_noise_articles_count(d.pop("noise_articles_count", UNSET))
+
+        def _parse_clustered_articles_count(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        clustered_articles_count = _parse_clustered_articles_count(d.pop("clustered_articles_count", UNSET))
+
         def _parse_summary(data: object) -> Union[None, Unset, str]:
             if data is None:
                 return data
@@ -253,18 +397,21 @@ class ClusteringSession:
             data_start=data_start,
             data_end=data_end,
             nb_days=nb_days,
+            field_id=field_id,
+            created_at=created_at,
+            session_start=session_start,
+            session_end=session_end,
+            status=status,
+            error=error,
             metadata=metadata,
             articles_count=articles_count,
             clusters_count=clusters_count,
-            noise_articles_ids=noise_articles_ids,
-            noise_articles_count=noise_articles_count,
-            clustered_articles_count=clustered_articles_count,
-            field_id=field_id,
-            session_start=session_start,
-            session_end=session_end,
             relevant_clusters_count=relevant_clusters_count,
             somewhat_relevant_clusters_count=somewhat_relevant_clusters_count,
             irrelevant_clusters_count=irrelevant_clusters_count,
+            noise_articles_ids=noise_articles_ids,
+            noise_articles_count=noise_articles_count,
+            clustered_articles_count=clustered_articles_count,
             summary=summary,
         )
 

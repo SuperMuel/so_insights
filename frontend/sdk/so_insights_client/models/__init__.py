@@ -1,7 +1,5 @@
 """Contains all the data models used in inputs/outputs"""
 
-from .analysis_task import AnalysisTask
-from .analysis_task_create import AnalysisTaskCreate
 from .article_preview import ArticlePreview
 from .cluster import Cluster
 from .cluster_evaluation import ClusterEvaluation
@@ -10,6 +8,7 @@ from .cluster_feedback import ClusterFeedback
 from .cluster_overview import ClusterOverview
 from .cluster_with_articles import ClusterWithArticles
 from .clustering_session import ClusteringSession
+from .clustering_session_create import ClusteringSessionCreate
 from .clustering_session_metadata import ClusteringSessionMetadata
 from .hdbscan_settings import HdbscanSettings
 from .http_validation_error import HTTPValidationError
@@ -31,14 +30,13 @@ from .workspace_create import WorkspaceCreate
 from .workspace_update import WorkspaceUpdate
 
 __all__ = (
-    "AnalysisTask",
-    "AnalysisTaskCreate",
     "ArticlePreview",
     "Cluster",
     "ClusterEvaluation",
     "ClusterEvaluationRelevanceLevel",
     "ClusterFeedback",
     "ClusteringSession",
+    "ClusteringSessionCreate",
     "ClusteringSessionMetadata",
     "ClusterOverview",
     "ClusterWithArticles",
