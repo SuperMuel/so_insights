@@ -4,6 +4,7 @@ from sdk.so_insights_client.api.clustering import list_clustering_sessions
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.language import Language
+from src.util import dates_to_session_label
 import streamlit as st
 
 from sdk.so_insights_client.client import Client
@@ -60,7 +61,7 @@ def select_session(client: Client, workspace: Workspace) -> ClusteringSession:
     session = st.selectbox(
         "Select a clustering session",
         options=sessions,
-        format_func=lambda s: f"{s.data_start.strftime('%d %B %Y')} → {s.data_end.strftime('%d %B %Y')} ({s.clusters_count} clusters)",
+        format_func=lambda s: dates_to_session_label(s.data_start, s.data_end),
     )
     if not session:
         st.warning("Please select a session.")

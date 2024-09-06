@@ -4,7 +4,7 @@ from src.dependencies import (
     ExistingSearchQuerySet,
     ExistingWorkspace,
 )
-from shared.models import IngestionRun, SearchQuerySet
+from shared.models import IngestionRun, SearchQuerySet, Status
 from typing import List
 
 from src.schemas import IngestionRunCreate
@@ -30,7 +30,7 @@ async def create_ingestion_run(
     if await IngestionRun.find(
         IngestionRun.workspace_id == workspace.id,
         IngestionRun.queries_set_id == query_set.id,
-        IngestionRun.status == "running",
+        IngestionRun.status == Status.running,
     ).count():
         raise HTTPException(
             status_code=400,
@@ -42,7 +42,7 @@ async def create_ingestion_run(
         queries_set_id=run.search_query_set_id,
         time_limit=run.time_limit,
         max_results=run.max_results,
-        status="pending",
+        status=Status.pending,
     )
     return await new_ingestion_run.insert()
 

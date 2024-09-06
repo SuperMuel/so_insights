@@ -1,19 +1,22 @@
 from datetime import date, datetime, timedelta
-from sdk.so_insights_client.models.analysis_task_create import AnalysisTaskCreate
 from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
+from sdk.so_insights_client.models.clustering_session_create import (
+    ClusteringSessionCreate,
+)
 from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
 from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
-from sdk.so_insights_client.api.analysis_tasks import (
-    create_analysis_task,
-)
 
 
+from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import AppSettings
+from src.util import dates_to_session_label, task_status_to_st_status
 import streamlit as st
 from millify import millify
 
 from sdk.so_insights_client.api.clustering import (
+    create_clustering_session,
+    list_clustering_sessions,
     list_clusters_with_articles_for_session,
     set_cluster_feedback,
 )
@@ -47,21 +50,21 @@ with st.sidebar:
         )
 
         if submit_button:
-            task = create_analysis_task.sync(
+            session = create_clustering_session.sync(
                 workspace_id=str(workspace.field_id),
                 client=client,
-                body=AnalysisTaskCreate(
+                body=ClusteringSessionCreate(
                     data_start=start_date,
                     data_end=end_date,
                 ),
             )
-            if isinstance(task, HTTPValidationError):
-                st.error(f"Failed to create analysis task: {task.detail}")
-            elif not task:
-                st.error("Failed to create analysis task")
+            if isinstance(session, HTTPValidationError):
+                st.error(f"Failed to create analysis : {session.detail}")
+            elif not session:
+                st.error("Failed to create analysis")
             else:
                 create_toast(
-                    "Analysis task created successfully!",
+                    "Analysis will launch soon.",
                     icon="✅",
                 )
                 st.rerun()
@@ -74,6 +77,34 @@ with st.sidebar:
 st.title("🔎 Topics detection")
 
 CLUSTERS_PER_PAGE = settings.CLUSTERS_PER_PAGE
+
+
+def _list_sessions(workspace: Workspace):
+    sessions = list_clustering_sessions.sync(
+        client=client,
+        workspace_id=str(workspace.field_id),
+    )
+
+    if isinstance(sessions, HTTPValidationError):
+        st.error(sessions.detail)
+        return
+
+    if not sessions:
+        st.warning(
+            "No analysis found. You can launch an analysis of your data using the form on the left."
+        )
+        return
+
+    for session in sessions:
+        status = st.status(
+            label=dates_to_session_label(session.data_start, session.data_end),
+            state=task_status_to_st_status(session.status),
+        )
+
+        status.write(f"Created at {session.created_at}")
+
+
+# _list_sessions(workspace)
 
 
 def display_session_metrics(session: ClusteringSession):

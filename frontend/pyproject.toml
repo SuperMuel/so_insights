@@ -31,6 +31,9 @@ st-copy-to-clipboard = "^0.1.6"
 st-theme = "^1.2.3"
 
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

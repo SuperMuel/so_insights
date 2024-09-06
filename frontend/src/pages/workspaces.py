@@ -26,6 +26,7 @@ from sdk.so_insights_client.models.time_limit import TimeLimit
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
 import shared.region
 from src.app_settings import AppSettings
+from src.util import task_status_to_st_status
 import streamlit as st
 
 from sdk.so_insights_client.api.workspaces import (
@@ -463,13 +464,6 @@ def _history_section(workspace: Workspace):
 
     query_sets = _fetch_query_sets(workspace)
 
-    status_map: dict[IngestionRunStatus, Literal["running", "complete", "error"]] = {
-        IngestionRunStatus.PENDING: "running",
-        IngestionRunStatus.RUNNING: "running",
-        IngestionRunStatus.COMPLETED: "complete",
-        IngestionRunStatus.FAILED: "error",
-    }
-
     time_limit_map = {
         TimeLimit.D: "Last 24 Hours",
         TimeLimit.W: "Last Week",
@@ -501,7 +495,7 @@ def _history_section(workspace: Workspace):
 
         status = st.status(
             label=f"**{query_set_title}** - {date_str} {new_articles_found}",
-            state=status_map[run.status],
+            state=task_status_to_st_status(run.status),
         )
         status.write(
             f"**Created at:** {run.created_at.strftime('%Y-%m-%d %H:%M:%S') if run.created_at else 'Not started'}"

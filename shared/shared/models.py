@@ -30,6 +30,13 @@ ModelDescription = Annotated[
 type TimeLimit = Literal["d", "w", "m", "y"]
 
 
+class Status(str, Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+
+
 class HdbscanSettings(BaseModel):
     min_cluster_size: int = 3
     min_samples: int = 1
@@ -86,7 +93,7 @@ class IngestionRun(Document):
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     start_at: PastDatetime | None = None
     end_at: PastDatetime | None = None
-    status: Literal["pending", "running", "completed", "failed"]
+    status: Status = Status.pending
     successfull_queries: int | None = None
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
@@ -99,10 +106,13 @@ class IngestionRun(Document):
         name = DBSettings().mongodb_ingestion_runs_collection
 
     def is_finished(self) -> bool:
-        return self.status in ("completed", "failed")
+        return self.status in [Status.completed, Status.failed]
 
     def is_running(self) -> bool:
-        return not self.is_finished()
+        return self.status == Status.running
+
+    def is_pending(self) -> bool:
+        return self.status == Status.pending
 
 
 class Article(Document):
@@ -158,13 +168,6 @@ class Article(Document):
 
 
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
-
-
-class Status(str, Enum):
-    pending = "pending"
-    running = "running"
-    completed = "completed"
-    failed = "failed"
 
 
 class ClusteringSession(Document):

@@ -19,7 +19,14 @@ from src.ingester_settings import IngesterSettings
 from src.search import BaseArticle, perform_search
 
 from shared.db import get_client, my_init_beanie
-from shared.models import Article, IngestionRun, SearchQuerySet, TimeLimit, Workspace
+from shared.models import (
+    Article,
+    IngestionRun,
+    SearchQuerySet,
+    Status,
+    TimeLimit,
+    Workspace,
+)
 import uvicorn
 
 load_dotenv()
@@ -175,12 +182,12 @@ async def handle_ingestion_run(
     search_query_set = await SearchQuerySet.get(run.queries_set_id)
     assert search_query_set
 
-    assert run.status in ["pending", "running"]
+    assert run.status in [Status.pending, Status.running]
 
     run.start_at = datetime.now(timezone.utc)
 
-    if run.status == "pending":
-        run.status = "running"
+    if run.status == Status.pending:
+        run.status = Status.running
 
     await run.replace()
 
@@ -198,12 +205,12 @@ async def handle_ingestion_run(
 
         run.successfull_queries = successful_queries
         run.n_inserted = n_inserted
-        run.status = "completed"
+        run.status = Status.completed
     except Exception as e:
         logger.error(
             f"Error while processing search query set {search_query_set.id}: {e}"
         )
-        run.status = "failed"
+        run.status = Status.failed
         run.error = str(e)
     finally:
         run.end_at = datetime.now(timezone.utc)
@@ -329,7 +336,7 @@ def create_ingestion_task(
             workspace_id=search_query_set.workspace_id,
             queries_set_id=search_query_set.id,
             time_limit=time_limit.to_literal(),
-            status="pending",
+            status=Status.pending,
             max_results=max_results,
         ).create()
 
@@ -388,7 +395,7 @@ def create_ingestion_tasks(
                     workspace_id=workspace.id,
                     queries_set_id=query_set.id,
                     time_limit=time_limit.to_literal(),
-                    status="pending",
+                    status=Status.pending,
                     max_results=max_results,
                 ).create()
 
@@ -484,9 +491,9 @@ def watch(
         try:
             while (datetime.now() - start_time).total_seconds() < max_runtime:
                 pending_run = await IngestionRun.find_one(
-                    IngestionRun.status == "pending"
+                    IngestionRun.status == Status.pending
                 ).update_one(
-                    Set({IngestionRun.status: "running"}),
+                    Set({IngestionRun.status: Status.running}),
                     response_type=UpdateResponse.NEW_DOCUMENT,
                 )
 

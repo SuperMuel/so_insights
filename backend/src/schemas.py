@@ -92,7 +92,6 @@ class IngestionRunCreate(BaseModel):
 
 
 class ClusteringSessionCreate(BaseModel):
-    workspace_id: PydanticObjectId
     data_start: PastDatetime
     data_end: datetime
 
