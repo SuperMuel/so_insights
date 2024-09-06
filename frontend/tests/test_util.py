@@ -10,6 +10,11 @@ from freezegun import freeze_time
 @pytest.mark.parametrize(
     "start, end, expected",
     [
+        (
+            datetime(2024, 8, 30, 0, 0),
+            datetime(2024, 8, 30, 23, 59, 59, 999000),
+            "August 30",
+        ),
         # Single day
         (datetime(2024, 9, 2), datetime(2024, 9, 2), "September 2"),
         # Full Week

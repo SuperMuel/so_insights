@@ -23,6 +23,7 @@ from sdk.so_insights_client.api.clustering import (
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 
 from src.shared import create_toast, get_client, get_workspace_or_stop, select_session
+from streamlit.elements.lib.mutable_status_container import StatusContainer
 
 client = get_client()
 workspace = get_workspace_or_stop()
@@ -95,16 +96,38 @@ def _list_sessions(workspace: Workspace):
         )
         return
 
+    sessions.sort(key=lambda s: s.created_at, reverse=True)
+
     for session in sessions:
-        status = st.status(
+        status: StatusContainer = st.status(
             label=dates_to_session_label(session.data_start, session.data_end),
             state=task_status_to_st_status(session.status),
         )
 
+        status.write(f"ID : {session.field_id}")
+        status.write(f"Status : {session.status}")
         status.write(f"Created at {session.created_at}")
+        status.write(f"Started at {session.session_start}")
+        status.write(f"Ended at {session.session_end}")
+        status.write(f"Data start : {session.data_start}")
+        status.write(f"Data end : {session.data_end}")
+        status.write(
+            f"Total number of articles : {millify(session.articles_count) if session.articles_count else 'N/A'}"
+        )
+        status.write(f"Total number of clusters : {session.clusters_count}")
+        status.write(
+            f"Total number of relevant clusters : {session.relevant_clusters_count}"
+        )
+        status.write(
+            f"Total number of somewhat relevant clusters : {session.somewhat_relevant_clusters_count}"
+        )
+        status.write(
+            f"Total number of irrelevant clusters : {session.irrelevant_clusters_count}"
+        )
 
 
-# _list_sessions(workspace)
+# with st.sidebar:
+#     _list_sessions(workspace)
 
 
 def display_session_metrics(session: ClusteringSession):

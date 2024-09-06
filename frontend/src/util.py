@@ -64,8 +64,8 @@ def dates_to_session_label(start: datetime, end: datetime) -> str:
 
     show_year = not is_current_year(start.year) or not is_current_year(end.year)
 
-    # Single date
-    if start == end:
+    # Single day (including full day spans)
+    if start.date() == end.date():
         return format_single_date(start, show_year)
 
     # Multi-year range
