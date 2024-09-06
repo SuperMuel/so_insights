@@ -377,7 +377,8 @@ def create_ingestion_tasks(
                 f"Creating ingestion tasks for workspace {workspace.id} ({workspace.name})"
             )
             query_sets = await SearchQuerySet.find(
-                SearchQuerySet.workspace_id == workspace.id
+                SearchQuerySet.workspace_id == workspace.id,
+                SearchQuerySet.deleted == False,  # noqa
             ).to_list()
 
             for query_set in query_sets:
