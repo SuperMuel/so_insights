@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional
 from beanie.odm.queries.update import (
     UpdateResponse,
 )
@@ -70,15 +71,33 @@ async def setup():
 
 @app.command()
 def create_analysis_tasks(
-    workspace_ids: list[str],
-    days: int = typer.Option(2, "--days", "-d", help="Number of days to analyze"),
+    workspace_ids: Optional[list[str]] = typer.Argument(
+        None,
+        help="List of workspace IDs to analyze. If not provided, all workspaces will be analyzed.",
+    ),
+    days: int = typer.Option(1, "--days", "-d", help="Number of days to analyze"),
 ):
+    """Create analysis tasks for specific workspaces or all workspaces.
+    This command will analyze data from the past 'n' days specified by the --days option.
+    """
+
     async def _create_analysis_tasks():
         mongo_client, analyzer = await setup()
 
-        for workspace_id in workspace_ids:
-            workspace = await Workspace.get(workspace_id)
+        if workspace_ids is None:
+            workspaces = await Workspace.find_all().to_list()
+        else:
+            workspaces = []
+            for workspace_id in workspace_ids:
+                workspace = await Workspace.get(workspace_id)
+                if workspace:
+                    workspaces.append(workspace)
+                else:
+                    typer.echo(
+                        f"No workspace found for the given id: {workspace_id}", err=True
+                    )
 
+        for workspace in workspaces:
             if workspace is None:
                 typer.echo("No cluster found for the given workspace.", err=True)
             else:
@@ -89,7 +108,7 @@ def create_analysis_tasks(
                     data_end=datetime.now(),
                     nb_days=days,
                 ).save()
-                typer.echo(f"Session {session.id} created for workspace {workspace_id}")
+                typer.echo(f"Session {session.id} created for workspace {workspace.id}")
 
         mongo_client.close()
 
@@ -103,9 +122,14 @@ def generate_overviews(
         False,
         "--only-missing",
         "-m",
-        help="Generate overviews only for clusters without overviews",
+        help="Generate overviews only for clusters without existing overviews",
     ),
 ):
+    """
+    Generate cluster overviews for the given session IDs. Use the --only-missing option to only generate overviews for
+    clusters that don't already have them.
+    """
+
     async def _generate_overviews():
         mongo_client, analyzer = await setup()
 
@@ -189,7 +213,11 @@ def summarize_session(session_id: str) -> None:
 
 @app.command()
 def repair():
-    """Repair clusters by generating missing overviews and evaluations."""
+    """
+    This command attempts to repair clustering sessions by generating missing overviews, evaluations, and session summaries.
+    It ensures that all clusters within a session are evaluated and summarized.
+    Also generates conversation starters if missing or evaluations are updated.
+    """
 
     async def _repair():
         mongo_client, analyzer = await setup()
