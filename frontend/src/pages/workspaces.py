@@ -75,7 +75,7 @@ def _create_new_workspace():
         )
         new_workspace_language = st.selectbox(
             "Primary Language",
-            options=Language,
+            options=Language.__members__.values(),
             format_func=language_to_str,
             index=_get_language_index(Language.EN),
             help="Select the primary language for content in this workspace",
@@ -110,7 +110,7 @@ def _edit_workspace_form(workspace: Workspace):
         )
         updated_language = st.selectbox(
             "Primary Language",
-            options=Language,
+            options=Language.__members__.values(),
             format_func=language_to_str,
             index=_get_language_index(Language(workspace.language)),
         )
@@ -456,7 +456,8 @@ def _history_section(workspace: Workspace):
 
     runs = _fetch_ingestion_runs(workspace)
 
-    _create_articles_found_chart(runs)
+    if runs:
+        _create_articles_found_chart(runs)
 
     if not runs:
         st.warning(
