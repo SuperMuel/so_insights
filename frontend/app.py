@@ -4,7 +4,7 @@ from sdk.so_insights_client.api.workspaces import list_workspaces
 from src.app_settings import AppSettings
 from src.shared import get_client
 import streamlit as st
-from streamlit_cookies_controller import CookieController
+from streamlit_cookies_controller import CookieController, RemoveEmptyElementContainer
 from streamlit_theme import st_theme
 
 
@@ -68,6 +68,7 @@ if __name__ == "__main__":
     )
 
     cookie_controller = CookieController()
+    RemoveEmptyElementContainer()
 
     def on_workspace_change():
         if chatbot_callback := st.session_state.get("on_workspace_changed_chatbot"):

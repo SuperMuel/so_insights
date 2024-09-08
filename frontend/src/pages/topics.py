@@ -10,7 +10,6 @@ from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
 
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import AppSettings
-from src.util import dates_to_session_label, task_status_to_st_status
 import streamlit as st
 from millify import millify
 
@@ -22,7 +21,14 @@ from sdk.so_insights_client.api.clustering import (
 )
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 
-from src.shared import create_toast, get_client, get_workspace_or_stop, select_session
+from src.shared import (
+    create_toast,
+    dates_to_session_label,
+    get_client,
+    get_workspace_or_stop,
+    select_session,
+    task_status_to_st_status,
+)
 from streamlit.elements.lib.mutable_status_container import StatusContainer
 
 client = get_client()
@@ -96,9 +102,8 @@ def _list_sessions(workspace: Workspace):
         )
         return
 
-    sessions.sort(key=lambda s: s.created_at, reverse=True)
-
     for session in sessions:
+        assert session.status
         status: StatusContainer = st.status(
             label=dates_to_session_label(session.data_start, session.data_end),
             state=task_status_to_st_status(session.status),
@@ -126,8 +131,8 @@ def _list_sessions(workspace: Workspace):
         )
 
 
-# with st.sidebar:
-#     _list_sessions(workspace)
+with st.sidebar:
+    _list_sessions(workspace)
 
 
 def display_session_metrics(session: ClusteringSession):

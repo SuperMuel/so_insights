@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Literal
 import pandas as pd
 import arrow
 from sdk.so_insights_client.api.ingestion_runs import (
@@ -16,7 +15,6 @@ from sdk.so_insights_client.models.hdbscan_settings import HdbscanSettings
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.ingestion_run import IngestionRun
 from sdk.so_insights_client.models.ingestion_run_create import IngestionRunCreate
-from sdk.so_insights_client.models.ingestion_run_status import IngestionRunStatus
 from sdk.so_insights_client.models.language import Language
 from sdk.so_insights_client.models.region import Region
 from sdk.so_insights_client.models.search_query_set import SearchQuerySet
@@ -26,14 +24,18 @@ from sdk.so_insights_client.models.time_limit import TimeLimit
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
 import shared.region
 from src.app_settings import AppSettings
-from src.util import task_status_to_st_status
 import streamlit as st
 
 from sdk.so_insights_client.api.workspaces import (
     create_workspace,
     update_workspace,
 )
-from src.shared import create_toast, get_client, language_to_str
+from src.shared import (
+    create_toast,
+    get_client,
+    language_to_str,
+    task_status_to_st_status,
+)
 from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 
 
@@ -493,6 +495,7 @@ def _history_section(workspace: Workspace):
             else ""
         )
 
+        assert run.status
         status = st.status(
             label=f"**{query_set_title}** - {date_str} {new_articles_found}",
             state=task_status_to_st_status(run.status),

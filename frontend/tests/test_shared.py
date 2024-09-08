@@ -1,9 +1,7 @@
 import pytest
 from datetime import datetime, timedelta
-from src.util import (
-    dates_to_session_label,
-)
 from freezegun import freeze_time
+from src.shared import dates_to_session_label
 
 
 @freeze_time("2024-06-15")
