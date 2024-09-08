@@ -9,6 +9,7 @@ from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
 from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
 
 
+from sdk.so_insights_client.models.status import Status
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import AppSettings
 import streamlit as st
@@ -91,7 +92,6 @@ def _list_sessions(workspace: Workspace):
     sessions = list_clustering_sessions.sync(
         client=client,
         workspace_id=str(workspace.field_id),
-        body=None,
     )
 
     if isinstance(sessions, HTTPValidationError):

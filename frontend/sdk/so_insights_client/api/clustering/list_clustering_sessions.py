@@ -8,35 +8,37 @@ from ...client import AuthenticatedClient, Client
 from ...models.clustering_session import ClusteringSession
 from ...models.http_validation_error import HTTPValidationError
 from ...models.status import Status
-from ...types import Response
+from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     workspace_id: str,
     *,
-    body: Union[List[Status], None],
+    statuses: Union[List[Status], None, Unset] = UNSET,
 ) -> Dict[str, Any]:
-    headers: Dict[str, Any] = {}
+    params: Dict[str, Any] = {}
+
+    json_statuses: Union[List[str], None, Unset]
+    if isinstance(statuses, Unset):
+        json_statuses = UNSET
+    elif isinstance(statuses, list):
+        json_statuses = []
+        for statuses_type_0_item_data in statuses:
+            statuses_type_0_item = statuses_type_0_item_data.value
+            json_statuses.append(statuses_type_0_item)
+
+    else:
+        json_statuses = statuses
+    params["statuses"] = json_statuses
+
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
     _kwargs: Dict[str, Any] = {
         "method": "get",
         "url": f"/workspaces/{workspace_id}/clustering/sessions",
+        "params": params,
     }
 
-    _body: Union[List[str], None]
-    if isinstance(body, list):
-        _body = []
-        for body_type_0_item_data in body:
-            body_type_0_item = body_type_0_item_data.value
-            _body.append(body_type_0_item)
-
-    else:
-        _body = body
-
-    _kwargs["json"] = _body
-    headers["Content-Type"] = "application/json"
-
-    _kwargs["headers"] = headers
     return _kwargs
 
 
@@ -77,7 +79,7 @@ def sync_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Union[List[Status], None],
+    statuses: Union[List[Status], None, Unset] = UNSET,
 ) -> Response[Union[HTTPValidationError, List["ClusteringSession"]]]:
     """List Clustering Sessions
 
@@ -85,7 +87,7 @@ def sync_detailed(
 
     Args:
         workspace_id (str):
-        body (Union[List[Status], None]):
+        statuses (Union[List[Status], None, Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -97,7 +99,7 @@ def sync_detailed(
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        body=body,
+        statuses=statuses,
     )
 
     response = client.get_httpx_client().request(
@@ -111,7 +113,7 @@ def sync(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Union[List[Status], None],
+    statuses: Union[List[Status], None, Unset] = UNSET,
 ) -> Optional[Union[HTTPValidationError, List["ClusteringSession"]]]:
     """List Clustering Sessions
 
@@ -119,7 +121,7 @@ def sync(
 
     Args:
         workspace_id (str):
-        body (Union[List[Status], None]):
+        statuses (Union[List[Status], None, Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -132,7 +134,7 @@ def sync(
     return sync_detailed(
         workspace_id=workspace_id,
         client=client,
-        body=body,
+        statuses=statuses,
     ).parsed
 
 
@@ -140,7 +142,7 @@ async def asyncio_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Union[List[Status], None],
+    statuses: Union[List[Status], None, Unset] = UNSET,
 ) -> Response[Union[HTTPValidationError, List["ClusteringSession"]]]:
     """List Clustering Sessions
 
@@ -148,7 +150,7 @@ async def asyncio_detailed(
 
     Args:
         workspace_id (str):
-        body (Union[List[Status], None]):
+        statuses (Union[List[Status], None, Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -160,7 +162,7 @@ async def asyncio_detailed(
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        body=body,
+        statuses=statuses,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -172,7 +174,7 @@ async def asyncio(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: Union[List[Status], None],
+    statuses: Union[List[Status], None, Unset] = UNSET,
 ) -> Optional[Union[HTTPValidationError, List["ClusteringSession"]]]:
     """List Clustering Sessions
 
@@ -180,7 +182,7 @@ async def asyncio(
 
     Args:
         workspace_id (str):
-        body (Union[List[Status], None]):
+        statuses (Union[List[Status], None, Unset]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -194,6 +196,6 @@ async def asyncio(
         await asyncio_detailed(
             workspace_id=workspace_id,
             client=client,
-            body=body,
+            statuses=statuses,
         )
     ).parsed

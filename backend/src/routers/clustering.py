@@ -50,7 +50,8 @@ def filter_clusters_with_relevancy(
 )
 async def list_clustering_sessions(
     workspace: ExistingWorkspace,
-    statuses: list[Status] | None = None,
+    statuses: Annotated[list[Status] | None, Query()] = None,
+    # async def read_items(q: Annotated[list[str] | None, Query()] = None):
 ):
     """List all clustering sessions for a workspace"""
     sessions = ClusteringSession.find(ClusteringSession.workspace_id == workspace.id)
