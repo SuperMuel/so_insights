@@ -91,6 +91,7 @@ def _list_sessions(workspace: Workspace):
     sessions = list_clustering_sessions.sync(
         client=client,
         workspace_id=str(workspace.field_id),
+        body=None,
     )
 
     if isinstance(sessions, HTTPValidationError):

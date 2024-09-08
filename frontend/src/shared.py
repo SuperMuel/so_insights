@@ -50,7 +50,9 @@ def show_all_toasts():
 
 def select_session(client: Client, workspace: Workspace) -> ClusteringSession:
     sessions = list_clustering_sessions.sync(
-        client=client, workspace_id=str(workspace.field_id)
+        client=client,
+        workspace_id=str(workspace.field_id),
+        body=[Status.COMPLETED],
     )
     if not sessions:
         st.warning("No clustering sessions found for this workspace.")

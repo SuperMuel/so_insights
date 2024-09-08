@@ -14,6 +14,7 @@ from shared.models import (
     ClusteringSession,
     Cluster,
     RelevanceLevel,
+    Status,
 )
 from src.schemas import ArticlePreview, ClusterWithArticles, ClusteringSessionCreate
 
@@ -47,13 +48,21 @@ def filter_clusters_with_relevancy(
     response_model=list[ClusteringSession],
     operation_id="list_clustering_sessions",
 )
-async def list_clustering_sessions(workspace: ExistingWorkspace):
+async def list_clustering_sessions(
+    workspace: ExistingWorkspace,
+    statuses: list[Status] | None = None,
+):
     """List all clustering sessions for a workspace"""
-    return (
-        await ClusteringSession.find(ClusteringSession.workspace_id == workspace.id)
-        .sort(-ClusteringSession.created_at)  # type: ignore
-        .to_list()
+    sessions = ClusteringSession.find(ClusteringSession.workspace_id == workspace.id)
+
+    if statuses is not None:
+        sessions = sessions.find(In(ClusteringSession.status, statuses))
+
+    sessions = sessions.sort(
+        -ClusteringSession.created_at,  # type: ignore
     )
+
+    return await sessions.to_list()
 
 
 @router.get(
