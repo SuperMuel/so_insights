@@ -49,12 +49,11 @@ def filter_clusters_with_relevancy(
 )
 async def list_clustering_sessions(workspace: ExistingWorkspace):
     """List all clustering sessions for a workspace"""
-    sessions: List[ClusteringSession] = (
+    return (
         await ClusteringSession.find(ClusteringSession.workspace_id == workspace.id)
         .sort(-ClusteringSession.created_at)  # type: ignore
         .to_list()
     )
-    return sessions
 
 
 @router.get(

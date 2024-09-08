@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+import arrow
 from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
 from sdk.so_insights_client.models.clustering_session import ClusteringSession
 from sdk.so_insights_client.models.clustering_session_create import (
@@ -114,8 +115,19 @@ def _list_sessions(workspace: Workspace):
         status.write(f"Created at {session.created_at}")
         status.write(f"Started at {session.session_start}")
         status.write(f"Ended at {session.session_end}")
+        if session.session_start and session.session_end:
+            humanized_duration = arrow.get(session.session_end).humanize(
+                arrow.get(session.session_start), only_distance=True
+            )
+            status.write(f"**Duration:** {humanized_duration}")
+
         status.write(f"Data start : {session.data_start}")
         status.write(f"Data end : {session.data_end}")
+        humanized_time_window = arrow.get(session.data_end).humanize(
+            arrow.get(session.data_start), only_distance=True
+        )
+        status.write(f"**Time window:** {humanized_time_window}")
+
         status.write(
             f"Total number of articles : {millify(session.articles_count) if session.articles_count else 'N/A'}"
         )
