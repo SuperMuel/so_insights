@@ -15,6 +15,7 @@ from shared.db_settings import DBSettings
 from pydantic import StringConstraints
 
 
+# TODO auto change update_at like in https://github.com/naoTimesdev/showtimes/blob/79ed15aa647c6fb8ee9a1f694b54d90a5ed7dda0/showtimes/models/database.py#L24
 def utc_datetime_factory():
     return datetime.now(UTC)
 
@@ -61,46 +62,72 @@ class Workspace(Document):
         )
 
 
-class SearchQuerySet(Document):
+class IngestionConfigType(str, Enum):
+    search = "search"
+    rss = "rss"
+
+
+class IngestionConfig(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    queries: list[str]
     title: ModelTitle
-    region: Region
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    deleted: bool = False
-    deleted_at: PastDatetime | None = None
+    type: IngestionConfigType
+
+    last_run_at: PastDatetime | None = None
 
     class Settings:
-        name: str = DBSettings().mongodb_search_query_sets_collection
+        is_root = True
+        name = DBSettings().mongodb_ingestion_configs_collection
 
-    async def find_last_finished_run(self) -> "IngestionRun | None":
-        return (
-            await IngestionRun.find(
-                IngestionRun.workspace_id == self.workspace_id,
-                IngestionRun.queries_set_id == self.id,
-            )
-            .sort(-IngestionRun.end_at)  # type: ignore
-            .first_or_none()
-        )
+
+class SearchIngestionConfig(IngestionConfig):
+    type: IngestionConfigType = IngestionConfigType.search
+
+    queries: list[str]  # TODO : min and max length
+    region: Region
+    max_results: int = Field(..., ge=1, le=100)
+    time_limit: TimeLimit
+
+    first_run_max_results: int = Field(..., ge=1, le=100)
+    first_run_time_limit: TimeLimit
+
+
+class RssIngestionConfig(IngestionConfig):
+    type: IngestionConfigType = IngestionConfigType.rss
+
+    rss_feed_url: HttpUrl  # TODO : add unique constraint on rss_feed_url
+
+
+class IngestionRunResult(BaseModel):
+    type: IngestionConfigType
+
+
+class SearchIngestionRunResult(IngestionRunResult):
+    type: IngestionConfigType = IngestionConfigType.search
+
+    successfull_queries: int
+    n_inserted: int
+
+
+class RssIngestionRunResult(IngestionRunResult):
+    type: IngestionConfigType = IngestionConfigType.rss
 
 
 class IngestionRun(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    queries_set_id: Annotated[PydanticObjectId, Indexed()]
-    time_limit: TimeLimit
-    max_results: int = Field(..., ge=1, le=100)
+    config_id: PydanticObjectId
+
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     start_at: PastDatetime | None = None
     end_at: PastDatetime | None = None
+
     status: Status = Status.pending
-    successfull_queries: int | None = None
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
     )
 
-    # Number of new articles found, that didn't exist in the database before
-    n_inserted: int | None = None
+    result: IngestionRunResult | None = None
 
     class Settings:
         name = DBSettings().mongodb_ingestion_runs_collection
@@ -130,7 +157,7 @@ class Article(Document):
         ""
     )
 
-    ingestion_run: IngestionRun
+    ingestion_run: IngestionRun | None = None
 
     vector_indexed: bool = False
 

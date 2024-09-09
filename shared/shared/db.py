@@ -2,12 +2,14 @@ from beanie import init_beanie
 from shared.db_settings import DBSettings
 from shared.models import (
     Cluster,
+    RssIngestionConfig,
+    SearchIngestionConfig,
     Workspace,
-    SearchQuerySet,
     IngestionRun,
     ClusteringSession,
     Article,
     Starters,
+    IngestionConfig,
 )
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
@@ -24,7 +26,9 @@ async def my_init_beanie(client):
         database=client[DBSettings().mongodb_database],
         document_models=[
             Workspace,
-            SearchQuerySet,
+            IngestionConfig,
+            SearchIngestionConfig,
+            RssIngestionConfig,
             IngestionRun,
             Cluster,
             ClusteringSession,

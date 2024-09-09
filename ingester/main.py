@@ -23,7 +23,8 @@ from shared.db import get_client, my_init_beanie
 from shared.models import (
     Article,
     IngestionRun,
-    SearchQuerySet,
+    SearchIngestionConfig,
+    SearchIngestionRunResult,
     Status,
     TimeLimit,
     Workspace,
@@ -109,20 +110,24 @@ async def mark_articles_as_vector_indexed(articles: list[Article]):
 
 
 async def perform_search_and_deduplicate_results(
-    ddgs: AsyncDDGS, search_query_set: SearchQuerySet, run: IngestionRun
+    ddgs: AsyncDDGS,
+    queries: list[str],
+    region: Region,
+    max_results: int,
+    time_limit: TimeLimit,
 ) -> tuple[int, list[BaseArticle]]:
-    """Performs the search for all queries of the query set, deduplicates the results and returns the number of successful queries and the deduplicated articles"""
+    """Performs the search for all queries of the SearchConfig, deduplicates the results and returns the number of successful queries and the deduplicated articles"""
 
     result = await perform_search(
         ddgs,
-        queries=search_query_set.queries,
-        region=search_query_set.region,
-        max_results=run.max_results,
-        time_limit=run.time_limit,
+        queries=queries,
+        region=region,
+        max_results=max_results,
+        time_limit=time_limit,
         verbose=settings.VERBOSE_SEARCH,
     )
     logger.info(
-        f"{result.successfull_queries}/{len(search_query_set.queries)} queries were successful. "
+        f"{result.successfull_queries}/{len(queries)} queries were successful. "
         f"Found {len(result.articles)} (undeduplicated) articles"
     )
     articles = deduplicate_articles(result.articles)
@@ -165,10 +170,11 @@ async def insert_articles_in_mongodb(
 
 
 async def index_articles_in_vector_db(
-    search_query_set: SearchQuerySet, get_pinecone_index
+    workspace_id: str,
+    get_pinecone_index,
 ):
     try:
-        pinecone_index = get_pinecone_index(str(search_query_set.workspace_id))
+        pinecone_index = get_pinecone_index(workspace_id)
         indexed = await index_not_indexed_articles(pinecone_index)
         await mark_articles_as_vector_indexed(indexed)
     except Exception as e:
@@ -178,14 +184,11 @@ async def index_articles_in_vector_db(
         )
 
 
-async def handle_ingestion_run(
+async def handle_search_ingestion_run(
     ddgs: AsyncDDGS,
     get_pinecone_index,
     run: IngestionRun,
 ):
-    search_query_set = await SearchQuerySet.get(run.queries_set_id)
-    assert search_query_set
-
     assert run.status in [Status.pending, Status.running]
 
     run.start_at = datetime.now(timezone.utc)
@@ -195,28 +198,59 @@ async def handle_ingestion_run(
 
     await run.replace()
 
+    config = await SearchIngestionConfig.get(run.config_id)
+    if not config:
+        msg = f"Config with id {run.config_id} not found."
+        logger.error(msg)
+        run.status = Status.failed
+        run.error = msg
+        await run.replace()
+        return
+
+    assert isinstance(config, SearchIngestionConfig)
+
+    if not config.queries:
+        msg = "No queries to process"
+        logger.error(msg)
+        run.status = Status.failed
+        run.error = msg
+        await run.replace()
+        return
+
     logger.info(
-        f"Processing search query set {search_query_set.id} "
-        f"({search_query_set.title}, {len(search_query_set.queries)} queries, {run.time_limit=})"
+        f"Processing SearchIngestionConfig {config.id} for workspace {run.workspace_id}"
+        f"({config.title}, {len(config.queries)} queries, {config.time_limit=}, {config.max_results=})"
     )
+
+    # TODO: check if it's first run
 
     try:
         successful_queries, articles = await perform_search_and_deduplicate_results(
-            ddgs, search_query_set, run
+            ddgs=ddgs,
+            queries=config.queries,
+            region=config.region,
+            max_results=config.max_results,
+            time_limit=config.time_limit,
         )
         n_inserted = await insert_articles_in_mongodb(
             articles,
-            region=search_query_set.region,
+            region=config.region,
             ingestion_run=run,
         )
-        await index_articles_in_vector_db(search_query_set, get_pinecone_index)
+        await index_articles_in_vector_db(
+            workspace_id=str(run.workspace_id),
+            get_pinecone_index=get_pinecone_index,
+        )
 
-        run.successfull_queries = successful_queries
-        run.n_inserted = n_inserted
+        run.result = SearchIngestionRunResult(
+            n_inserted=n_inserted,
+            successfull_queries=successful_queries,
+        )
         run.status = Status.completed
+
     except Exception as e:
         logger.error(
-            f"Error while processing search query set {search_query_set.id}: {e}"
+            f"Error while processing search config {config.id}: {e}. Run will be marked as failed."
         )
         run.status = Status.failed
         run.error = str(e)
@@ -224,7 +258,7 @@ async def handle_ingestion_run(
         run.end_at = datetime.now(timezone.utc)
         await run.replace()
 
-    logger.info(f"Finished processing search query set {search_query_set.id}")
+    logger.info(f"Finished processing SearchIngestionConfig {config.id}")
 
 
 async def upsert_articles_of_workspace(
@@ -320,37 +354,27 @@ class TimeLimitEnum(str, Enum):
 
 
 @app.command()
-def create_ingestion_task(
-    search_query_set_id: str,
-    time_limit: TimeLimitEnum = typer.Option(
-        TimeLimitEnum.from_literal(settings.DEFAULT_TIME_LIMIT), "-t", "--time-limit"
-    ),
-    max_results: int = typer.Option(
-        settings.MAX_RESULTS, "-m", "--max-results", help="Maximum number of results"
-    ),
+def create_search_ingestion_task(
+    config_id: str,
 ):
-    """Create ingestion tasks for a single SearchQuerySet"""
+    """Create ingestion tasks for a single SearchConfig"""
 
     async def single_run():
         mongo_client, ddgs, get_pinecone_index = await setup()
 
-        search_query_set = await SearchQuerySet.get(search_query_set_id)
-        if not search_query_set:
-            typer.echo(f"SearchQuerySet with id {search_query_set_id} not found.")
+        config = await SearchIngestionConfig.get(config_id)
+        if not config:
+            typer.echo(f"Config with id {config_id} not found.")
             return
-        assert search_query_set.id
+        assert config.id
 
         run = await IngestionRun(
-            workspace_id=search_query_set.workspace_id,
-            queries_set_id=search_query_set.id,
-            time_limit=time_limit.to_literal(),
+            workspace_id=config.workspace_id,
+            config_id=config.id,
             status=Status.pending,
-            max_results=max_results,
         ).create()
 
-        logger.info(
-            f"Created ingestion run {run.id} for search query set {search_query_set.id}"
-        )
+        logger.info(f"Created ingestion run {run.id} for config {config.id}")
 
         mongo_client.close()
 
@@ -365,14 +389,8 @@ def create_ingestion_tasks(
         "--workspace-id",
         help="To create ingestion tasks for a specific workspace. If not provided, tasks will be created for all workspaces.",
     ),
-    time_limit: TimeLimitEnum = typer.Option(
-        TimeLimitEnum.from_literal(settings.DEFAULT_TIME_LIMIT), "-t", "--time-limit"
-    ),
-    max_results: int = typer.Option(
-        settings.MAX_RESULTS, "-m", "--max-results", help="Maximum number of results"
-    ),
 ):
-    """Create ingestion tasks for all SearchQuerySets of a workspace or all workspaces"""
+    """Create ingestion tasks for all SearchConfigs of a workspace or all workspaces"""
 
     async def create_runs():
         mongo_client, ddgs, get_pinecone_index = await setup()
@@ -391,25 +409,21 @@ def create_ingestion_tasks(
             logger.info(
                 f"Creating ingestion tasks for workspace {workspace.id} ({workspace.name})"
             )
-            query_sets = await SearchQuerySet.find(
-                SearchQuerySet.workspace_id == workspace.id,
-                SearchQuerySet.deleted == False,  # noqa
+
+            configs = await SearchIngestionConfig.find(
+                SearchIngestionConfig.workspace_id == workspace.id
             ).to_list()
 
-            for query_set in query_sets:
-                assert query_set.id
+            for config in configs:
+                assert config.id
 
                 run = await IngestionRun(
                     workspace_id=workspace.id,
-                    queries_set_id=query_set.id,
-                    time_limit=time_limit.to_literal(),
+                    config_id=config.id,
                     status=Status.pending,
-                    max_results=max_results,
                 ).create()
 
-                logger.info(
-                    f"Created ingestion run {run.id} for search query set {query_set.id}"
-                )
+                logger.info(f"Created ingestion run {run.id} for config {config.id}")
 
         mongo_client.close()
 
@@ -515,7 +529,7 @@ def watch(
                     f"Processing ingestion run {pending_run.id} for workspace {pending_run.workspace_id}"
                 )
 
-                await handle_ingestion_run(
+                await handle_search_ingestion_run(
                     ddgs=ddgs,
                     get_pinecone_index=get_pinecone_index,
                     run=pending_run,
