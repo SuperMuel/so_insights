@@ -1,63 +1,53 @@
-from typing import Any, Dict, List, Type, TypeVar, cast
+from typing import Any, Dict, List, Type, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..models.region import Region
+from ..models.ingestion_config_type import IngestionConfigType
+from ..types import UNSET, Unset
 
-T = TypeVar("T", bound="SearchQuerySetCreate")
+T = TypeVar("T", bound="RssIngestionRunResult")
 
 
 @_attrs_define
-class SearchQuerySetCreate:
+class RssIngestionRunResult:
     """
     Attributes:
-        queries (List[str]):
-        title (str):
-        region (Region):
+        type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.RSS.
     """
 
-    queries: List[str]
-    title: str
-    region: Region
+    type: Union[Unset, IngestionConfigType] = IngestionConfigType.RSS
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        queries = self.queries
-
-        title = self.title
-
-        region = self.region.value
+        type: Union[Unset, str] = UNSET
+        if not isinstance(self.type, Unset):
+            type = self.type.value
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
-        field_dict.update(
-            {
-                "queries": queries,
-                "title": title,
-                "region": region,
-            }
-        )
+        field_dict.update({})
+        if type is not UNSET:
+            field_dict["type"] = type
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
-        queries = cast(List[str], d.pop("queries"))
+        _type = d.pop("type", UNSET)
+        type: Union[Unset, IngestionConfigType]
+        if isinstance(_type, Unset):
+            type = UNSET
+        else:
+            type = IngestionConfigType(_type)
 
-        title = d.pop("title")
-
-        region = Region(d.pop("region"))
-
-        search_query_set_create = cls(
-            queries=queries,
-            title=title,
-            region=region,
+        rss_ingestion_run_result = cls(
+            type=type,
         )
 
-        search_query_set_create.additional_properties = d
-        return search_query_set_create
+        rss_ingestion_run_result.additional_properties = d
+        return rss_ingestion_run_result
 
     @property
     def additional_keys(self) -> List[str]:

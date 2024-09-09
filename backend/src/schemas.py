@@ -1,6 +1,6 @@
 from datetime import datetime
 from beanie import PydanticObjectId
-from pydantic import BaseModel, HttpUrl, PastDatetime
+from pydantic import BaseModel, Field, HttpUrl, PastDatetime
 
 from shared.models import (
     Cluster,
@@ -33,16 +33,28 @@ class WorkspaceUpdate(BaseModel):
         extra = "forbid"
 
 
-class SearchQuerySetCreate(BaseModel):
-    queries: list[str]
+class SearchIngestionConfigCreate(BaseModel):
     title: ModelTitle
     region: Region
+    queries: list[str]
+
+    max_results: int = Field(..., ge=1, le=100)
+    time_limit: TimeLimit
+
+    first_run_max_results: int = Field(..., ge=1, le=100)
+    first_run_time_limit: TimeLimit
+
+    class Config:
+        extra = "forbid"
 
 
-class SearchQuerySetUpdate(BaseModel):
-    queries: list[str] | None = None
-    title: ModelTitle | None = None
-    region: Region | None = None
+class SearchIngestionConfigUpdate(BaseModel):
+    title: ModelTitle | None
+    region: Region | None
+    queries: list[str] | None
+
+    max_results: int | None = Field(None, ge=1, le=100)
+    time_limit: TimeLimit | None
 
     class Config:
         extra = "forbid"
@@ -86,9 +98,7 @@ class ClusterWithArticles(BaseModel):
 
 
 class IngestionRunCreate(BaseModel):
-    time_limit: TimeLimit
-    max_results: int
-    search_query_set_id: PydanticObjectId
+    ingestion_config_id: PydanticObjectId
 
 
 class ClusteringSessionCreate(BaseModel):

@@ -10,8 +10,8 @@ from shared.db import get_client, my_init_beanie
 from src.api_settings import APISettings
 from src.routers import (
     clustering,
+    ingestion_configs,
     ingestion_runs,
-    search_query_sets,
     starters,
     workspaces,
 )
@@ -63,8 +63,8 @@ async def root():
 
 app.include_router(workspaces.router, prefix="/workspaces")
 app.include_router(
-    search_query_sets.router,
-    prefix="/workspaces/{workspace_id}/search-query-sets",
+    ingestion_configs.router,
+    prefix="/workspaces/{workspace_id}/ingestion-configs",
 )
 app.include_router(
     ingestion_runs.router,

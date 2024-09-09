@@ -12,15 +12,17 @@ from .clustering_session_create import ClusteringSessionCreate
 from .clustering_session_metadata import ClusteringSessionMetadata
 from .hdbscan_settings import HdbscanSettings
 from .http_validation_error import HTTPValidationError
+from .ingestion_config_type import IngestionConfigType
 from .ingestion_run import IngestionRun
-from .ingestion_run_create import IngestionRunCreate
 from .language import Language
 from .list_clusters_for_session_relevance_levels_type_0_item import ListClustersForSessionRelevanceLevelsType0Item
 from .region import Region
 from .relevancy_filter import RelevancyFilter
-from .search_query_set import SearchQuerySet
-from .search_query_set_create import SearchQuerySetCreate
-from .search_query_set_update import SearchQuerySetUpdate
+from .rss_ingestion_run_result import RssIngestionRunResult
+from .search_ingestion_config import SearchIngestionConfig
+from .search_ingestion_config_create import SearchIngestionConfigCreate
+from .search_ingestion_config_update import SearchIngestionConfigUpdate
+from .search_ingestion_run_result import SearchIngestionRunResult
 from .status import Status
 from .time_limit import TimeLimit
 from .validation_error import ValidationError
@@ -41,15 +43,17 @@ __all__ = (
     "ClusterWithArticles",
     "HdbscanSettings",
     "HTTPValidationError",
+    "IngestionConfigType",
     "IngestionRun",
-    "IngestionRunCreate",
     "Language",
     "ListClustersForSessionRelevanceLevelsType0Item",
     "Region",
     "RelevancyFilter",
-    "SearchQuerySet",
-    "SearchQuerySetCreate",
-    "SearchQuerySetUpdate",
+    "RssIngestionRunResult",
+    "SearchIngestionConfig",
+    "SearchIngestionConfigCreate",
+    "SearchIngestionConfigUpdate",
+    "SearchIngestionRunResult",
     "Status",
     "TimeLimit",
     "ValidationError",

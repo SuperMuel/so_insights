@@ -99,18 +99,14 @@ class RssIngestionConfig(IngestionConfig):
     rss_feed_url: HttpUrl  # TODO : add unique constraint on rss_feed_url
 
 
-class IngestionRunResult(BaseModel):
-    type: IngestionConfigType
-
-
-class SearchIngestionRunResult(IngestionRunResult):
+class SearchIngestionRunResult(BaseModel):
     type: IngestionConfigType = IngestionConfigType.search
 
     successfull_queries: int
     n_inserted: int
 
 
-class RssIngestionRunResult(IngestionRunResult):
+class RssIngestionRunResult(BaseModel):
     type: IngestionConfigType = IngestionConfigType.rss
 
 
@@ -127,7 +123,7 @@ class IngestionRun(Document):
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
     )
 
-    result: IngestionRunResult | None = None
+    result: SearchIngestionRunResult | RssIngestionRunResult | None = None
 
     class Settings:
         name = DBSettings().mongodb_ingestion_runs_collection

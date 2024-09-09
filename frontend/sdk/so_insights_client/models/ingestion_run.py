@@ -1,13 +1,17 @@
 import datetime
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
 from ..models.status import Status
-from ..models.time_limit import TimeLimit
 from ..types import UNSET, Unset
+
+if TYPE_CHECKING:
+    from ..models.rss_ingestion_run_result import RssIngestionRunResult
+    from ..models.search_ingestion_run_result import SearchIngestionRunResult
+
 
 T = TypeVar("T", bound="IngestionRun")
 
@@ -17,41 +21,34 @@ class IngestionRun:
     """
     Attributes:
         workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        queries_set_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        time_limit (TimeLimit):
-        max_results (int):
+        config_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         created_at (Union[Unset, datetime.datetime]):
         start_at (Union[None, Unset, datetime.datetime]):
         end_at (Union[None, Unset, datetime.datetime]):
         status (Union[Unset, Status]):  Default: Status.PENDING.
-        successfull_queries (Union[None, Unset, int]):
         error (Union[None, Unset, str]):
-        n_inserted (Union[None, Unset, int]):
+        result (Union['RssIngestionRunResult', 'SearchIngestionRunResult', None, Unset]):
     """
 
     workspace_id: str
-    queries_set_id: str
-    time_limit: TimeLimit
-    max_results: int
+    config_id: str
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     start_at: Union[None, Unset, datetime.datetime] = UNSET
     end_at: Union[None, Unset, datetime.datetime] = UNSET
     status: Union[Unset, Status] = Status.PENDING
-    successfull_queries: Union[None, Unset, int] = UNSET
     error: Union[None, Unset, str] = UNSET
-    n_inserted: Union[None, Unset, int] = UNSET
+    result: Union["RssIngestionRunResult", "SearchIngestionRunResult", None, Unset] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        from ..models.rss_ingestion_run_result import RssIngestionRunResult
+        from ..models.search_ingestion_run_result import SearchIngestionRunResult
+
         workspace_id = self.workspace_id
 
-        queries_set_id = self.queries_set_id
-
-        time_limit = self.time_limit.value
-
-        max_results = self.max_results
+        config_id = self.config_id
 
         field_id: Union[None, Unset, str]
         if isinstance(self.field_id, Unset):
@@ -83,32 +80,28 @@ class IngestionRun:
         if not isinstance(self.status, Unset):
             status = self.status.value
 
-        successfull_queries: Union[None, Unset, int]
-        if isinstance(self.successfull_queries, Unset):
-            successfull_queries = UNSET
-        else:
-            successfull_queries = self.successfull_queries
-
         error: Union[None, Unset, str]
         if isinstance(self.error, Unset):
             error = UNSET
         else:
             error = self.error
 
-        n_inserted: Union[None, Unset, int]
-        if isinstance(self.n_inserted, Unset):
-            n_inserted = UNSET
+        result: Union[Dict[str, Any], None, Unset]
+        if isinstance(self.result, Unset):
+            result = UNSET
+        elif isinstance(self.result, SearchIngestionRunResult):
+            result = self.result.to_dict()
+        elif isinstance(self.result, RssIngestionRunResult):
+            result = self.result.to_dict()
         else:
-            n_inserted = self.n_inserted
+            result = self.result
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
                 "workspace_id": workspace_id,
-                "queries_set_id": queries_set_id,
-                "time_limit": time_limit,
-                "max_results": max_results,
+                "config_id": config_id,
             }
         )
         if field_id is not UNSET:
@@ -121,25 +114,22 @@ class IngestionRun:
             field_dict["end_at"] = end_at
         if status is not UNSET:
             field_dict["status"] = status
-        if successfull_queries is not UNSET:
-            field_dict["successfull_queries"] = successfull_queries
         if error is not UNSET:
             field_dict["error"] = error
-        if n_inserted is not UNSET:
-            field_dict["n_inserted"] = n_inserted
+        if result is not UNSET:
+            field_dict["result"] = result
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+        from ..models.rss_ingestion_run_result import RssIngestionRunResult
+        from ..models.search_ingestion_run_result import SearchIngestionRunResult
+
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
 
-        queries_set_id = d.pop("queries_set_id")
-
-        time_limit = TimeLimit(d.pop("time_limit"))
-
-        max_results = d.pop("max_results")
+        config_id = d.pop("config_id")
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -198,15 +188,6 @@ class IngestionRun:
         else:
             status = Status(_status)
 
-        def _parse_successfull_queries(data: object) -> Union[None, Unset, int]:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(Union[None, Unset, int], data)
-
-        successfull_queries = _parse_successfull_queries(d.pop("successfull_queries", UNSET))
-
         def _parse_error(data: object) -> Union[None, Unset, str]:
             if data is None:
                 return data
@@ -216,28 +197,41 @@ class IngestionRun:
 
         error = _parse_error(d.pop("error", UNSET))
 
-        def _parse_n_inserted(data: object) -> Union[None, Unset, int]:
+        def _parse_result(data: object) -> Union["RssIngestionRunResult", "SearchIngestionRunResult", None, Unset]:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
-            return cast(Union[None, Unset, int], data)
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                result_type_0 = SearchIngestionRunResult.from_dict(data)
 
-        n_inserted = _parse_n_inserted(d.pop("n_inserted", UNSET))
+                return result_type_0
+            except:  # noqa: E722
+                pass
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                result_type_1 = RssIngestionRunResult.from_dict(data)
+
+                return result_type_1
+            except:  # noqa: E722
+                pass
+            return cast(Union["RssIngestionRunResult", "SearchIngestionRunResult", None, Unset], data)
+
+        result = _parse_result(d.pop("result", UNSET))
 
         ingestion_run = cls(
             workspace_id=workspace_id,
-            queries_set_id=queries_set_id,
-            time_limit=time_limit,
-            max_results=max_results,
+            config_id=config_id,
             field_id=field_id,
             created_at=created_at,
             start_at=start_at,
             end_at=end_at,
             status=status,
-            successfull_queries=successfull_queries,
             error=error,
-            n_inserted=n_inserted,
+            result=result,
         )
 
         ingestion_run.additional_properties = d

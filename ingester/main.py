@@ -28,6 +28,7 @@ from shared.models import (
     Status,
     TimeLimit,
     Workspace,
+    utc_datetime_factory,
 )
 import uvicorn
 
@@ -241,6 +242,9 @@ async def handle_search_ingestion_run(
             workspace_id=str(run.workspace_id),
             get_pinecone_index=get_pinecone_index,
         )
+
+        config.last_run_at = utc_datetime_factory()
+        await config.replace()
 
         run.result = SearchIngestionRunResult(
             n_inserted=n_inserted,
@@ -512,6 +516,7 @@ def watch(
 
         try:
             while (datetime.now() - start_time).total_seconds() < max_runtime:
+                logger.info("Checking for pending ingestion runs")
                 pending_run = await IngestionRun.find_one(
                     IngestionRun.status == Status.pending
                 ).update_one(

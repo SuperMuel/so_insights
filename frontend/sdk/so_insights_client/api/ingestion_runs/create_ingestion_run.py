@@ -7,28 +7,28 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.http_validation_error import HTTPValidationError
 from ...models.ingestion_run import IngestionRun
-from ...models.ingestion_run_create import IngestionRunCreate
-from ...types import Response
+from ...types import UNSET, Response
 
 
 def _get_kwargs(
     workspace_id: str,
     *,
-    body: IngestionRunCreate,
+    ingestion_config_id: str,
 ) -> Dict[str, Any]:
-    headers: Dict[str, Any] = {}
+    params: Dict[str, Any] = {}
+
+    json_ingestion_config_id: str
+    json_ingestion_config_id = ingestion_config_id
+    params["ingestion_config_id"] = json_ingestion_config_id
+
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
     _kwargs: Dict[str, Any] = {
         "method": "post",
         "url": f"/workspaces/{workspace_id}/ingestion-runs/",
+        "params": params,
     }
 
-    _body = body.to_dict()
-
-    _kwargs["json"] = _body
-    headers["Content-Type"] = "application/json"
-
-    _kwargs["headers"] = headers
     return _kwargs
 
 
@@ -64,13 +64,13 @@ def sync_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: IngestionRunCreate,
+    ingestion_config_id: str,
 ) -> Response[Union[HTTPValidationError, IngestionRun]]:
     """Create Ingestion Run
 
     Args:
         workspace_id (str):
-        body (IngestionRunCreate):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -82,7 +82,7 @@ def sync_detailed(
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        body=body,
+        ingestion_config_id=ingestion_config_id,
     )
 
     response = client.get_httpx_client().request(
@@ -96,13 +96,13 @@ def sync(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: IngestionRunCreate,
+    ingestion_config_id: str,
 ) -> Optional[Union[HTTPValidationError, IngestionRun]]:
     """Create Ingestion Run
 
     Args:
         workspace_id (str):
-        body (IngestionRunCreate):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -115,7 +115,7 @@ def sync(
     return sync_detailed(
         workspace_id=workspace_id,
         client=client,
-        body=body,
+        ingestion_config_id=ingestion_config_id,
     ).parsed
 
 
@@ -123,13 +123,13 @@ async def asyncio_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: IngestionRunCreate,
+    ingestion_config_id: str,
 ) -> Response[Union[HTTPValidationError, IngestionRun]]:
     """Create Ingestion Run
 
     Args:
         workspace_id (str):
-        body (IngestionRunCreate):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -141,7 +141,7 @@ async def asyncio_detailed(
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        body=body,
+        ingestion_config_id=ingestion_config_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -153,13 +153,13 @@ async def asyncio(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: IngestionRunCreate,
+    ingestion_config_id: str,
 ) -> Optional[Union[HTTPValidationError, IngestionRun]]:
     """Create Ingestion Run
 
     Args:
         workspace_id (str):
-        body (IngestionRunCreate):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -173,6 +173,6 @@ async def asyncio(
         await asyncio_detailed(
             workspace_id=workspace_id,
             client=client,
-            body=body,
+            ingestion_config_id=ingestion_config_id,
         )
     ).parsed

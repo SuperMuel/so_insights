@@ -5,46 +5,64 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.ingestion_config_type import IngestionConfigType
 from ..models.region import Region
+from ..models.time_limit import TimeLimit
 from ..types import UNSET, Unset
 
-T = TypeVar("T", bound="SearchQuerySet")
+T = TypeVar("T", bound="SearchIngestionConfig")
 
 
 @_attrs_define
-class SearchQuerySet:
+class SearchIngestionConfig:
     """
     Attributes:
         workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        queries (List[str]):
         title (str):
+        queries (List[str]):
         region (Region):
+        max_results (int):
+        time_limit (TimeLimit):
+        first_run_max_results (int):
+        first_run_time_limit (TimeLimit):
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         created_at (Union[Unset, datetime.datetime]):
         updated_at (Union[Unset, datetime.datetime]):
-        deleted (Union[Unset, bool]):  Default: False.
-        deleted_at (Union[None, Unset, datetime.datetime]):
+        type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.SEARCH.
+        last_run_at (Union[None, Unset, datetime.datetime]):
     """
 
     workspace_id: str
-    queries: List[str]
     title: str
+    queries: List[str]
     region: Region
+    max_results: int
+    time_limit: TimeLimit
+    first_run_max_results: int
+    first_run_time_limit: TimeLimit
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
-    deleted: Union[Unset, bool] = False
-    deleted_at: Union[None, Unset, datetime.datetime] = UNSET
+    type: Union[Unset, IngestionConfigType] = IngestionConfigType.SEARCH
+    last_run_at: Union[None, Unset, datetime.datetime] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         workspace_id = self.workspace_id
 
-        queries = self.queries
-
         title = self.title
 
+        queries = self.queries
+
         region = self.region.value
+
+        max_results = self.max_results
+
+        time_limit = self.time_limit.value
+
+        first_run_max_results = self.first_run_max_results
+
+        first_run_time_limit = self.first_run_time_limit.value
 
         field_id: Union[None, Unset, str]
         if isinstance(self.field_id, Unset):
@@ -60,24 +78,30 @@ class SearchQuerySet:
         if not isinstance(self.updated_at, Unset):
             updated_at = self.updated_at.isoformat()
 
-        deleted = self.deleted
+        type: Union[Unset, str] = UNSET
+        if not isinstance(self.type, Unset):
+            type = self.type.value
 
-        deleted_at: Union[None, Unset, str]
-        if isinstance(self.deleted_at, Unset):
-            deleted_at = UNSET
-        elif isinstance(self.deleted_at, datetime.datetime):
-            deleted_at = self.deleted_at.isoformat()
+        last_run_at: Union[None, Unset, str]
+        if isinstance(self.last_run_at, Unset):
+            last_run_at = UNSET
+        elif isinstance(self.last_run_at, datetime.datetime):
+            last_run_at = self.last_run_at.isoformat()
         else:
-            deleted_at = self.deleted_at
+            last_run_at = self.last_run_at
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
                 "workspace_id": workspace_id,
-                "queries": queries,
                 "title": title,
+                "queries": queries,
                 "region": region,
+                "max_results": max_results,
+                "time_limit": time_limit,
+                "first_run_max_results": first_run_max_results,
+                "first_run_time_limit": first_run_time_limit,
             }
         )
         if field_id is not UNSET:
@@ -86,10 +110,10 @@ class SearchQuerySet:
             field_dict["created_at"] = created_at
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
-        if deleted is not UNSET:
-            field_dict["deleted"] = deleted
-        if deleted_at is not UNSET:
-            field_dict["deleted_at"] = deleted_at
+        if type is not UNSET:
+            field_dict["type"] = type
+        if last_run_at is not UNSET:
+            field_dict["last_run_at"] = last_run_at
 
         return field_dict
 
@@ -98,11 +122,19 @@ class SearchQuerySet:
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
 
-        queries = cast(List[str], d.pop("queries"))
-
         title = d.pop("title")
 
+        queries = cast(List[str], d.pop("queries"))
+
         region = Region(d.pop("region"))
+
+        max_results = d.pop("max_results")
+
+        time_limit = TimeLimit(d.pop("time_limit"))
+
+        first_run_max_results = d.pop("first_run_max_results")
+
+        first_run_time_limit = TimeLimit(d.pop("first_run_time_limit"))
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -127,9 +159,14 @@ class SearchQuerySet:
         else:
             updated_at = isoparse(_updated_at)
 
-        deleted = d.pop("deleted", UNSET)
+        _type = d.pop("type", UNSET)
+        type: Union[Unset, IngestionConfigType]
+        if isinstance(_type, Unset):
+            type = UNSET
+        else:
+            type = IngestionConfigType(_type)
 
-        def _parse_deleted_at(data: object) -> Union[None, Unset, datetime.datetime]:
+        def _parse_last_run_at(data: object) -> Union[None, Unset, datetime.datetime]:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -137,29 +174,33 @@ class SearchQuerySet:
             try:
                 if not isinstance(data, str):
                     raise TypeError()
-                deleted_at_type_0 = isoparse(data)
+                last_run_at_type_0 = isoparse(data)
 
-                return deleted_at_type_0
+                return last_run_at_type_0
             except:  # noqa: E722
                 pass
             return cast(Union[None, Unset, datetime.datetime], data)
 
-        deleted_at = _parse_deleted_at(d.pop("deleted_at", UNSET))
+        last_run_at = _parse_last_run_at(d.pop("last_run_at", UNSET))
 
-        search_query_set = cls(
+        search_ingestion_config = cls(
             workspace_id=workspace_id,
-            queries=queries,
             title=title,
+            queries=queries,
             region=region,
+            max_results=max_results,
+            time_limit=time_limit,
+            first_run_max_results=first_run_max_results,
+            first_run_time_limit=first_run_time_limit,
             field_id=field_id,
             created_at=created_at,
             updated_at=updated_at,
-            deleted=deleted,
-            deleted_at=deleted_at,
+            type=type,
+            last_run_at=last_run_at,
         )
 
-        search_query_set.additional_properties = d
-        return search_query_set
+        search_ingestion_config.additional_properties = d
+        return search_ingestion_config
 
     @property
     def additional_keys(self) -> List[str]:

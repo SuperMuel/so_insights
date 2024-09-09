@@ -12,11 +12,11 @@ from ...types import Response
 
 def _get_kwargs(
     workspace_id: str,
-    search_query_set_id: str,
+    ingestion_config_id: str,
 ) -> Dict[str, Any]:
     _kwargs: Dict[str, Any] = {
         "method": "get",
-        "url": f"/workspaces/{workspace_id}/ingestion-runs/search-query-set/{search_query_set_id}",
+        "url": f"/workspaces/{workspace_id}/ingestion-runs/ingestion_config/{ingestion_config_id}",
     }
 
     return _kwargs
@@ -57,7 +57,7 @@ def _build_response(
 
 def sync_detailed(
     workspace_id: str,
-    search_query_set_id: str,
+    ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Response[Union[HTTPValidationError, List["IngestionRun"]]]:
@@ -65,7 +65,7 @@ def sync_detailed(
 
     Args:
         workspace_id (str):
-        search_query_set_id (str):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -77,7 +77,7 @@ def sync_detailed(
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        search_query_set_id=search_query_set_id,
+        ingestion_config_id=ingestion_config_id,
     )
 
     response = client.get_httpx_client().request(
@@ -89,7 +89,7 @@ def sync_detailed(
 
 def sync(
     workspace_id: str,
-    search_query_set_id: str,
+    ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Optional[Union[HTTPValidationError, List["IngestionRun"]]]:
@@ -97,7 +97,7 @@ def sync(
 
     Args:
         workspace_id (str):
-        search_query_set_id (str):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -109,14 +109,14 @@ def sync(
 
     return sync_detailed(
         workspace_id=workspace_id,
-        search_query_set_id=search_query_set_id,
+        ingestion_config_id=ingestion_config_id,
         client=client,
     ).parsed
 
 
 async def asyncio_detailed(
     workspace_id: str,
-    search_query_set_id: str,
+    ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Response[Union[HTTPValidationError, List["IngestionRun"]]]:
@@ -124,7 +124,7 @@ async def asyncio_detailed(
 
     Args:
         workspace_id (str):
-        search_query_set_id (str):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -136,7 +136,7 @@ async def asyncio_detailed(
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        search_query_set_id=search_query_set_id,
+        ingestion_config_id=ingestion_config_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -146,7 +146,7 @@ async def asyncio_detailed(
 
 async def asyncio(
     workspace_id: str,
-    search_query_set_id: str,
+    ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Optional[Union[HTTPValidationError, List["IngestionRun"]]]:
@@ -154,7 +154,7 @@ async def asyncio(
 
     Args:
         workspace_id (str):
-        search_query_set_id (str):
+        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -167,7 +167,7 @@ async def asyncio(
     return (
         await asyncio_detailed(
             workspace_id=workspace_id,
-            search_query_set_id=search_query_set_id,
+            ingestion_config_id=ingestion_config_id,
             client=client,
         )
     ).parsed
