@@ -6,6 +6,7 @@ from itertools import batched
 from typing import Optional
 
 from fastapi import FastAPI
+from shared.region import Region
 import typer
 from beanie import BulkWriter, PydanticObjectId, UpdateResponse
 from beanie.odm.operators.update.general import Set
@@ -130,7 +131,9 @@ async def perform_search_and_deduplicate_results(
 
 
 async def insert_articles_in_mongodb(
-    search_query_set: SearchQuerySet, articles: list[BaseArticle]
+    articles: list[BaseArticle],
+    region: Region,
+    ingestion_run: IngestionRun,
 ) -> int:
     if not articles:
         logger.info("No articles to upsert")
@@ -141,8 +144,9 @@ async def insert_articles_in_mongodb(
         inserted = await Article.insert_many(
             [
                 Article(
-                    workspace_id=search_query_set.workspace_id,
-                    region=search_query_set.region,
+                    workspace_id=ingestion_run.workspace_id,
+                    region=region,
+                    ingestion_run=ingestion_run,
                     **article.model_dump(),
                 )
                 for article in articles
@@ -200,7 +204,11 @@ async def handle_ingestion_run(
         successful_queries, articles = await perform_search_and_deduplicate_results(
             ddgs, search_query_set, run
         )
-        n_inserted = await insert_articles_in_mongodb(search_query_set, articles)
+        n_inserted = await insert_articles_in_mongodb(
+            articles,
+            region=search_query_set.region,
+            ingestion_run=run,
+        )
         await index_articles_in_vector_db(search_query_set, get_pinecone_index)
 
         run.successfull_queries = successful_queries

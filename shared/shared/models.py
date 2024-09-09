@@ -130,6 +130,8 @@ class Article(Document):
         ""
     )
 
+    ingestion_run: IngestionRun
+
     vector_indexed: bool = False
 
     @field_validator("title", mode="before")
