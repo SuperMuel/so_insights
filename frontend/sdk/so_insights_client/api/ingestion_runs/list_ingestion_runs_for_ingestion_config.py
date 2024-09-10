@@ -61,7 +61,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Response[Union[HTTPValidationError, List["IngestionRun"]]]:
-    """List Ingestion Runs For Search Query Set
+    """List Ingestion Runs For Ingestion Config
 
     Args:
         workspace_id (str):
@@ -93,7 +93,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Optional[Union[HTTPValidationError, List["IngestionRun"]]]:
-    """List Ingestion Runs For Search Query Set
+    """List Ingestion Runs For Ingestion Config
 
     Args:
         workspace_id (str):
@@ -120,7 +120,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Response[Union[HTTPValidationError, List["IngestionRun"]]]:
-    """List Ingestion Runs For Search Query Set
+    """List Ingestion Runs For Ingestion Config
 
     Args:
         workspace_id (str):
@@ -150,7 +150,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
 ) -> Optional[Union[HTTPValidationError, List["IngestionRun"]]]:
-    """List Ingestion Runs For Search Query Set
+    """List Ingestion Runs For Ingestion Config
 
     Args:
         workspace_id (str):
