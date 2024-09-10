@@ -33,4 +33,4 @@ class IngesterSettings(BaseSettings):
     # Watcher settings
     POLLING_INTERVAL_S: int = 10
     MAX_RUNTIME_S: int = 30 * 60  # 30 minutes
-    PORT: int = 8080
+    PORT: int = 8081

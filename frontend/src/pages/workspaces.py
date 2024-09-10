@@ -534,7 +534,7 @@ def _history_section(workspace: Workspace):
         else:
             date_str = "Not started"
 
-        query_set_title = (
+        config_title = (
             next(
                 (q.title for q in configs if q.field_id == run.config_id),
                 None,
@@ -548,7 +548,7 @@ def _history_section(workspace: Workspace):
 
         assert run.status
         status = st.status(
-            label=f"**{query_set_title}** - {date_str} {new_articles_found}",
+            label=f"**{config_title}** - {date_str} {new_articles_found}",
             state=task_status_to_st_status(run.status),
         )
         status.write(

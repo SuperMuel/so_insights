@@ -81,7 +81,7 @@ class IngestionConfig(Document):
         name = DBSettings().mongodb_ingestion_configs_collection
 
     async def get_last_run(self) -> Self | None:
-        return (
+        return await (
             IngestionRun.find(
                 IngestionRun.workspace_id == self.workspace_id,
                 IngestionRun.config_id == self.id,

@@ -51,7 +51,7 @@ async def get_ingestion_run(ingestion_run: ExistingIngestionRun):
     response_model=List[IngestionRun],
     operation_id="list_ingestion_runs_for_ingestion_config",
 )
-async def list_ingestion_runs_for_search_query_set(
+async def list_ingestion_runs_for_ingestion_config(
     workspace: ExistingWorkspace,
     config: ExistingIngestionConfig,
 ):

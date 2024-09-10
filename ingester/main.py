@@ -393,8 +393,8 @@ def create_ingestion_tasks(
         "--workspace-id",
         help="To create ingestion tasks for a specific workspace. If not provided, tasks will be created for all workspaces.",
     ),
-    type: Optional[str] = typer.Option(
-        IngestionConfigType,
+    type: Optional[IngestionConfigType] = typer.Option(
+        None,
         "-t",
         "--type",
         help="To create ingestion tasks for a specific type of ingestion config. If not provided, tasks will be created for all types.",
