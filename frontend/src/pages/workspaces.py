@@ -1,6 +1,8 @@
 from collections import defaultdict
-import pandas as pd
+
 import arrow
+import pandas as pd
+import streamlit as st
 from sdk.so_insights_client.api.ingestion_configs import (
     create_search_ingestion_config,
     list_search_ingestion_configs,
@@ -10,11 +12,23 @@ from sdk.so_insights_client.api.ingestion_runs import (
     create_ingestion_run,
     list_ingestion_runs,
 )
+from sdk.so_insights_client.api.workspaces import (
+    create_workspace,
+    update_workspace,
+)
+from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
 from sdk.so_insights_client.models.hdbscan_settings import HdbscanSettings
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.ingestion_run import IngestionRun
 from sdk.so_insights_client.models.language import Language
 from sdk.so_insights_client.models.region import Region
+from sdk.so_insights_client.models.rss_ingestion_config import RssIngestionConfig
+from sdk.so_insights_client.models.rss_ingestion_config_create import (
+    RssIngestionConfigCreate,
+)
+from sdk.so_insights_client.models.rss_ingestion_config_update import (
+    RssIngestionConfigUpdate,
+)
 from sdk.so_insights_client.models.search_ingestion_config import SearchIngestionConfig
 from sdk.so_insights_client.models.search_ingestion_config_create import (
     SearchIngestionConfigCreate,
@@ -22,27 +36,17 @@ from sdk.so_insights_client.models.search_ingestion_config_create import (
 from sdk.so_insights_client.models.search_ingestion_config_update import (
     SearchIngestionConfigUpdate,
 )
-from sdk.so_insights_client.models.search_ingestion_run_result import (
-    SearchIngestionRunResult,
-)
 from sdk.so_insights_client.models.time_limit import TimeLimit
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
+
 import shared.region
 from src.app_settings import AppSettings
-import streamlit as st
-
-from sdk.so_insights_client.api.workspaces import (
-    create_workspace,
-    update_workspace,
-)
 from src.shared import (
     create_toast,
     get_client,
     language_to_str,
     task_status_to_st_status,
 )
-from sdk.so_insights_client.models import Workspace, WorkspaceUpdate
-
 
 settings = AppSettings()
 
@@ -454,14 +458,10 @@ def _create_articles_found_chart(runs: list[IngestionRun]):
     if not runs:
         return
 
-    assert all([run.result and run.result.type == "search" for run in runs])
-
-    results: list[SearchIngestionRunResult] = [run.result for run in runs if run.result]  # type:ignore
-
-    for run, result in zip(runs, results):
-        if run.end_at:
+    for run in runs:
+        if run.end_at and run.n_inserted:
             date = run.end_at.date()
-            graph_data[date] += result.n_inserted
+            graph_data[date] += run.n_inserted
 
     # Convert to pandas DataFrame and sort by date
     df = pd.DataFrame(
@@ -488,9 +488,7 @@ def _history_section(workspace: Workspace):
     runs = _fetch_ingestion_runs(workspace)
 
     if runs:
-        _create_articles_found_chart(
-            [run for run in runs if run.result and run.result.type == "search"]
-        )
+        _create_articles_found_chart([run for run in runs if run.n_inserted])
 
     if not runs:
         st.warning(
@@ -499,13 +497,6 @@ def _history_section(workspace: Workspace):
         return
 
     configs = _fetch_ingestion_configs(workspace)
-
-    time_limit_map = {
-        TimeLimit.D: "Last 24 Hours",
-        TimeLimit.W: "Last Week",
-        TimeLimit.M: "Last Month",
-        TimeLimit.Y: "Last Year",
-    }
 
     for run in runs:
         if run.end_at:
@@ -524,9 +515,7 @@ def _history_section(workspace: Workspace):
         )
 
         new_articles_found = (
-            f"- {run.result.n_inserted} new articles found"  # type:ignore #TODO : find better way to coerce the type
-            if run.result and run.result.type == "search"
-            else ""
+            f"- {run.n_inserted} new articles found" if run.n_inserted else ""
         )
 
         assert run.status
