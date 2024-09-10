@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status
 
 from shared.models import (
+    IngestionConfig,
     RssIngestionConfig,
     SearchIngestionConfig,
     utc_datetime_factory,
@@ -18,6 +19,26 @@ from src.schemas import (
 )
 
 router = APIRouter(tags=["ingestion-configs"])
+
+# fetch all ingestion configs
+
+
+@router.get(
+    "/",
+    response_model=list[SearchIngestionConfig | RssIngestionConfig],
+    operation_id="list_ingestion_configs",
+)
+async def list_ingestion_configs(workspace: ExistingWorkspace):
+    assert workspace.id
+
+    return (
+        await IngestionConfig.find(
+            IngestionConfig.workspace_id == workspace.id,
+            with_children=True,
+        )
+        .sort(-IngestionConfig.created_at)  # type:ignore
+        .to_list()
+    )
 
 
 @router.get(
@@ -56,9 +77,15 @@ async def create_search_ingestion_config(
 async def list_search_ingestion_configs(workspace: ExistingWorkspace):
     assert workspace.id
 
-    return await SearchIngestionConfig.find(
-        SearchIngestionConfig.workspace_id == workspace.id
-    ).to_list()
+    return (
+        await SearchIngestionConfig.find(
+            SearchIngestionConfig.workspace_id == workspace.id
+        )
+        .sort(
+            -SearchIngestionConfig.created_at  # type:ignore
+        )
+        .to_list()
+    )
 
 
 @router.put(
@@ -103,9 +130,13 @@ async def create_rss_ingestion_config(
 async def list_rss_ingestion_configs(workspace: ExistingWorkspace):
     assert workspace.id
 
-    return await RssIngestionConfig.find(
-        RssIngestionConfig.workspace_id == workspace.id
-    ).to_list()
+    return (
+        await RssIngestionConfig.find(RssIngestionConfig.workspace_id == workspace.id)
+        .sort(
+            -RssIngestionConfig.created_at  # type:ignore
+        )
+        .to_list()
+    )
 
 
 @router.get(

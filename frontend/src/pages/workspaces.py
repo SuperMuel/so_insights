@@ -2,9 +2,11 @@ from collections import defaultdict
 
 import arrow
 import pandas as pd
+from shared.models import IngestionConfig
 import streamlit as st
 from sdk.so_insights_client.api.ingestion_configs import (
     create_search_ingestion_config,
+    list_ingestion_configs,
     list_search_ingestion_configs,
     update_search_ingestion_config,
 )
@@ -174,8 +176,10 @@ def _edit_workspace_form(workspace: Workspace):
                 st.warning("Please confirm the update by checking the box.")
 
 
-def _fetch_ingestion_configs(workspace: Workspace) -> list[SearchIngestionConfig]:
-    configs = list_search_ingestion_configs.sync(
+def _fetch_ingestion_configs(
+    workspace: Workspace,
+) -> list[RssIngestionConfig | SearchIngestionConfig]:
+    configs = list_ingestion_configs.sync(
         client=client, workspace_id=str(workspace.field_id)
     )
 
@@ -258,18 +262,14 @@ def update_config(workspace: Workspace, config: SearchIngestionConfig):
 
 
 @st.dialog("Create Ingestion Run")
-def create_new_ingestion_run(
-    workspace: Workspace,
-    config: SearchIngestionConfig,
-):
-    assert config.field_id
-    st.subheader(f"Create Ingestion Run for '{config.title}'")
+def create_new_ingestion_run(workspace: Workspace, config_id: str, config_title: str):
+    st.subheader(f"Create Ingestion Run for '{config_title}'")
 
     if st.button("Start Ingestion Process"):
         response = create_ingestion_run.sync(
             client=client,
             workspace_id=str(workspace.field_id),
-            ingestion_config_id=str(config.field_id),
+            ingestion_config_id=config_id,
         )
 
         if isinstance(response, HTTPValidationError):
@@ -278,22 +278,45 @@ def create_new_ingestion_run(
             st.error("Failed to create ingestion run")
         else:
             create_toast(
-                f"Ingestion run for '**{config.title}**' created successfully!",
+                f"Ingestion run for '**{config_title}**' created successfully!",
                 icon="🚀",
             )
             st.rerun()
 
 
-def _show_one_data_source(workspace: Workspace, config: SearchIngestionConfig):
+def _show_search_config_details(workspace, config: SearchIngestionConfig):
+    st.metric("Region", region_to_full_name(config.region))
+    st.write(f"**Search Queries ({len(config.queries)}):**")
+
+    with st.container(border=True):
+        st.markdown(" ".join([f"`{query}`" for query in config.queries]))
+
+    st.write(f"**Max Results:** {config.max_results}")
+    st.write(f"**Time Limit:** {config.time_limit}")
+
+    humanized_last_run = (
+        arrow.get(config.last_run_at).humanize() if config.last_run_at else None
+    )
+    st.write(f"**Last Run:** {humanized_last_run or 'Not run yet'}")
+
+
+def _show_rss_config_details(workspace, config: RssIngestionConfig):
+    st.metric("RSS Feed URL", config.rss_feed_url)
+
+    humanized_last_run = (
+        arrow.get(config.last_run_at).humanize() if config.last_run_at else None
+    )
+    st.write(f"**Last Run:** {humanized_last_run or 'Not run yet'}")
+
+
+def _show_one_data_source(
+    workspace: Workspace, config: SearchIngestionConfig | RssIngestionConfig
+):
     with st.expander(f"**{config.title}**"):
-        st.metric("Region", region_to_full_name(config.region))
-        st.write(f"**Search Queries ({len(config.queries)}):**")
-
-        with st.container(border=True):
-            st.markdown(" ".join([f"`{query}`" for query in config.queries]))
-
-        st.write(f"**Max Results:** {config.max_results}")
-        st.write(f"**Time Limit:** {config.time_limit}")
+        if isinstance(config, SearchIngestionConfig):
+            _show_search_config_details(workspace, config)
+        else:
+            _show_rss_config_details(workspace, config)
 
         col1, col2, col3 = st.columns([1, 1, 1])
 
@@ -303,7 +326,10 @@ def _show_one_data_source(workspace: Workspace, config: SearchIngestionConfig):
                 key=f"update_search_ingestion_config_{config.field_id}",
                 use_container_width=True,
             ):
-                update_config(workspace, config)
+                if not isinstance(config, SearchIngestionConfig):
+                    st.error("Editing RSS configurations is not supported yet.")
+                else:
+                    update_config(workspace, config)
 
         with col2:
             if st.button(
@@ -329,11 +355,13 @@ def _show_one_data_source(workspace: Workspace, config: SearchIngestionConfig):
                 key=f"create_ingestion_run_{config.field_id}",
                 use_container_width=True,
             ):
-                create_new_ingestion_run(workspace, config)
+                create_new_ingestion_run(
+                    workspace, config_title=config.title, config_id=str(config.field_id)
+                )
 
 
 @st.dialog("Create New Data Source")
-def _create_new_data_source(workspace: Workspace):
+def _create_new_search_data_source(workspace: Workspace):
     with st.form(
         "create_search_ingestion_config",
         clear_on_submit=True,
@@ -426,7 +454,7 @@ def _data_sources_section(workspace: Workspace):
         "➕ New Data Source",
         use_container_width=True,
     ):
-        _create_new_data_source(workspace)
+        _create_new_search_data_source(workspace)
 
     configs = _fetch_ingestion_configs(workspace)
     if not configs:
