@@ -11,9 +11,8 @@ class IngesterSettings(BaseSettings):
     )
     MAX_RETRIES_PER_QUERY: int = 2
     RETRY_SLEEP_TIME_S: int = 5
-    SLEEP_BETWEEN_QUERIES_S: int = 5
+    SLEEP_BETWEEN_QUERIES_S: int = 4
     QUERY_TIMEOUT: int = 30
-    MIN_HOURS_BETWEEN_RUNS: int = 1
 
     # Whether to log each search query during the search
     VERBOSE_SEARCH: bool = True
@@ -26,9 +25,6 @@ class IngesterSettings(BaseSettings):
     PINECONE_INDEX: str = Field(default=...)
 
     MONGODB_URI: str = Field(default=...)
-
-    # TEMPORARY: these parameters will be in the IngestionSchedule model
-    MAX_RESULTS: int = 30
 
     # Watcher settings
     POLLING_INTERVAL_S: int = 10

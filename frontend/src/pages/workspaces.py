@@ -3,8 +3,10 @@ from collections import defaultdict
 import arrow
 import pandas as pd
 from shared.models import IngestionConfig
+from shared.util import validate_url
 import streamlit as st
 from sdk.so_insights_client.api.ingestion_configs import (
+    create_rss_ingestion_config,
     create_search_ingestion_config,
     list_ingestion_configs,
     list_search_ingestion_configs,
@@ -70,7 +72,6 @@ def region_to_full_name(region: Region) -> str:
 def _create_new_workspace():
     with st.form(
         "new_workspace_form",
-        clear_on_submit=True,
         border=False,
     ):
         new_workspace_name = st.text_input(
@@ -364,7 +365,6 @@ def _show_one_data_source(
 def _create_new_search_data_source(workspace: Workspace):
     with st.form(
         "create_search_ingestion_config",
-        clear_on_submit=True,
         border=False,
     ):
         config_title = st.text_input(
@@ -409,7 +409,10 @@ def _create_new_search_data_source(workspace: Workspace):
         )
         assert isinstance(time_limit, TimeLimit)
 
-        if st.form_submit_button("Submit"):
+        if st.form_submit_button(
+            "Submit",
+            use_container_width=True,
+        ):
             if not config_title or not queries_input:
                 st.error("Please fill in both the title and search queries.")
             else:
@@ -447,14 +450,67 @@ def _create_new_search_data_source(workspace: Workspace):
                     )
 
 
+@st.dialog("Create New RSS Data Source")
+def _create_new_rss_data_source(workspace: Workspace):
+    with st.form(
+        "create_rss_ingestion_config",
+        border=False,
+    ):
+        config_title = st.text_input(
+            "Configuration Title*",
+            placeholder="Example.com RSS Feed",
+            max_chars=30,
+        )
+
+        rss_feed_url = st.text_input(
+            "RSS Feed URL*",
+            placeholder="https://example.com/rss",
+            help="Enter the URL of the RSS feed you want to monitor",
+        )
+
+        if st.form_submit_button(
+            "Submit",
+            use_container_width=True,
+        ):
+            if not config_title or not rss_feed_url:
+                st.error("Please fill in both the title and RSS feed URL.")
+            elif not validate_url(rss_feed_url):
+                st.error("Invalid RSS feed URL. Please enter a valid URL.")
+            else:
+                new_config = RssIngestionConfigCreate(
+                    title=config_title,
+                    rss_feed_url=rss_feed_url,
+                )
+
+                response = create_rss_ingestion_config.sync(
+                    client=client,
+                    workspace_id=str(workspace.field_id),
+                    body=new_config,
+                )
+
+                if isinstance(response, RssIngestionConfig):
+                    st.success(
+                        f"RSS Configuration '**{config_title}**' created successfully!"
+                    )
+                    st.rerun()
+                else:
+                    st.error(f"Failed to create RSS configuration. Error: {response}")
+
+
 def _data_sources_section(workspace: Workspace):
-    col1, col2 = st.columns([3, 1])
+    col1, col2, col3 = st.columns([3, 1, 1])
     col1.subheader("📰 Data sources")
     if col2.button(
-        "➕ New Data Source",
+        "➕ New Web Search Source",
         use_container_width=True,
     ):
         _create_new_search_data_source(workspace)
+
+    if col3.button(
+        "➕ New RSS Data Source",
+        use_container_width=True,
+    ):
+        _create_new_rss_data_source(workspace)
 
     configs = _fetch_ingestion_configs(workspace)
     if not configs:

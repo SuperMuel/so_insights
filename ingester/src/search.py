@@ -14,7 +14,7 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
-from src.ingester_util import validate_url
+from shared.util import validate_url
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from src.ingester_settings import IngesterSettings

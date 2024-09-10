@@ -1,4 +1,4 @@
-from src.ingester_util import validate_url
+from shared.util import validate_url
 
 
 def test_validate_url_with_valid_url():
