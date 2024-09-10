@@ -20,63 +20,18 @@ def my_fixture():
 def test_cluster_evaluation_valid_relevant():
     evaluation = ClusterEvaluation(
         justification="This cluster is relevant.",
-        relevant=True,
-        irrelevancy_reason=None,
+        relevance_level="highly_relevant",
+        confidence_score=0.9,
     )
-    assert evaluation.relevant == True  # noqa: E712
-    assert evaluation.irrelevancy_reason is None
+    assert evaluation.justification == "This cluster is relevant."
+    assert evaluation.relevance_level == "highly_relevant"
+    assert evaluation.confidence_score == 0.9
 
 
-def test_cluster_evaluation_valid_irrelevant():
-    evaluation = ClusterEvaluation(
-        justification="This cluster is not relevant.",
-        relevant=False,
-        irrelevancy_reason="Off-topic content",
-    )
-    assert evaluation.relevant == False  # noqa: E712
-    assert evaluation.irrelevancy_reason == "Off-topic content"
-
-
-def test_cluster_evaluation_invalid_relevant_with_reason():
-    with pytest.raises(ValidationError) as exc_info:
+def test_confidence_score_between_0_and_1():
+    with pytest.raises(ValidationError):
         ClusterEvaluation(
             justification="This should fail.",
-            relevant=True,
-            irrelevancy_reason="This shouldn't be here",
+            relevance_level="highly_relevant",
+            confidence_score=1.1,
         )
-    assert "irrelevancy_reason must be None when relevant is True" in str(
-        exc_info.value
-    )
-
-
-def test_cluster_evaluation_invalid_irrelevant_without_reason():
-    with pytest.raises(ValidationError) as exc_info:
-        ClusterEvaluation(
-            justification="This should fail.", relevant=False, irrelevancy_reason=None
-        )
-    assert "irrelevancy_reason must not be None when relevant is False" in str(
-        exc_info.value
-    )
-
-
-def test_cluster_evaluation_irrelevancy_reason_optional_when_relevant():
-    evaluation = ClusterEvaluation(
-        justification="This is relevant without specifying irrelevancy_reason.",
-        relevant=True,
-    )
-    assert evaluation.relevant == True  # noqa: E712
-    assert evaluation.irrelevancy_reason is None
-
-
-def test_cluster_evaluation_justification_required():
-    with pytest.raises(ValidationError) as exc_info:
-        ClusterEvaluation(relevant=True)  # type: ignore
-    assert "Field required" in str(exc_info.value)
-    assert "justification" in str(exc_info.value)
-
-
-def test_cluster_evaluation_relevant_required():
-    with pytest.raises(ValidationError) as exc_info:
-        ClusterEvaluation(justification="Missing relevant field")  # type: ignore
-    assert "Field required" in str(exc_info.value)
-    assert "relevant" in str(exc_info.value)
