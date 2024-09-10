@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from enum import Enum
 from beanie.odm.queries.find import FindMany
-from typing import Annotated, Any, Dict, Literal
+from typing import Annotated, Any, Dict, Literal, Self
 
 from beanie import Document, Indexed, PydanticObjectId
 from beanie.operators import Exists
@@ -80,6 +80,19 @@ class IngestionConfig(Document):
         is_root = True
         name = DBSettings().mongodb_ingestion_configs_collection
 
+    async def get_last_run(self) -> Self | None:
+        return (
+            IngestionRun.find(
+                IngestionRun.workspace_id == self.workspace_id,
+                IngestionRun.config_id == self.id,
+                with_children=True,
+            )
+            .sort(
+                -IngestionRun.created_at  # type:ignore
+            )
+            .first_or_none()
+        )
+
 
 class SearchIngestionConfig(IngestionConfig):
     type: IngestionConfigType = IngestionConfigType.search
@@ -92,6 +105,19 @@ class SearchIngestionConfig(IngestionConfig):
     first_run_max_results: int = Field(..., ge=1, le=100)
     first_run_time_limit: TimeLimit
 
+    async def get_max_results_and_time_limit(self) -> tuple[int, TimeLimit]:
+        """If the config has already run, return the default max_results and time_limit.
+        If it's the first run, return the first_run_max_results and first_run_time_limit.
+        """
+        has_run = await self.get_last_run()
+
+        max_results, time_limit = (
+            (self.max_results, self.time_limit)
+            if has_run
+            else (self.first_run_max_results, self.first_run_time_limit)
+        )
+        return max_results, time_limit
+
 
 class RssIngestionConfig(IngestionConfig):
     type: IngestionConfigType = IngestionConfigType.rss
@@ -101,9 +127,6 @@ class RssIngestionConfig(IngestionConfig):
 
 class SearchIngestionRunResult(BaseModel):
     type: IngestionConfigType = IngestionConfigType.search
-
-    successfull_queries: int
-    n_inserted: int
 
 
 class RssIngestionRunResult(BaseModel):
@@ -123,7 +146,7 @@ class IngestionRun(Document):
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
     )
 
-    result: SearchIngestionRunResult | RssIngestionRunResult | None = None
+    n_inserted: int | None = None
 
     class Settings:
         name = DBSettings().mongodb_ingestion_runs_collection
@@ -136,6 +159,37 @@ class IngestionRun(Document):
 
     def is_pending(self) -> bool:
         return self.status == Status.pending
+
+    async def mark_as_finished(self, status: Status, error: str | None = None):
+        """
+        Finish the process and update the status, end time, and error (if any).
+        Parameters:
+        - status (Status): The status to set for the process.
+        - error (str | None): The error message, if any.
+        Returns:
+        - None
+        """
+        self.status = status
+        self.end_at = utc_datetime_factory()
+        self.error = error
+
+        await self.save()
+
+    async def mark_as_started(self):
+        """
+        Start the process and update the status and start time.
+        Returns:
+        - None
+        """
+        if self.status not in [Status.pending, Status.running]:
+            raise ValueError("Cannot start a completed process.")
+
+        self.start_at = utc_datetime_factory()
+
+        if self.status == Status.pending:
+            self.status = Status.running
+
+        await self.replace()
 
 
 class Article(Document):
@@ -155,7 +209,7 @@ class Article(Document):
 
     content: str | None = None
 
-    ingestion_run: IngestionRun | None = None
+    ingestion_run_id: PydanticObjectId | None = None
 
     vector_indexed: bool = False
 

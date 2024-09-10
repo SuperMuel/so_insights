@@ -1,11 +1,11 @@
 from pydantic_core import Url
 import pytest
 from shared.db import my_init_beanie
-from src.rss import entry_to_published_date, fetch_rss_feed, convert_to_article
+from src.rss import entry_to_published_date, convert_to_article
 from datetime import datetime, timezone
-from shared.models import Article, IngestionRun
+from shared.models import Article
 
-from beanie import PydanticObjectId, init_beanie
+from beanie import PydanticObjectId
 
 from mongomock_motor import AsyncMongoMockClient
 from make_it_sync import make_sync

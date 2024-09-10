@@ -6,7 +6,7 @@ import aiohttp
 import feedparser
 from beanie import PydanticObjectId
 
-from shared.models import Article, RssIngestionConfig, Workspace
+from shared.models import Article, RssIngestionConfig
 
 
 logger = logging.getLogger(__name__)
@@ -50,26 +50,12 @@ def convert_to_article(
     )
 
 
-async def ingest_rss_feed(
-    config: RssIngestionConfig, workspace: Workspace
-) -> list[Article]:
-    assert workspace.id
-
+async def ingest_rss_feed(config: RssIngestionConfig) -> list[Article]:
     async with aiohttp.ClientSession() as session:
         feed_content = await fetch_rss_feed(session, str(config.rss_feed_url))
 
     entries = await parse_rss_feed(feed_content)
 
-    articles = [convert_to_article(entry, workspace.id) for entry in entries]
+    articles = [convert_to_article(entry, config.workspace_id) for entry in entries]
 
-    return articles
-
-
-async def process_rss_config(
-    config: RssIngestionConfig, workspace: Workspace
-) -> list[Article]:
-    articles = await ingest_rss_feed(config, workspace)
-
-    # TODO: Implement deduplication logic here
-    # For now, we'll just return all articles
     return articles
