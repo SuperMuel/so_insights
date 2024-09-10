@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
+from typing import Any, Dict, List, Type, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -7,11 +7,6 @@ from dateutil.parser import isoparse
 
 from ..models.status import Status
 from ..types import UNSET, Unset
-
-if TYPE_CHECKING:
-    from ..models.rss_ingestion_run_result import RssIngestionRunResult
-    from ..models.search_ingestion_run_result import SearchIngestionRunResult
-
 
 T = TypeVar("T", bound="IngestionRun")
 
@@ -28,7 +23,7 @@ class IngestionRun:
         end_at (Union[None, Unset, datetime.datetime]):
         status (Union[Unset, Status]):  Default: Status.PENDING.
         error (Union[None, Unset, str]):
-        result (Union['RssIngestionRunResult', 'SearchIngestionRunResult', None, Unset]):
+        n_inserted (Union[None, Unset, int]):
     """
 
     workspace_id: str
@@ -39,13 +34,10 @@ class IngestionRun:
     end_at: Union[None, Unset, datetime.datetime] = UNSET
     status: Union[Unset, Status] = Status.PENDING
     error: Union[None, Unset, str] = UNSET
-    result: Union["RssIngestionRunResult", "SearchIngestionRunResult", None, Unset] = UNSET
+    n_inserted: Union[None, Unset, int] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        from ..models.rss_ingestion_run_result import RssIngestionRunResult
-        from ..models.search_ingestion_run_result import SearchIngestionRunResult
-
         workspace_id = self.workspace_id
 
         config_id = self.config_id
@@ -86,15 +78,11 @@ class IngestionRun:
         else:
             error = self.error
 
-        result: Union[Dict[str, Any], None, Unset]
-        if isinstance(self.result, Unset):
-            result = UNSET
-        elif isinstance(self.result, SearchIngestionRunResult):
-            result = self.result.to_dict()
-        elif isinstance(self.result, RssIngestionRunResult):
-            result = self.result.to_dict()
+        n_inserted: Union[None, Unset, int]
+        if isinstance(self.n_inserted, Unset):
+            n_inserted = UNSET
         else:
-            result = self.result
+            n_inserted = self.n_inserted
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -116,16 +104,13 @@ class IngestionRun:
             field_dict["status"] = status
         if error is not UNSET:
             field_dict["error"] = error
-        if result is not UNSET:
-            field_dict["result"] = result
+        if n_inserted is not UNSET:
+            field_dict["n_inserted"] = n_inserted
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
-        from ..models.rss_ingestion_run_result import RssIngestionRunResult
-        from ..models.search_ingestion_run_result import SearchIngestionRunResult
-
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
 
@@ -197,30 +182,14 @@ class IngestionRun:
 
         error = _parse_error(d.pop("error", UNSET))
 
-        def _parse_result(data: object) -> Union["RssIngestionRunResult", "SearchIngestionRunResult", None, Unset]:
+        def _parse_n_inserted(data: object) -> Union[None, Unset, int]:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
-            try:
-                if not isinstance(data, dict):
-                    raise TypeError()
-                result_type_0 = SearchIngestionRunResult.from_dict(data)
+            return cast(Union[None, Unset, int], data)
 
-                return result_type_0
-            except:  # noqa: E722
-                pass
-            try:
-                if not isinstance(data, dict):
-                    raise TypeError()
-                result_type_1 = RssIngestionRunResult.from_dict(data)
-
-                return result_type_1
-            except:  # noqa: E722
-                pass
-            return cast(Union["RssIngestionRunResult", "SearchIngestionRunResult", None, Unset], data)
-
-        result = _parse_result(d.pop("result", UNSET))
+        n_inserted = _parse_n_inserted(d.pop("n_inserted", UNSET))
 
         ingestion_run = cls(
             workspace_id=workspace_id,
@@ -231,7 +200,7 @@ class IngestionRun:
             end_at=end_at,
             status=status,
             error=error,
-            result=result,
+            n_inserted=n_inserted,
         )
 
         ingestion_run.additional_properties = d

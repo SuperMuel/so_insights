@@ -1,7 +1,21 @@
 from fastapi import APIRouter, status
-from src.dependencies import ExistingWorkspace, ExistingSearchIngestionConfig
-from shared.models import utc_datetime_factory, SearchIngestionConfig
-from src.schemas import SearchIngestionConfigCreate, SearchIngestionConfigUpdate
+
+from shared.models import (
+    RssIngestionConfig,
+    SearchIngestionConfig,
+    utc_datetime_factory,
+)
+from src.dependencies import (
+    ExistingRssIngestionConfig,
+    ExistingSearchIngestionConfig,
+    ExistingWorkspace,
+)
+from src.schemas import (
+    RssIngestionConfigCreate,
+    RssIngestionConfigUpdate,
+    SearchIngestionConfigCreate,
+    SearchIngestionConfigUpdate,
+)
 
 router = APIRouter(tags=["ingestion-configs"])
 
@@ -55,6 +69,62 @@ async def list_search_ingestion_configs(workspace: ExistingWorkspace):
 async def update_search_ingestion_config(
     config_update: SearchIngestionConfigUpdate,
     ingestion_config: ExistingSearchIngestionConfig,
+):
+    update_data = config_update.model_dump(exclude_unset=True)
+    update_data["updated_at"] = utc_datetime_factory()
+    await ingestion_config.update({"$set": update_data})
+    return ingestion_config
+
+
+@router.post(
+    "/rss",
+    response_model=RssIngestionConfig,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="create_rss_ingestion_config",
+)
+async def create_rss_ingestion_config(
+    config: RssIngestionConfigCreate, workspace: ExistingWorkspace
+):
+    assert workspace.id
+
+    new_config = RssIngestionConfig(
+        **config.model_dump(),
+        workspace_id=workspace.id,
+    )
+
+    return await new_config.insert()
+
+
+@router.get(
+    "/rss",
+    response_model=list[RssIngestionConfig],
+    operation_id="list_rss_ingestion_configs",
+)
+async def list_rss_ingestion_configs(workspace: ExistingWorkspace):
+    assert workspace.id
+
+    return await RssIngestionConfig.find(
+        RssIngestionConfig.workspace_id == workspace.id
+    ).to_list()
+
+
+@router.get(
+    "/rss/{rss_ingestion_config_id}",
+    response_model=RssIngestionConfig,
+    operation_id="get_rss_ingestion_config",
+)
+async def get_rss_ingestion_config(ingestion_config: ExistingRssIngestionConfig):
+    return ingestion_config
+
+
+@router.put(
+    "/rss/{rss_ingestion_config_id}",
+    response_model=RssIngestionConfig,
+    operation_id="update_rss_ingestion_config",
+)
+async def update_rss_ingestion_config(
+    config_update: RssIngestionConfigUpdate,
+    ingestion_config: ExistingRssIngestionConfig,
 ):
     update_data = config_update.model_dump(exclude_unset=True)
     update_data["updated_at"] = utc_datetime_factory()

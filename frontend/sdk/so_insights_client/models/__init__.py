@@ -18,11 +18,12 @@ from .language import Language
 from .list_clusters_for_session_relevance_levels_type_0_item import ListClustersForSessionRelevanceLevelsType0Item
 from .region import Region
 from .relevancy_filter import RelevancyFilter
-from .rss_ingestion_run_result import RssIngestionRunResult
+from .rss_ingestion_config import RssIngestionConfig
+from .rss_ingestion_config_create import RssIngestionConfigCreate
+from .rss_ingestion_config_update import RssIngestionConfigUpdate
 from .search_ingestion_config import SearchIngestionConfig
 from .search_ingestion_config_create import SearchIngestionConfigCreate
 from .search_ingestion_config_update import SearchIngestionConfigUpdate
-from .search_ingestion_run_result import SearchIngestionRunResult
 from .status import Status
 from .time_limit import TimeLimit
 from .validation_error import ValidationError
@@ -49,11 +50,12 @@ __all__ = (
     "ListClustersForSessionRelevanceLevelsType0Item",
     "Region",
     "RelevancyFilter",
-    "RssIngestionRunResult",
+    "RssIngestionConfig",
+    "RssIngestionConfigCreate",
+    "RssIngestionConfigUpdate",
     "SearchIngestionConfig",
     "SearchIngestionConfigCreate",
     "SearchIngestionConfigUpdate",
-    "SearchIngestionRunResult",
     "Status",
     "TimeLimit",
     "ValidationError",

@@ -8,6 +8,7 @@ from shared.models import (
     ClusteringSession,
     IngestionConfig,
     IngestionRun,
+    RssIngestionConfig,
     SearchIngestionConfig,
     Workspace,
 )
@@ -45,6 +46,20 @@ async def get_search_ingestion_config(
     if not ingestion_config or ingestion_config.workspace_id != workspace.id:
         raise HTTPException(status_code=404, detail="Search ingestion config not found")
     return ingestion_config
+
+
+async def get_rss_ingestion_config(
+    rss_ingestion_config_id: str | PydanticObjectId, workspace: ExistingWorkspace
+) -> RssIngestionConfig:
+    ingestion_config = await RssIngestionConfig.get(rss_ingestion_config_id)
+    if not ingestion_config or ingestion_config.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="RSS ingestion config not found")
+    return ingestion_config
+
+
+ExistingRssIngestionConfig = Annotated[
+    RssIngestionConfig, Depends(get_rss_ingestion_config)
+]
 
 
 ExistingSearchIngestionConfig = Annotated[

@@ -60,6 +60,22 @@ class SearchIngestionConfigUpdate(BaseModel):
         extra = "forbid"
 
 
+class RssIngestionConfigCreate(BaseModel):
+    title: ModelTitle
+    rss_feed_url: HttpUrl
+
+    class Config:
+        extra = "forbid"
+
+
+class RssIngestionConfigUpdate(BaseModel):
+    title: ModelTitle | None
+    rss_feed_url: HttpUrl | None
+
+    class Config:
+        extra = "forbid"
+
+
 class ArticlePreview(BaseModel):
     id: str
     title: str
