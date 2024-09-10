@@ -9,7 +9,6 @@ from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
 from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
 
 
-from sdk.so_insights_client.models.status import Status
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import AppSettings
 import streamlit as st

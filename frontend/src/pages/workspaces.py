@@ -2,14 +2,12 @@ from collections import defaultdict
 
 import arrow
 import pandas as pd
-from shared.models import IngestionConfig
 from shared.util import validate_url
 import streamlit as st
 from sdk.so_insights_client.api.ingestion_configs import (
     create_rss_ingestion_config,
     create_search_ingestion_config,
     list_ingestion_configs,
-    list_search_ingestion_configs,
     update_search_ingestion_config,
 )
 from sdk.so_insights_client.api.ingestion_runs import (
@@ -29,9 +27,6 @@ from sdk.so_insights_client.models.region import Region
 from sdk.so_insights_client.models.rss_ingestion_config import RssIngestionConfig
 from sdk.so_insights_client.models.rss_ingestion_config_create import (
     RssIngestionConfigCreate,
-)
-from sdk.so_insights_client.models.rss_ingestion_config_update import (
-    RssIngestionConfigUpdate,
 )
 from sdk.so_insights_client.models.search_ingestion_config import SearchIngestionConfig
 from sdk.so_insights_client.models.search_ingestion_config_create import (
