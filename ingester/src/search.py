@@ -14,10 +14,10 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+from shared.util import validate_url
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from src.ingester_settings import IngesterSettings
-from src.util import validate_url
 
 import logging
 
@@ -91,7 +91,7 @@ async def search(
     )
 
 
-class RunResult:
+class _SearchResult:
     def __init__(self, articles: list[BaseArticle], successfull_queries: int):
         self.articles = articles
         self.successfull_queries = successfull_queries
@@ -105,7 +105,7 @@ async def perform_search(
     time_limit: TimeLimit,
     stop_after_consecutive_failures: int = 5,
     verbose: bool = False,
-) -> RunResult:
+) -> _SearchResult:
     # TODO : handle KeyboardInterrupt and return partial results
     all_articles = []
 
@@ -140,4 +140,4 @@ async def perform_search(
 
         await asyncio.sleep(settings.SLEEP_BETWEEN_QUERIES_S)
 
-    return RunResult(all_articles, successfull_queries)
+    return _SearchResult(all_articles, successfull_queries)

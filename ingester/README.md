@@ -43,14 +43,14 @@ poetry install
 
 The Ingester provides several command-line interfaces:
 
-1. Run ingestion for a single search query set:
+1. Run ingestion for a single config:
    ```
-   poetry run python main.py create-ingestion-task <search_query_set_id> [--time-limit <d|w|m|y>]
+   poetry run python main.py create-ingestion-task <config_id> 
    ```
 
-2. Run ingestion for all search query sets:
+2. Run ingestion for all search configs:
    ```
-   poetry run python main.py create-ingestion-tasks [--time-limit <d|w|m|y>]
+   poetry run python main.py create-ingestion-tasks 
    ```
 
 3. Upsert articles for a specific workspace:

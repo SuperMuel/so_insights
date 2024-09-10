@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from enum import Enum
 from beanie.odm.queries.find import FindMany
-from typing import Annotated, Any, Dict, Literal
+from typing import Annotated, Any, Dict, Literal, Self
 
 from beanie import Document, Indexed, PydanticObjectId
 from beanie.operators import Exists
@@ -15,6 +15,7 @@ from shared.db_settings import DBSettings
 from pydantic import StringConstraints
 
 
+# TODO auto change update_at like in https://github.com/naoTimesdev/showtimes/blob/79ed15aa647c6fb8ee9a1f694b54d90a5ed7dda0/showtimes/models/database.py#L24
 def utc_datetime_factory():
     return datetime.now(UTC)
 
@@ -61,45 +62,90 @@ class Workspace(Document):
         )
 
 
-class SearchQuerySet(Document):
+class IngestionConfigType(str, Enum):
+    search = "search"
+    rss = "rss"
+
+
+class IngestionConfig(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    queries: list[str]
     title: ModelTitle
-    region: Region
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    deleted: bool = False
-    deleted_at: PastDatetime | None = None
+    type: IngestionConfigType
+
+    last_run_at: PastDatetime | None = None
 
     class Settings:
-        name: str = DBSettings().mongodb_search_query_sets_collection
+        is_root = True
+        name = DBSettings().mongodb_ingestion_configs_collection
 
-    async def find_last_finished_run(self) -> "IngestionRun | None":
-        return (
-            await IngestionRun.find(
+    async def get_last_run(self) -> Self | None:
+        return await (
+            IngestionRun.find(
                 IngestionRun.workspace_id == self.workspace_id,
-                IngestionRun.queries_set_id == self.id,
+                IngestionRun.config_id == self.id,
+                with_children=True,
             )
-            .sort(-IngestionRun.end_at)  # type: ignore
+            .sort(
+                -IngestionRun.created_at  # type:ignore
+            )
             .first_or_none()
         )
 
 
+class SearchIngestionConfig(IngestionConfig):
+    type: IngestionConfigType = IngestionConfigType.search
+
+    queries: list[str]  # TODO : min and max length
+    region: Region
+    max_results: int = Field(..., ge=1, le=100)
+    time_limit: TimeLimit
+
+    first_run_max_results: int = Field(..., ge=1, le=100)
+    first_run_time_limit: TimeLimit
+
+    async def get_max_results_and_time_limit(self) -> tuple[int, TimeLimit]:
+        """If the config has already run, return the default max_results and time_limit.
+        If it's the first run, return the first_run_max_results and first_run_time_limit.
+        """
+        has_run = await self.get_last_run()
+
+        max_results, time_limit = (
+            (self.max_results, self.time_limit)
+            if has_run
+            else (self.first_run_max_results, self.first_run_time_limit)
+        )
+        return max_results, time_limit
+
+
+class RssIngestionConfig(IngestionConfig):
+    type: IngestionConfigType = IngestionConfigType.rss
+
+    rss_feed_url: HttpUrl  # TODO : add unique constraint on rss_feed_url
+
+
+class SearchIngestionRunResult(BaseModel):
+    type: IngestionConfigType = IngestionConfigType.search
+
+
+class RssIngestionRunResult(BaseModel):
+    type: IngestionConfigType = IngestionConfigType.rss
+
+
 class IngestionRun(Document):
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    queries_set_id: Annotated[PydanticObjectId, Indexed()]
-    time_limit: TimeLimit
-    max_results: int = Field(..., ge=1, le=100)
+    config_id: PydanticObjectId
+
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     start_at: PastDatetime | None = None
     end_at: PastDatetime | None = None
+
     status: Status = Status.pending
-    successfull_queries: int | None = None
     error: str | None = (
         None  # can be timeout (we should check for long duration ingestion and mark it as failed)
     )
 
-    # Number of new articles found, that didn't exist in the database before
     n_inserted: int | None = None
 
     class Settings:
@@ -113,6 +159,37 @@ class IngestionRun(Document):
 
     def is_pending(self) -> bool:
         return self.status == Status.pending
+
+    async def mark_as_finished(self, status: Status, error: str | None = None):
+        """
+        Finish the process and update the status, end time, and error (if any).
+        Parameters:
+        - status (Status): The status to set for the process.
+        - error (str | None): The error message, if any.
+        Returns:
+        - None
+        """
+        self.status = status
+        self.end_at = utc_datetime_factory()
+        self.error = error
+
+        await self.save()
+
+    async def mark_as_started(self):
+        """
+        Start the process and update the status and start time.
+        Returns:
+        - None
+        """
+        if self.status not in [Status.pending, Status.running]:
+            raise ValueError("Cannot start a completed process.")
+
+        self.start_at = utc_datetime_factory()
+
+        if self.status == Status.pending:
+            self.status = Status.running
+
+        await self.replace()
 
 
 class Article(Document):
@@ -130,7 +207,9 @@ class Article(Document):
         ""
     )
 
-    ingestion_run: IngestionRun
+    content: str | None = None
+
+    ingestion_run_id: PydanticObjectId | None = None
 
     vector_indexed: bool = False
 

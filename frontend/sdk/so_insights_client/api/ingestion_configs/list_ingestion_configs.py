@@ -1,32 +1,22 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.http_validation_error import HTTPValidationError
-from ...models.ingestion_run import IngestionRun
-from ...types import UNSET, Response
+from ...models.rss_ingestion_config import RssIngestionConfig
+from ...models.search_ingestion_config import SearchIngestionConfig
+from ...types import Response
 
 
 def _get_kwargs(
     workspace_id: str,
-    *,
-    ingestion_config_id: str,
 ) -> Dict[str, Any]:
-    params: Dict[str, Any] = {}
-
-    json_ingestion_config_id: str
-    json_ingestion_config_id = ingestion_config_id
-    params["ingestion_config_id"] = json_ingestion_config_id
-
-    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
-
     _kwargs: Dict[str, Any] = {
-        "method": "post",
-        "url": f"/workspaces/{workspace_id}/ingestion-runs/",
-        "params": params,
+        "method": "get",
+        "url": f"/workspaces/{workspace_id}/ingestion-configs/",
     }
 
     return _kwargs
@@ -34,9 +24,30 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[HTTPValidationError, IngestionRun]]:
+) -> Optional[Union[HTTPValidationError, List[Union["RssIngestionConfig", "SearchIngestionConfig"]]]]:
     if response.status_code == HTTPStatus.OK:
-        response_200 = IngestionRun.from_dict(response.json())
+        response_200 = []
+        _response_200 = response.json()
+        for response_200_item_data in _response_200:
+
+            def _parse_response_200_item(data: object) -> Union["RssIngestionConfig", "SearchIngestionConfig"]:
+                try:
+                    if not isinstance(data, dict):
+                        raise TypeError()
+                    response_200_item_type_0 = SearchIngestionConfig.from_dict(data)
+
+                    return response_200_item_type_0
+                except:  # noqa: E722
+                    pass
+                if not isinstance(data, dict):
+                    raise TypeError()
+                response_200_item_type_1 = RssIngestionConfig.from_dict(data)
+
+                return response_200_item_type_1
+
+            response_200_item = _parse_response_200_item(response_200_item_data)
+
+            response_200.append(response_200_item)
 
         return response_200
     if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
@@ -51,7 +62,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[HTTPValidationError, IngestionRun]]:
+) -> Response[Union[HTTPValidationError, List[Union["RssIngestionConfig", "SearchIngestionConfig"]]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -64,25 +75,22 @@ def sync_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    ingestion_config_id: str,
-) -> Response[Union[HTTPValidationError, IngestionRun]]:
-    """Create Ingestion Run
+) -> Response[Union[HTTPValidationError, List[Union["RssIngestionConfig", "SearchIngestionConfig"]]]]:
+    """List Ingestion Configs
 
     Args:
         workspace_id (str):
-        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, IngestionRun]]
+        Response[Union[HTTPValidationError, List[Union['RssIngestionConfig', 'SearchIngestionConfig']]]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        ingestion_config_id=ingestion_config_id,
     )
 
     response = client.get_httpx_client().request(
@@ -96,26 +104,23 @@ def sync(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    ingestion_config_id: str,
-) -> Optional[Union[HTTPValidationError, IngestionRun]]:
-    """Create Ingestion Run
+) -> Optional[Union[HTTPValidationError, List[Union["RssIngestionConfig", "SearchIngestionConfig"]]]]:
+    """List Ingestion Configs
 
     Args:
         workspace_id (str):
-        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, IngestionRun]
+        Union[HTTPValidationError, List[Union['RssIngestionConfig', 'SearchIngestionConfig']]]
     """
 
     return sync_detailed(
         workspace_id=workspace_id,
         client=client,
-        ingestion_config_id=ingestion_config_id,
     ).parsed
 
 
@@ -123,25 +128,22 @@ async def asyncio_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    ingestion_config_id: str,
-) -> Response[Union[HTTPValidationError, IngestionRun]]:
-    """Create Ingestion Run
+) -> Response[Union[HTTPValidationError, List[Union["RssIngestionConfig", "SearchIngestionConfig"]]]]:
+    """List Ingestion Configs
 
     Args:
         workspace_id (str):
-        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, IngestionRun]]
+        Response[Union[HTTPValidationError, List[Union['RssIngestionConfig', 'SearchIngestionConfig']]]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        ingestion_config_id=ingestion_config_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -153,26 +155,23 @@ async def asyncio(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    ingestion_config_id: str,
-) -> Optional[Union[HTTPValidationError, IngestionRun]]:
-    """Create Ingestion Run
+) -> Optional[Union[HTTPValidationError, List[Union["RssIngestionConfig", "SearchIngestionConfig"]]]]:
+    """List Ingestion Configs
 
     Args:
         workspace_id (str):
-        ingestion_config_id (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, IngestionRun]
+        Union[HTTPValidationError, List[Union['RssIngestionConfig', 'SearchIngestionConfig']]]
     """
 
     return (
         await asyncio_detailed(
             workspace_id=workspace_id,
             client=client,
-            ingestion_config_id=ingestion_config_id,
         )
     ).parsed

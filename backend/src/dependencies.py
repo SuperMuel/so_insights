@@ -6,8 +6,10 @@ from fastapi import Depends, HTTPException
 from shared.models import (
     Cluster,
     ClusteringSession,
+    IngestionConfig,
     IngestionRun,
-    SearchQuerySet,
+    RssIngestionConfig,
+    SearchIngestionConfig,
     Workspace,
 )
 
@@ -23,22 +25,46 @@ async def get_workspace(workspace_id: str | PydanticObjectId) -> Workspace:
 ExistingWorkspace = Annotated[Workspace, Depends(get_workspace)]
 
 
-async def get_search_query_set(
-    search_query_set_id: str | PydanticObjectId, workspace: ExistingWorkspace
-) -> SearchQuerySet:
-    search_query_set = await SearchQuerySet.get(search_query_set_id)
-
-    if (
-        not search_query_set
-        or search_query_set.workspace_id != workspace.id
-        or search_query_set.deleted
-    ):
-        raise HTTPException(status_code=404, detail="Search query set not found")
-
-    return search_query_set
+async def get_ingestion_config(
+    ingestion_config_id: str | PydanticObjectId, workspace: ExistingWorkspace
+) -> IngestionConfig:
+    ingestion_config = await IngestionConfig.get(
+        ingestion_config_id, with_children=True
+    )
+    if not ingestion_config or ingestion_config.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="Ingestion config not found")
+    return ingestion_config
 
 
-ExistingSearchQuerySet = Annotated[SearchQuerySet, Depends(get_search_query_set)]
+ExistingIngestionConfig = Annotated[IngestionConfig, Depends(get_ingestion_config)]
+
+
+async def get_search_ingestion_config(
+    search_ingestion_config_id: str | PydanticObjectId, workspace: ExistingWorkspace
+) -> SearchIngestionConfig:
+    ingestion_config = await SearchIngestionConfig.get(search_ingestion_config_id)
+    if not ingestion_config or ingestion_config.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="Search ingestion config not found")
+    return ingestion_config
+
+
+async def get_rss_ingestion_config(
+    rss_ingestion_config_id: str | PydanticObjectId, workspace: ExistingWorkspace
+) -> RssIngestionConfig:
+    ingestion_config = await RssIngestionConfig.get(rss_ingestion_config_id)
+    if not ingestion_config or ingestion_config.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="RSS ingestion config not found")
+    return ingestion_config
+
+
+ExistingRssIngestionConfig = Annotated[
+    RssIngestionConfig, Depends(get_rss_ingestion_config)
+]
+
+
+ExistingSearchIngestionConfig = Annotated[
+    SearchIngestionConfig, Depends(get_search_ingestion_config)
+]
 
 
 async def get_ingestion_run(

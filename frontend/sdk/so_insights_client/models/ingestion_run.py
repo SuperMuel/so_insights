@@ -6,7 +6,6 @@ from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
 from ..models.status import Status
-from ..models.time_limit import TimeLimit
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="IngestionRun")
@@ -17,29 +16,23 @@ class IngestionRun:
     """
     Attributes:
         workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        queries_set_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        time_limit (TimeLimit):
-        max_results (int):
+        config_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         created_at (Union[Unset, datetime.datetime]):
         start_at (Union[None, Unset, datetime.datetime]):
         end_at (Union[None, Unset, datetime.datetime]):
         status (Union[Unset, Status]):  Default: Status.PENDING.
-        successfull_queries (Union[None, Unset, int]):
         error (Union[None, Unset, str]):
         n_inserted (Union[None, Unset, int]):
     """
 
     workspace_id: str
-    queries_set_id: str
-    time_limit: TimeLimit
-    max_results: int
+    config_id: str
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     start_at: Union[None, Unset, datetime.datetime] = UNSET
     end_at: Union[None, Unset, datetime.datetime] = UNSET
     status: Union[Unset, Status] = Status.PENDING
-    successfull_queries: Union[None, Unset, int] = UNSET
     error: Union[None, Unset, str] = UNSET
     n_inserted: Union[None, Unset, int] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -47,11 +40,7 @@ class IngestionRun:
     def to_dict(self) -> Dict[str, Any]:
         workspace_id = self.workspace_id
 
-        queries_set_id = self.queries_set_id
-
-        time_limit = self.time_limit.value
-
-        max_results = self.max_results
+        config_id = self.config_id
 
         field_id: Union[None, Unset, str]
         if isinstance(self.field_id, Unset):
@@ -83,12 +72,6 @@ class IngestionRun:
         if not isinstance(self.status, Unset):
             status = self.status.value
 
-        successfull_queries: Union[None, Unset, int]
-        if isinstance(self.successfull_queries, Unset):
-            successfull_queries = UNSET
-        else:
-            successfull_queries = self.successfull_queries
-
         error: Union[None, Unset, str]
         if isinstance(self.error, Unset):
             error = UNSET
@@ -106,9 +89,7 @@ class IngestionRun:
         field_dict.update(
             {
                 "workspace_id": workspace_id,
-                "queries_set_id": queries_set_id,
-                "time_limit": time_limit,
-                "max_results": max_results,
+                "config_id": config_id,
             }
         )
         if field_id is not UNSET:
@@ -121,8 +102,6 @@ class IngestionRun:
             field_dict["end_at"] = end_at
         if status is not UNSET:
             field_dict["status"] = status
-        if successfull_queries is not UNSET:
-            field_dict["successfull_queries"] = successfull_queries
         if error is not UNSET:
             field_dict["error"] = error
         if n_inserted is not UNSET:
@@ -135,11 +114,7 @@ class IngestionRun:
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
 
-        queries_set_id = d.pop("queries_set_id")
-
-        time_limit = TimeLimit(d.pop("time_limit"))
-
-        max_results = d.pop("max_results")
+        config_id = d.pop("config_id")
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -198,15 +173,6 @@ class IngestionRun:
         else:
             status = Status(_status)
 
-        def _parse_successfull_queries(data: object) -> Union[None, Unset, int]:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(Union[None, Unset, int], data)
-
-        successfull_queries = _parse_successfull_queries(d.pop("successfull_queries", UNSET))
-
         def _parse_error(data: object) -> Union[None, Unset, str]:
             if data is None:
                 return data
@@ -227,15 +193,12 @@ class IngestionRun:
 
         ingestion_run = cls(
             workspace_id=workspace_id,
-            queries_set_id=queries_set_id,
-            time_limit=time_limit,
-            max_results=max_results,
+            config_id=config_id,
             field_id=field_id,
             created_at=created_at,
             start_at=start_at,
             end_at=end_at,
             status=status,
-            successfull_queries=successfull_queries,
             error=error,
             n_inserted=n_inserted,
         )

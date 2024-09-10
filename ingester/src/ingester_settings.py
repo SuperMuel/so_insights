@@ -1,4 +1,3 @@
-from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,9 +11,8 @@ class IngesterSettings(BaseSettings):
     )
     MAX_RETRIES_PER_QUERY: int = 2
     RETRY_SLEEP_TIME_S: int = 5
-    SLEEP_BETWEEN_QUERIES_S: int = 5
+    SLEEP_BETWEEN_QUERIES_S: int = 4
     QUERY_TIMEOUT: int = 30
-    MIN_HOURS_BETWEEN_RUNS: int = 1
 
     # Whether to log each search query during the search
     VERBOSE_SEARCH: bool = True
@@ -28,11 +26,7 @@ class IngesterSettings(BaseSettings):
 
     MONGODB_URI: str = Field(default=...)
 
-    # TEMPORARY: these parameters will be in the IngestionSchedule model
-    MAX_RESULTS: int = 30
-    DEFAULT_TIME_LIMIT: Literal["d", "w", "m", "y"] = "d"
-
     # Watcher settings
     POLLING_INTERVAL_S: int = 10
     MAX_RUNTIME_S: int = 30 * 60  # 30 minutes
-    PORT: int = 8080
+    PORT: int = 8081
