@@ -153,6 +153,8 @@ class Article(Document):
         ""
     )
 
+    content: str | None = None
+
     ingestion_run: IngestionRun | None = None
 
     vector_indexed: bool = False
