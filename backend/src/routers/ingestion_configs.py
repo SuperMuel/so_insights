@@ -20,8 +20,6 @@ from src.schemas import (
 
 router = APIRouter(tags=["ingestion-configs"])
 
-# fetch all ingestion configs
-
 
 @router.get(
     "/",

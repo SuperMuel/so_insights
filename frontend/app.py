@@ -1,14 +1,12 @@
-from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from sdk.so_insights_client.api.workspaces import list_workspaces
 from src.app_settings import AppSettings
 from src.shared import get_client
 import streamlit as st
-from streamlit_cookies_controller import CookieController, RemoveEmptyElementContainer
 from streamlit_theme import st_theme
 
 
-def select_workspace(client, cookie_controller: CookieController, on_change) -> None:
+def select_workspace(client, on_change) -> None:
     workspaces = list_workspaces.sync(client=client)
 
     if workspaces is None:
@@ -20,9 +18,14 @@ def select_workspace(client, cookie_controller: CookieController, on_change) -> 
         st.stop()
 
     index = 0
-    if workspace_id := cookie_controller.get("workspace_id"):
+
+    if "workspace" in st.session_state:
         index = next(
-            (i for i, w in enumerate(workspaces) if w.field_id == workspace_id),
+            (
+                i
+                for i, w in enumerate(workspaces)
+                if w.field_id == st.session_state.workspace.field_id
+            ),
             0,
         )
 
@@ -36,12 +39,6 @@ def select_workspace(client, cookie_controller: CookieController, on_change) -> 
     )
 
     assert selected
-
-    cookie_controller.set(
-        "workspace_id",
-        selected.field_id,
-        expires=datetime.now() + timedelta(days=365),
-    )
 
 
 if __name__ == "__main__":
@@ -67,9 +64,6 @@ if __name__ == "__main__":
         ]
     )
 
-    cookie_controller = CookieController()
-    RemoveEmptyElementContainer()
-
     def on_workspace_change():
         if chatbot_callback := st.session_state.get("on_workspace_changed_chatbot"):
             try:
@@ -80,7 +74,6 @@ if __name__ == "__main__":
     with st.sidebar:
         select_workspace(
             get_client(),
-            cookie_controller,
             on_workspace_change,
         )
 
