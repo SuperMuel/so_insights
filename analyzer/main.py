@@ -311,6 +311,7 @@ def watch(
         server_task = asyncio.create_task(run_server())
         try:
             while (datetime.now() - start_time).total_seconds() < max_runtime:
+                logger.info("Checking for pending sessions")
                 session = await ClusteringSession.find_one(
                     ClusteringSession.status == Status.pending
                 ).update_one(

@@ -422,7 +422,7 @@ def create_ingestion_tasks(
 
             configs = await IngestionConfig.find(
                 IngestionConfig.workspace_id == workspace.id,
-                IngestionConfig.type == type,
+                *([IngestionConfig.type == type] if type else []),
                 with_children=True,
             ).to_list()
 
@@ -435,7 +435,7 @@ def create_ingestion_tasks(
                     status=Status.pending,
                 ).create()
 
-                logger.info(f"Created ingestion run {run.id} for config {config.id}")
+                logger.info(f"\tCreated ingestion run {run.id} for config {config.id}")
 
         mongo_client.close()
 
