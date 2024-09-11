@@ -44,6 +44,13 @@ class HdbscanSettings(BaseModel):
 
 
 class Workspace(Document):
+    """
+    Represents a project workspace for organizing and managing content.
+
+    A Workspace is like a container for a specific research topic or project. It holds
+    settings and metadata that apply to all the content within it.
+    """
+
     name: ModelTitle
     description: ModelDescription = Field(default="")
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
@@ -68,6 +75,12 @@ class IngestionConfigType(str, Enum):
 
 
 class IngestionConfig(Document):
+    """
+    Base configuration for data ingestion processes.
+
+    An IngestionConfig defines how the system should collect information for a workspace.
+    """
+
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     title: ModelTitle
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
@@ -95,6 +108,12 @@ class IngestionConfig(Document):
 
 
 class SearchIngestionConfig(IngestionConfig):
+    """
+    Configuration for ingesting data from web searches.
+
+    This config tells the system how to perform web searches to gather content.
+    """
+
     type: IngestionConfigType = IngestionConfigType.search
 
     queries: list[str]  # TODO : min and max length
@@ -120,6 +139,12 @@ class SearchIngestionConfig(IngestionConfig):
 
 
 class RssIngestionConfig(IngestionConfig):
+    """
+    Configuration for ingesting data from RSS feeds.
+
+    This config specifies an RSS feed to collect content from.
+    """
+
     type: IngestionConfigType = IngestionConfigType.rss
 
     rss_feed_url: HttpUrl  # TODO : add unique constraint on rss_feed_url
@@ -134,6 +159,12 @@ class RssIngestionRunResult(BaseModel):
 
 
 class IngestionRun(Document):
+    """
+    Represents a single execution of an ingestion process.
+
+    An IngestionRun tracks the details of one attempt to collect data using an IngestionConfig.
+    """
+
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     config_id: PydanticObjectId
 
@@ -193,6 +224,13 @@ class IngestionRun(Document):
 
 
 class Article(Document):
+    """
+    Represents a single piece of content collected during ingestion.
+
+    An Article could be a news article, blog post, or any other text-based content
+    retrieved from the web
+    """
+
     workspace_id: PydanticObjectId
     title: Annotated[
         str, StringConstraints(min_length=1, max_length=200, strip_whitespace=True)
@@ -252,6 +290,19 @@ RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
 
 
 class ClusteringSession(Document):
+    """
+    Represents a session of grouping similar articles together.
+
+    A ClusteringSession is like a large-scale organization effort. It takes all the
+    articles collected within a certain time frame and groups them based on their
+    similarities. This helps in identifying trends, recurring themes, or related
+    pieces of information across many articles.
+
+    The session keeps track of various statistics about the clustering process,
+    such as how many groups were formed, how many articles were processed, and
+    how relevant or useful these groups are estimated to be.
+    """
+
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
     session_start: PastDatetime | None = None
@@ -313,6 +364,20 @@ class ClusteringSession(Document):
 
 
 class ClusterEvaluation(BaseModel):
+    """
+    Represents an assessment of a cluster's quality and relevance to the workspace.
+
+    After articles are grouped into clusters, it's important to understand how
+    good these groupings are for the workspace owner. The ClusterEvaluation provides
+    a way to score and explain the relevance of a cluster.
+
+    It includes a justification for the evaluation, a relevance level
+    (like "highly relevant", "somewhat relevant", or "not relevant"), and a
+    confidence score for this evaluation.
+
+    Done automatically by LLM after clustering and overview generation.
+    """
+
     justification: str = Field(
         ..., description="Your explanation for the relevance level."
     )
@@ -321,6 +386,15 @@ class ClusterEvaluation(BaseModel):
 
 
 class ClusterOverview(BaseModel):
+    """
+    Provides a summary of what a cluster of articles is about.
+
+    When you have a group of related articles, it's useful to have a quick
+    summary of what connects them. The ClusterOverview is the result of an LLM
+    generating a title and a brief summary that captures the main theme or topic
+    of the majority of articles in a cluster.
+    """
+
     title: Annotated[
         str,
         StringConstraints(
@@ -334,10 +408,31 @@ class ClusterOverview(BaseModel):
 
 
 class ClusterFeedback(BaseModel):
+    """
+    Captures user feedback on the relevance or usefulness of a cluster.
+
+    This simple model allows users to indicate whether they find a particular
+    cluster of articles relevant or not. It's a way to incorporate human judgment
+    into the system's organization of content, which can help improve the
+    cluster evaluation process over time.
+    """
+
     relevant: bool
 
 
 class Cluster(Document):
+    """
+    Represents a group of related articles identified during clustering.
+
+    A Cluster is the result of the grouping process. It contains multiple articles
+    that the system has determined are related in some way. Each cluster includes
+    references to its articles, an overview summarizing the cluster's theme,
+    an evaluation of its quality, and any user feedback received.
+
+    Clusters are the key output of the analysis process, providing a structured way
+    to understand and navigate large amounts of collected content.
+    """
+
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     session_id: Annotated[PydanticObjectId, Indexed()]
     articles_count: int = Field(
@@ -366,8 +461,17 @@ class Cluster(Document):
 
 
 class Starters(Document):
+    """
+    Stores predefined conversation starters or prompts to use in the workspace's chatbot.
+
+    Starters are like icebreakers or guiding questions. They can be used to help
+    users begin interacting with the collected and organized information in a
+    workspace.
+    """
+
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     starters: list[str]
+
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
     class Settings:
