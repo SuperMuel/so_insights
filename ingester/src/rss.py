@@ -30,7 +30,9 @@ def entry_to_published_date(published_parsed) -> datetime | None:
 
 
 def convert_to_article(
-    entry: Dict[str, Any], workspace_id: PydanticObjectId
+    entry: Dict[str, Any],
+    workspace_id: PydanticObjectId,
+    ingestion_run_id: PydanticObjectId,
 ) -> Article:
     # Convert the published date to a datetime object
     published = entry.get("published_parsed")
@@ -41,6 +43,7 @@ def convert_to_article(
 
     return Article(
         workspace_id=workspace_id,
+        ingestion_run_id=ingestion_run_id,
         title=entry.get("title", ""),
         url=entry.get("link", ""),
         body=entry.get("summary", ""),
@@ -50,12 +53,21 @@ def convert_to_article(
     )
 
 
-async def ingest_rss_feed(config: RssIngestionConfig) -> list[Article]:
+async def ingest_rss_feed(
+    config: RssIngestionConfig, ingestion_run_id: PydanticObjectId
+) -> list[Article]:
     async with aiohttp.ClientSession() as session:
         feed_content = await fetch_rss_feed(session, str(config.rss_feed_url))
 
     entries = await parse_rss_feed(feed_content)
 
-    articles = [convert_to_article(entry, config.workspace_id) for entry in entries]
+    articles = [
+        convert_to_article(
+            entry,
+            config.workspace_id,
+            ingestion_run_id=ingestion_run_id,
+        )
+        for entry in entries
+    ]
 
     return articles

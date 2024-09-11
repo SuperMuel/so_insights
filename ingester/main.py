@@ -260,7 +260,8 @@ async def handle_rss_ingestion_config(
         f"({config.title}, {config.rss_feed_url=})"
     )
 
-    return await ingest_rss_feed(config)
+    assert run.id
+    return await ingest_rss_feed(config, ingestion_run_id=run.id)
 
 
 async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
@@ -295,9 +296,6 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
     except Exception as e:
         logger.info(f"Error while processing ingestion run: {e}")
         return await run.mark_as_finished(Status.failed, error=str(e))
-
-    for article in articles:
-        article.ingestion_run_id = run.id
 
     run.n_inserted = await insert_articles_in_mongodb(articles)
 
