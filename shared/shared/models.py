@@ -39,8 +39,13 @@ class Status(str, Enum):
 
 
 class HdbscanSettings(BaseModel):
-    min_cluster_size: int = 3
-    min_samples: int = 1
+    min_cluster_size: int = Field(
+        default=3, description="Minimum number of points required to form a cluster"
+    )
+    min_samples: int = Field(
+        default=1,
+        description="Number of samples in a neighborhood for a point to be considered as a core point",
+    )
 
 
 class Workspace(Document):
@@ -51,12 +56,25 @@ class Workspace(Document):
     settings and metadata that apply to all the content within it.
     """
 
-    name: ModelTitle
-    description: ModelDescription = Field(default="")
-    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    updated_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    language: Language = Language.fr
-    hdbscan_settings: HdbscanSettings = Field(default_factory=HdbscanSettings)
+    name: ModelTitle = Field(..., description="The name of the workspace")
+    description: ModelDescription = Field(
+        default="", description="A detailed description of the workspace's purpose"
+    )
+    created_at: PastDatetime = Field(
+        default_factory=utc_datetime_factory,
+        description="Timestamp when the workspace was created",
+    )
+    updated_at: PastDatetime = Field(
+        default_factory=utc_datetime_factory,
+        description="Timestamp of the last update to the workspace",
+    )
+    language: Language = Field(
+        default=Language.fr, description="The primary language of the workspace content"
+    )
+    hdbscan_settings: HdbscanSettings = Field(
+        default=HdbscanSettings(),
+        description="HDBSCAN algorithm settings for clustering",
+    )
 
     class Settings:
         name: str = DBSettings().mongodb_workspaces_collection
@@ -116,13 +134,26 @@ class SearchIngestionConfig(IngestionConfig):
 
     type: IngestionConfigType = IngestionConfigType.search
 
-    queries: list[str]  # TODO : min and max length
-    region: Region
-    max_results: int = Field(..., ge=1, le=100)
-    time_limit: TimeLimit
-
-    first_run_max_results: int = Field(..., ge=1, le=100)
-    first_run_time_limit: TimeLimit
+    queries: list[str] = Field(
+        ..., description="List of search queries to use for ingestion"
+    )  # TODO : min and max length
+    region: Region = Field(..., description="Geographic region to focus the search on")
+    max_results: int = Field(
+        ..., ge=1, le=100, description="Maximum number of results to fetch per query"
+    )
+    time_limit: TimeLimit = Field(
+        ...,
+        description="Time limit for search results (d: day, w: week, m: month, y: year)",
+    )
+    first_run_max_results: int = Field(
+        ...,
+        ge=1,
+        le=100,
+        description="Maximum number of results to fetch per query on the first run",
+    )
+    first_run_time_limit: TimeLimit = Field(
+        ..., description="Time limit for search results on the first run"
+    )
 
     async def get_max_results_and_time_limit(self) -> tuple[int, TimeLimit]:
         """If the config has already run, return the default max_results and time_limit.
@@ -166,18 +197,29 @@ class IngestionRun(Document):
     """
 
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    config_id: PydanticObjectId
-
-    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    start_at: PastDatetime | None = None
-    end_at: PastDatetime | None = None
-
-    status: Status = Status.pending
-    error: str | None = (
-        None  # can be timeout (we should check for long duration ingestion and mark it as failed)
+    config_id: PydanticObjectId = Field(
+        ..., description="ID of the ingestion config used for this run"
     )
 
-    n_inserted: int | None = None
+    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
+
+    start_at: PastDatetime | None = Field(
+        default=None, description="Timestamp when the run started"
+    )
+    end_at: PastDatetime | None = Field(
+        default=None, description="Timestamp when the run ended"
+    )
+
+    status: Status = Field(
+        default=Status.pending, description="Current status of the ingestion run"
+    )
+    error: str | None = Field(
+        default=None, description="Error message if the run failed"
+    )
+    n_inserted: int | None = Field(
+        default=None,
+        description="Number of new articles inserted in the DB during this run",
+    )
 
     class Settings:
         name = DBSettings().mongodb_ingestion_runs_collection
@@ -234,22 +276,35 @@ class Article(Document):
     workspace_id: PydanticObjectId
     title: Annotated[
         str, StringConstraints(min_length=1, max_length=200, strip_whitespace=True)
-    ]
-    url: HttpUrl
-    body: Annotated[str, StringConstraints(max_length=1000, strip_whitespace=True)] = ""
-    found_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    date: PastDatetime
-    region: Region | None = None
-    image: HttpUrl | None = None
-    source: Annotated[str, StringConstraints(max_length=100, strip_whitespace=True)] = (
-        ""
+    ] = Field(..., description="Title of the article")
+    url: HttpUrl = Field(..., description="URL where the article was found")
+    body: Annotated[str, StringConstraints(max_length=1000, strip_whitespace=True)] = (
+        Field(
+            default="", description="Short excerpt or meta_description of the article"
+        )
     )
-
-    content: str | None = None
-
-    ingestion_run_id: PydanticObjectId | None = None
-
-    vector_indexed: bool = False
+    found_at: PastDatetime = Field(
+        default_factory=utc_datetime_factory,
+        description="Timestamp when the article was found",
+    )
+    date: PastDatetime = Field(..., description="Publication date of the article")
+    region: Region | None = Field(
+        default=None, description="Geographic region associated with the article"
+    )
+    image: HttpUrl | None = Field(
+        default=None, description="URL of the main image in the article"
+    )
+    source: Annotated[str, StringConstraints(max_length=100, strip_whitespace=True)] = (
+        Field(default="", description="Source of the article")
+    )
+    content: str | None = Field(default=None, description="Full content of the article")
+    ingestion_run_id: PydanticObjectId | None = Field(
+        None, description="ID of the ingestion run that found this article"
+    )
+    vector_indexed: bool = Field(
+        default=False,
+        description="Whether this article has been indexed in the vector database",
+    )
 
     @field_validator("title", mode="before")
     @classmethod
@@ -304,36 +359,60 @@ class ClusteringSession(Document):
     """
 
     workspace_id: Annotated[PydanticObjectId, Indexed()]
-    created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    session_start: PastDatetime | None = None
-    session_end: PastDatetime | None = None
-
-    status: Status = Status.pending
-    error: str | None = None
-
-    data_start: PastDatetime
-    data_end: datetime
-    nb_days: int
-
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
+    created_at: PastDatetime = Field(
+        default_factory=utc_datetime_factory,
+        description="Timestamp when the session was created",
+    )
+    session_start: PastDatetime | None = Field(
+        default=None, description="Timestamp when the clustering session started"
+    )
+    session_end: PastDatetime | None = Field(
+        default=None, description="Timestamp when the clustering session ended"
+    )
+    status: Status = Field(
+        default=Status.pending, description="Current status of the clustering session"
+    )
+    error: str | None = Field(
+        default=None, description="Error message if the session failed"
+    )
+    data_start: PastDatetime = Field(
+        default=..., description="Start date of the data range used for clustering"
+    )
+    data_end: datetime = Field(
+        default=..., description="End date of the data range used for clustering"
+    )
+    nb_days: int = Field(..., description="Number of days in the data range")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metadata about the clustering session",
+    )
     articles_count: int | None = Field(
-        default=None,
-        description="Number of articles on which the clustering was performed, including noise.",
+        default=None, description="Number of articles processed in this session"
     )
-    clusters_count: int | None = None
-    relevant_clusters_count: int | None = None
-    somewhat_relevant_clusters_count: int | None = None
-    irrelevant_clusters_count: int | None = None
-
-    noise_articles_ids: list[PydanticObjectId] | None = None
-    noise_articles_count: int | None = None
+    clusters_count: int | None = Field(
+        default=None, description="Total number of clusters formed"
+    )
+    relevant_clusters_count: int | None = Field(
+        default=None, description="Number of clusters deemed highly relevant"
+    )
+    somewhat_relevant_clusters_count: int | None = Field(
+        default=None, description="Number of clusters deemed somewhat relevant"
+    )
+    irrelevant_clusters_count: int | None = Field(
+        default=None, description="Number of clusters deemed not relevant"
+    )
+    noise_articles_ids: list[PydanticObjectId] | None = Field(
+        default=None, description="IDs of articles classified as noise"
+    )
+    noise_articles_count: int | None = Field(
+        default=None, description="Number of articles classified as noise"
+    )
     clustered_articles_count: int | None = Field(
-        default=None,
-        description="Number of articles in clusters, excluding noise.",
+        default=None, description="Number of articles successfully clustered"
     )
-
-    summary: str | None = None
+    summary: str | None = Field(
+        default=None, description="Overall summary of the clusteres deemed relevant"
+    )
 
     def pretty_print(self) -> str:
         return f"{self.data_start.strftime('%d %B %Y')} → {self.data_end.strftime('%d %B %Y')}"
@@ -406,6 +485,8 @@ class ClusterOverview(BaseModel):
     ]
     language: Language
 
+    created_at: PastDatetime | None = Field(default_factory=utc_datetime_factory)
+
 
 class ClusterFeedback(BaseModel):
     """
@@ -417,7 +498,10 @@ class ClusterFeedback(BaseModel):
     cluster evaluation process over time.
     """
 
-    relevant: bool
+    relevant: bool = Field(
+        ..., description="User feedback on whether the cluster is relevant"
+    )
+    created_at: PastDatetime | None = Field(default_factory=utc_datetime_factory)
 
 
 class Cluster(Document):
@@ -433,25 +517,33 @@ class Cluster(Document):
     to understand and navigate large amounts of collected content.
     """
 
-    workspace_id: Annotated[PydanticObjectId, Indexed()]
-    session_id: Annotated[PydanticObjectId, Indexed()]
-    articles_count: int = Field(
-        ...,
-        description="Number of articles in the cluster.",
+    workspace_id: Annotated[PydanticObjectId, Indexed()] = Field(
+        ..., description="ID of the workspace this cluster belongs to"
     )
+    session_id: Annotated[PydanticObjectId, Indexed()] = Field(
+        ..., description="ID of the clustering session that created this cluster"
+    )
+    articles_count: int = Field(..., description="Number of articles in the cluster")
     articles_ids: list[PydanticObjectId] = Field(
         ...,
         description="IDs of articles in the cluster, sorted by their distance to the cluster center",
     )
-
-    overview: ClusterOverview | None = None
-    overview_generation_error: str | None = None
-
-    evaluation: ClusterEvaluation | None = None
-
-    feedback: ClusterFeedback | None = None
-
-    first_image: HttpUrl | None = None
+    overview: ClusterOverview | None = Field(
+        default=None, description="Generated overview of the cluster's content"
+    )
+    overview_generation_error: str | None = Field(
+        default=None, description="Error message if overview generation failed"
+    )
+    evaluation: ClusterEvaluation | None = Field(
+        default=None, description="Evaluation of the cluster's relevance and quality"
+    )
+    feedback: ClusterFeedback | None = Field(
+        default=None, description="User feedback on the cluster"
+    )
+    first_image: HttpUrl | None = Field(
+        default=None,
+        description="URL of the first image found in the cluster's articles",
+    )
 
     class Settings:
         name = DBSettings().mongodb_clusters_collection
@@ -471,7 +563,6 @@ class Starters(Document):
 
     workspace_id: Annotated[PydanticObjectId, Indexed()]
     starters: list[str]
-
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
     class Settings:
