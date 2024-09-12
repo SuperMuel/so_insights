@@ -126,18 +126,26 @@ def _edit_workspace_form(workspace: Workspace):
         with st.expander("Advanced Settings"):
             assert workspace.hdbscan_settings
             st.write("HDBSCAN Settings")
-            updated_min_cluster_size = st.number_input(
-                "Minimum Cluster Size",
-                min_value=2,
-                value=workspace.hdbscan_settings.min_cluster_size,  # type:ignore
-                help="The minimum size of clusters; must be at least 2.",
+            updated_min_cluster_size = int(
+                st.number_input(
+                    "Minimum Cluster Size",
+                    min_value=2,
+                    step=1,
+                    value=workspace.hdbscan_settings.min_cluster_size or 3,
+                    help="The minimum size of clusters; must be at least 2.",
+                )
             )
-            updated_min_samples = st.number_input(
-                "Minimum Samples",
-                min_value=1,
-                value=workspace.hdbscan_settings.min_samples,  # type:ignore
-                help="The number of samples in a neighborhood for a point to be considered a core point.",
+            updated_min_samples = int(
+                st.number_input(
+                    "Minimum Samples",
+                    min_value=1,
+                    step=1,
+                    value=workspace.hdbscan_settings.min_samples or 1,
+                    help="The number of samples in a neighborhood for a point to be considered a core point.",
+                )
             )
+
+            assert updated_min_cluster_size and updated_min_samples
 
         if st.form_submit_button(
             "✏️ Update Workspace",

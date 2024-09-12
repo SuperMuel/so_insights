@@ -27,6 +27,7 @@ from .search_ingestion_config_update import SearchIngestionConfigUpdate
 from .status import Status
 from .time_limit import TimeLimit
 from .validation_error import ValidationError
+from .workspace import Workspace
 from .workspace_create import WorkspaceCreate
 from .workspace_update import WorkspaceUpdate
 
@@ -58,6 +59,7 @@ __all__ = (
     "Status",
     "TimeLimit",
     "ValidationError",
+    "Workspace",
     "WorkspaceCreate",
     "WorkspaceUpdate",
 )

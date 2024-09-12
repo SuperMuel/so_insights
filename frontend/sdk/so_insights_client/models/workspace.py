@@ -1,55 +1,55 @@
 import datetime
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
-from ..models.ingestion_config_type import IngestionConfigType
 from ..types import UNSET, Unset
 
-T = TypeVar("T", bound="RssIngestionConfig")
+if TYPE_CHECKING:
+    from ..models.hdbscan_settings import HdbscanSettings
+
+
+T = TypeVar("T", bound="Workspace")
 
 
 @_attrs_define
-class RssIngestionConfig:
-    """Configuration for ingesting data from RSS feeds.
+class Workspace:
+    """Represents a project workspace for organizing and managing content.
 
-    This config specifies an RSS feed to collect content from.
+    A Workspace is like a container for a specific research topic or project. It holds
+    settings and metadata that apply to all the content within it.
 
         Attributes:
-            workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-            title (str):
-            rss_feed_url (str):
+            name (str): The name of the workspace
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
-            created_at (Union[Unset, datetime.datetime]):
-            updated_at (Union[Unset, datetime.datetime]):
-            type (Union[Unset, IngestionConfigType]):
-            last_run_at (Union[None, Unset, datetime.datetime]):
+            description (Union[Unset, str]): A detailed description of the workspace's purpose Default: ''.
+            created_at (Union[Unset, datetime.datetime]): Timestamp when the workspace was created
+            updated_at (Union[Unset, datetime.datetime]): Timestamp of the last update to the workspace
+            language (Union[Unset, Any]): The primary language of the workspace content
+            hdbscan_settings (Union[Unset, HdbscanSettings]):
     """
 
-    workspace_id: str
-    title: str
-    rss_feed_url: str
+    name: str
     field_id: Union[None, Unset, str] = UNSET
+    description: Union[Unset, str] = ""
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
-    type: Union[Unset, IngestionConfigType] = UNSET
-    last_run_at: Union[None, Unset, datetime.datetime] = UNSET
+    language: Union[Unset, Any] = UNSET
+    hdbscan_settings: Union[Unset, "HdbscanSettings"] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        workspace_id = self.workspace_id
-
-        title = self.title
-
-        rss_feed_url = self.rss_feed_url
+        name = self.name
 
         field_id: Union[None, Unset, str]
         if isinstance(self.field_id, Unset):
             field_id = UNSET
         else:
             field_id = self.field_id
+
+        description = self.description
 
         created_at: Union[Unset, str] = UNSET
         if not isinstance(self.created_at, Unset):
@@ -59,48 +59,40 @@ class RssIngestionConfig:
         if not isinstance(self.updated_at, Unset):
             updated_at = self.updated_at.isoformat()
 
-        type: Union[Unset, str] = UNSET
-        if not isinstance(self.type, Unset):
-            type = self.type.value
+        language = self.language
 
-        last_run_at: Union[None, Unset, str]
-        if isinstance(self.last_run_at, Unset):
-            last_run_at = UNSET
-        elif isinstance(self.last_run_at, datetime.datetime):
-            last_run_at = self.last_run_at.isoformat()
-        else:
-            last_run_at = self.last_run_at
+        hdbscan_settings: Union[Unset, Dict[str, Any]] = UNSET
+        if not isinstance(self.hdbscan_settings, Unset):
+            hdbscan_settings = self.hdbscan_settings.to_dict()
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "workspace_id": workspace_id,
-                "title": title,
-                "rss_feed_url": rss_feed_url,
+                "name": name,
             }
         )
         if field_id is not UNSET:
             field_dict["_id"] = field_id
+        if description is not UNSET:
+            field_dict["description"] = description
         if created_at is not UNSET:
             field_dict["created_at"] = created_at
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
-        if type is not UNSET:
-            field_dict["type"] = type
-        if last_run_at is not UNSET:
-            field_dict["last_run_at"] = last_run_at
+        if language is not UNSET:
+            field_dict["language"] = language
+        if hdbscan_settings is not UNSET:
+            field_dict["hdbscan_settings"] = hdbscan_settings
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+        from ..models.hdbscan_settings import HdbscanSettings
+
         d = src_dict.copy()
-        workspace_id = d.pop("workspace_id")
-
-        title = d.pop("title")
-
-        rss_feed_url = d.pop("rss_feed_url")
+        name = d.pop("name")
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -110,6 +102,8 @@ class RssIngestionConfig:
             return cast(Union[None, Unset, str], data)
 
         field_id = _parse_field_id(d.pop("_id", UNSET))
+
+        description = d.pop("description", UNSET)
 
         _created_at = d.pop("created_at", UNSET)
         created_at: Union[Unset, datetime.datetime]
@@ -125,43 +119,27 @@ class RssIngestionConfig:
         else:
             updated_at = isoparse(_updated_at)
 
-        _type = d.pop("type", UNSET)
-        type: Union[Unset, IngestionConfigType]
-        if isinstance(_type, Unset):
-            type = UNSET
+        language = d.pop("language", UNSET)
+
+        _hdbscan_settings = d.pop("hdbscan_settings", UNSET)
+        hdbscan_settings: Union[Unset, HdbscanSettings]
+        if isinstance(_hdbscan_settings, Unset):
+            hdbscan_settings = UNSET
         else:
-            type = IngestionConfigType(_type)
+            hdbscan_settings = HdbscanSettings.from_dict(_hdbscan_settings)
 
-        def _parse_last_run_at(data: object) -> Union[None, Unset, datetime.datetime]:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            try:
-                if not isinstance(data, str):
-                    raise TypeError()
-                last_run_at_type_0 = isoparse(data)
-
-                return last_run_at_type_0
-            except:  # noqa: E722
-                pass
-            return cast(Union[None, Unset, datetime.datetime], data)
-
-        last_run_at = _parse_last_run_at(d.pop("last_run_at", UNSET))
-
-        rss_ingestion_config = cls(
-            workspace_id=workspace_id,
-            title=title,
-            rss_feed_url=rss_feed_url,
+        workspace = cls(
+            name=name,
             field_id=field_id,
+            description=description,
             created_at=created_at,
             updated_at=updated_at,
-            type=type,
-            last_run_at=last_run_at,
+            language=language,
+            hdbscan_settings=hdbscan_settings,
         )
 
-        rss_ingestion_config.additional_properties = d
-        return rss_ingestion_config
+        workspace.additional_properties = d
+        return workspace
 
     @property
     def additional_keys(self) -> List[str]:

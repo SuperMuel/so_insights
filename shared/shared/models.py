@@ -72,7 +72,7 @@ class Workspace(Document):
         default=Language.fr, description="The primary language of the workspace content"
     )
     hdbscan_settings: HdbscanSettings = Field(
-        default=HdbscanSettings(),
+        default_factory=HdbscanSettings,
         description="HDBSCAN algorithm settings for clustering",
     )
 
