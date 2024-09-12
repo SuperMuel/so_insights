@@ -9,18 +9,22 @@ class IngesterSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    # Search settings
     MAX_RETRIES_PER_QUERY: int = 2
     RETRY_SLEEP_TIME_S: int = 5
     SLEEP_BETWEEN_QUERIES_S: int = 4
     QUERY_TIMEOUT: int = 30
+    VERBOSE_SEARCH: bool = Field(
+        default=True, description="Whether to log each search query during the search"
+    )
 
-    # Whether to log each search query during the search
-    VERBOSE_SEARCH: bool = True
-
+    # Embeddings settings
     VOYAGEAI_API_KEY: str = Field(default=...)
     EMBEDDING_MODEL: str = "voyage-large-2-instruct"
     EMBEDDING_BATCH_SIZE: int = 128
 
+    # Vector database settings
     PINECONE_API_KEY: str = Field(default=...)
     PINECONE_INDEX: str = Field(default=...)
 

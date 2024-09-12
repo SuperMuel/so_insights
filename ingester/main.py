@@ -1,23 +1,25 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from itertools import batched
-from typing import Callable, Optional
+from datetime import datetime
+from typing import Optional
 
 from fastapi import FastAPI
-from shared.region import Region
+from src.mongo_db_operations import insert_articles_in_mongodb
 from src.rss import ingest_rss_feed
+from src.vector_indexing import (
+    get_pinecone_index,
+    sync_workspace_with_vector_db,
+)
 import typer
-from beanie import BulkWriter, PydanticObjectId, UpdateResponse
+from beanie import UpdateResponse
 from beanie.odm.operators.update.general import Set
 from dotenv import load_dotenv
 from duckduckgo_search import AsyncDDGS
-from langchain_core.documents import Document
-from langchain_pinecone import PineconeVectorStore
 from langchain_voyageai import VoyageAIEmbeddings
-from pymongo.errors import BulkWriteError
 from src.ingester_settings import IngesterSettings
-from src.search import BaseArticle, perform_search
+from src.search import (
+    perform_search_and_deduplicate_results,
+)
 
 from shared.db import get_client, my_init_beanie
 from shared.models import (
@@ -28,7 +30,6 @@ from shared.models import (
     RssIngestionConfig,
     SearchIngestionConfig,
     Status,
-    TimeLimit,
     Workspace,
     utc_datetime_factory,
 )
@@ -71,152 +72,28 @@ embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for paramete
 )
 
 
-PineconeIndexGetter = Callable[[str | PydanticObjectId], PineconeVectorStore]
-
-
-def get_pinecone_index(namespace: str | PydanticObjectId) -> PineconeVectorStore:
-    return PineconeVectorStore(
-        pinecone_api_key=settings.PINECONE_API_KEY,
-        index_name=settings.PINECONE_INDEX,
-        embedding=embeddings,
-        namespace=str(namespace),
-    )
-
-
-def has_recent_run(last_run: IngestionRun, t: timedelta) -> bool:
-    assert t.total_seconds() > 0, "t must be greater than 0 seconds"
-
-    end_at = last_run.end_at
-
-    assert (
-        end_at is not None
-    ), "You should first verify that the last run has finished, and thus has an end_at date"
-
-    return end_at > datetime.now() - t
-
-
-def deduplicate_articles(articles: list[BaseArticle]) -> list[BaseArticle]:
-    return list({article.url: article for article in articles}.values())
-
-
-def article_to_document(article: Article) -> Document:
-    return Document(
-        page_content=f"{article.title}\n{article.body}",
-        id=str(article.id),
-        metadata={
-            "title": article.title,
-            "url": str(article.url),
-            "body": article.body,
-            "found_at": article.found_at.timestamp(),
-            "date": article.date.timestamp(),
-        },
-    )
-
-
-async def index_not_indexed_articles(
-    pinecone_index: PineconeVectorStore,
-) -> list[Article]:
-    assert pinecone_index._namespace
-    not_indexed = await Article.find(
-        Article.workspace_id == PydanticObjectId(pinecone_index._namespace),
-        Article.vector_indexed == False,  # noqa: E712
-    ).to_list()
-
-    if not not_indexed:
-        logger.info("No articles to index")
-        return []
-
-    logger.info(f"Indexing {len(not_indexed)} articles")
-
-    documents = list(map(article_to_document, not_indexed))
-
-    await pinecone_index.aadd_documents(
-        documents, ids=[str(article.id) for article in not_indexed]
-    )
-
-    return not_indexed
-
-
-async def mark_articles_as_vector_indexed(articles: list[Article]):
-    logger.info(f"Marking {len(articles)} articles as vector indexed")
-    async with BulkWriter() as bulk_writer:
-        for article in articles:
-            await article.update(
-                Set({Article.vector_indexed: True}),
-                bulk_writer=bulk_writer,
-            )
-    logger.info("Marked as vector indexed.")
-
-
-async def perform_search_and_deduplicate_results(
-    ddgs: AsyncDDGS,
-    queries: list[str],
-    region: Region,
-    max_results: int,
-    time_limit: TimeLimit,
-) -> list[BaseArticle]:
-    """Performs the search for all queries of the SearchConfig, deduplicates the results and returns the number of successful queries and the deduplicated articles"""
-
-    result = await perform_search(
-        ddgs,
-        queries=queries,
-        region=region,
-        max_results=max_results,
-        time_limit=time_limit,
-        verbose=settings.VERBOSE_SEARCH,
-    )
-    logger.info(
-        f"{result.successfull_queries}/{len(queries)} queries were successful. "
-        f"Found {len(result.articles)} (undeduplicated) articles"
-    )
-    articles = deduplicate_articles(result.articles)
-    logger.info(f"Deduplicated to {len(articles)} articles")
-    return articles
-
-
-async def insert_articles_in_mongodb(
-    articles: list[Article],
-) -> int:
-    assert all([article.ingestion_run_id for article in articles])
-
-    if not articles:
-        logger.info("No articles to upsert")
-        return 0
-
-    logger.info("Upserting articles to mongodb")
-    try:
-        inserted = await Article.insert_many(
-            articles,
-            ordered=False,
-        )
-        n_inserted = len(inserted.inserted_ids)
-        logger.info(f"Inserted {n_inserted} articles to mongodb")
-        return n_inserted
-    except BulkWriteError as e:
-        n_inserted = e.details["nInserted"]
-        logger.info(f"Inserted {n_inserted} new documents into MongoDB.")
-        logger.info(f"Encountered {len(e.details['writeErrors'])} duplicates.")
-
-        return n_inserted
-
-
-async def index_articles_in_vector_db(workspace_id: str):
-    try:
-        pinecone_index = get_pinecone_index(workspace_id)
-        indexed = await index_not_indexed_articles(pinecone_index)
-        await mark_articles_as_vector_indexed(indexed)
-    except Exception as e:
-        logger.error(
-            f"Error while indexing articles: {e}. In mongoDB, we won't mark them as indexed. "
-            f"You'll have to manually check the synchronization between the vector store and mongodb."
-        )
-
-
 async def handle_search_ingestion_config(
     ddgs: AsyncDDGS,
     run: IngestionRun,
     config: SearchIngestionConfig,
 ) -> list[Article]:
+    """
+    Handles the ingestion process for a search-based ingestion configuration.
+
+    This function performs searches based on the provided configuration, processes the results,
+    and converts them into Article objects.
+
+    Args:
+        ddgs (AsyncDDGS): An instance of the AsyncDDGS client for performing searches.
+        run (IngestionRun): The current ingestion run object.
+        config (SearchIngestionConfig): The search ingestion configuration.
+
+    Returns:
+        list[Article]: A list of Article objects created from the search results.
+
+    Raises:
+        ValueError: If no queries are provided in the configuration.
+    """
     assert isinstance(config, SearchIngestionConfig)
     assert run.status == Status.running and run.start_at
 
@@ -253,6 +130,19 @@ async def handle_rss_ingestion_config(
     config: RssIngestionConfig,
     run: IngestionRun,
 ) -> list[Article]:
+    """
+    Handles the ingestion process for an RSS-based ingestion configuration.
+
+    This function fetches and processes articles from the specified RSS feed.
+
+    Args:
+        config (RssIngestionConfig): The RSS ingestion configuration.
+        run (IngestionRun): The current ingestion run object.
+
+    Returns:
+        list[Article]: A list of Article objects created from the RSS feed entries.
+    """
+
     assert run.status == Status.running and run.start_at
 
     logger.info(
@@ -265,6 +155,16 @@ async def handle_rss_ingestion_config(
 
 
 async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
+    """
+    Manages the entire process of an ingestion run.
+
+    This function coordinates the ingestion process, handling both search and RSS configurations.
+    It updates the run status, processes articles, and syncs them with the vector database.
+
+    Args:
+        run (IngestionRun): The ingestion run to be processed.
+        ddgs (AsyncDDGS): An instance of the AsyncDDGS client for performing searches.
+    """
     assert run.status in [Status.pending, Status.running]
 
     await run.mark_as_started()
@@ -297,51 +197,24 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
         logger.info(f"Error while processing ingestion run: {e}")
         return await run.mark_as_finished(Status.failed, error=str(e))
 
+    assert all([article.ingestion_run_id for article in articles])
     run.n_inserted = await insert_articles_in_mongodb(articles)
 
-    await index_articles_in_vector_db(workspace_id=str(run.workspace_id))
+    workspace = await Workspace.get(run.workspace_id)
+    assert workspace and workspace.id
+
+    await sync_workspace_with_vector_db(
+        workspace=workspace,
+        index=get_pinecone_index(workspace.id, embeddings),
+        force=False,
+    )
+
     await run.mark_as_finished(Status.completed)
 
     assert run.end_at and run.status in [Status.completed, Status.failed]
     logger.info(
         "Finished processing ingestion run. Found {run.n_inserted} new articles."
     )
-
-
-async def upsert_articles_of_workspace(
-    workspace: Workspace,
-    index: PineconeVectorStore,
-    batch_size: int = 1000,
-    force: bool = False,
-):
-    assert workspace.id
-    logger.info(f"Fetching articles for workspace {workspace.id}")
-
-    if force:
-        articles = await Article.find(Article.workspace_id == workspace.id).to_list()
-    else:
-        articles = await Article.find(
-            Article.workspace_id == workspace.id,
-            Article.vector_indexed == False,  # noqa: E712
-        ).to_list()
-
-    logger.info(
-        f"Found {len(articles)} not indexed articles for workspace {workspace.id}"
-    )
-
-    nb_batches = len(articles) // batch_size + 1
-
-    for i, batch in enumerate(batched(articles, batch_size)):
-        logger.info(
-            f"Upserting articles for workspace {workspace.id} ({i + 1}/{nb_batches})"
-        )
-        documents = [article_to_document(article) for article in batch]
-        await index.aadd_documents(
-            documents, ids=[str(article.id) for article in batch]
-        )
-        await mark_articles_as_vector_indexed(list(batch))
-
-    logger.info(f"Finished upserting articles for workspace {workspace.id}")
 
 
 async def setup():
@@ -357,9 +230,11 @@ async def setup():
 def create_ingestion_task(
     config_id: str,
 ):
-    """Create ingestion tasks for a single IngestionConfig"""
+    """
+    Creates an ingestion task for a single IngestionConfig.
+    """
 
-    async def single_run():
+    async def _create_ingestion_task():
         mongo_client, _ = await setup()
 
         config = await IngestionConfig.get(config_id, with_children=True)
@@ -380,7 +255,7 @@ def create_ingestion_task(
 
         mongo_client.close()
 
-    asyncio.run(single_run())
+    asyncio.run(_create_ingestion_task())
 
 
 @app.command()
@@ -400,7 +275,7 @@ def create_ingestion_tasks(
 ):
     """Create ingestion tasks for all IngestionConfigs of a workspace or all workspaces"""
 
-    async def create_runs():
+    async def _create_ingestion_tasks():
         mongo_client, _ = await setup()
 
         if workspace_id:
@@ -437,11 +312,11 @@ def create_ingestion_tasks(
 
         mongo_client.close()
 
-    asyncio.run(create_runs())
+    asyncio.run(_create_ingestion_tasks())
 
 
 @app.command()
-def upsert(
+def sync_vector_db(
     workspace_id: Optional[str] = typer.Option(
         None,
         "-w",
@@ -452,9 +327,9 @@ def upsert(
         False, "--force", help="Force upsert even if the articles are already indexed"
     ),
 ):
-    """Upsert articles for a single workspace of all workspaces"""
+    """Sync articles from MongoDB to the vector database for a single workspace or all workspaces"""
 
-    async def upsert_articles():
+    async def _sync_vector_db():
         mongo_client, _ = await setup()
 
         if workspace_id:
@@ -471,12 +346,12 @@ def upsert(
                 f"Upserting articles for workspace {workspace.id} ({workspace.name}) ({i + 1}/{len(workspaces)})"
             )
             assert workspace.id
-            index = get_pinecone_index(workspace.id)
-            await upsert_articles_of_workspace(workspace, index, force=force)
+            index = get_pinecone_index(workspace.id, embeddings)
+            await sync_workspace_with_vector_db(workspace, index, force=force)
 
         mongo_client.close()
 
-    asyncio.run(upsert_articles())
+    asyncio.run(_sync_vector_db())
 
 
 @app.command()

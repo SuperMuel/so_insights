@@ -1,7 +1,7 @@
 from pydantic_core import Url
 import pytest
 from shared.db import my_init_beanie
-from src.rss import entry_to_published_date, convert_to_article
+from src.rss import _entry_to_published_date, _convert_to_article
 from datetime import datetime, timezone
 from shared.models import Article
 
@@ -42,11 +42,12 @@ def my_fixture():
     ],
 )
 def test_entry_to_published_date(published_parsed, expected_date):
-    result: datetime | None = entry_to_published_date(published_parsed)
+    result: datetime | None = _entry_to_published_date(published_parsed)
     assert result == expected_date
 
 
 WORKSPACE_ID = PydanticObjectId()
+INGESTION_RUN_ID = PydanticObjectId()
 
 
 def test_convert_to_article():
@@ -66,12 +67,13 @@ def test_convert_to_article():
         source="Test Author",
         workspace_id=WORKSPACE_ID,
         content="content",
+        ingestion_run_id=INGESTION_RUN_ID,
     )
 
     workspace_id = PydanticObjectId()
     expected_article.workspace_id = workspace_id
 
-    article = convert_to_article(entry, workspace_id)
+    article = _convert_to_article(entry, workspace_id, INGESTION_RUN_ID)
 
     assert article.workspace_id == expected_article.workspace_id
     assert article.title == expected_article.title
