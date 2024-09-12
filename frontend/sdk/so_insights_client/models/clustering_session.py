@@ -5,6 +5,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.status import Status
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ class ClusteringSession:
             created_at (Union[Unset, datetime.datetime]): Timestamp when the session was created
             session_start (Union[None, Unset, datetime.datetime]): Timestamp when the clustering session started
             session_end (Union[None, Unset, datetime.datetime]): Timestamp when the clustering session ended
-            status (Union[Unset, Any]): Current status of the clustering session
+            status (Union[Unset, Status]):  Default: Status.PENDING.
             error (Union[None, Unset, str]): Error message if the session failed
             metadata (Union[Unset, ClusteringSessionMetadata]): Additional metadata about the clustering session
             articles_count (Union[None, Unset, int]): Number of articles processed in this session
@@ -58,7 +59,7 @@ class ClusteringSession:
     created_at: Union[Unset, datetime.datetime] = UNSET
     session_start: Union[None, Unset, datetime.datetime] = UNSET
     session_end: Union[None, Unset, datetime.datetime] = UNSET
-    status: Union[Unset, Any] = UNSET
+    status: Union[Unset, Status] = Status.PENDING
     error: Union[None, Unset, str] = UNSET
     metadata: Union[Unset, "ClusteringSessionMetadata"] = UNSET
     articles_count: Union[None, Unset, int] = UNSET
@@ -107,7 +108,9 @@ class ClusteringSession:
         else:
             session_end = self.session_end
 
-        status = self.status
+        status: Union[Unset, str] = UNSET
+        if not isinstance(self.status, Unset):
+            status = self.status.value
 
         error: Union[None, Unset, str]
         if isinstance(self.error, Unset):
@@ -284,7 +287,12 @@ class ClusteringSession:
 
         session_end = _parse_session_end(d.pop("session_end", UNSET))
 
-        status = d.pop("status", UNSET)
+        _status = d.pop("status", UNSET)
+        status: Union[Unset, Status]
+        if isinstance(_status, Unset):
+            status = UNSET
+        else:
+            status = Status(_status)
 
         def _parse_error(data: object) -> Union[None, Unset, str]:
             if data is None:

@@ -31,7 +31,7 @@ class SearchIngestionConfig:
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
             created_at (Union[Unset, datetime.datetime]):
             updated_at (Union[Unset, datetime.datetime]):
-            type (Union[Unset, IngestionConfigType]):
+            type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.SEARCH.
             last_run_at (Union[None, Unset, datetime.datetime]):
     """
 
@@ -46,7 +46,7 @@ class SearchIngestionConfig:
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
-    type: Union[Unset, IngestionConfigType] = UNSET
+    type: Union[Unset, IngestionConfigType] = IngestionConfigType.SEARCH
     last_run_at: Union[None, Unset, datetime.datetime] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 

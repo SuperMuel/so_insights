@@ -5,6 +5,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.language import Language
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ class Workspace:
             description (Union[Unset, str]): A detailed description of the workspace's purpose Default: ''.
             created_at (Union[Unset, datetime.datetime]): Timestamp when the workspace was created
             updated_at (Union[Unset, datetime.datetime]): Timestamp of the last update to the workspace
-            language (Union[Unset, Any]): The primary language of the workspace content
+            language (Union[Unset, Language]):  Default: Language.FR.
             hdbscan_settings (Union[Unset, HdbscanSettings]):
     """
 
@@ -36,7 +37,7 @@ class Workspace:
     description: Union[Unset, str] = ""
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
-    language: Union[Unset, Any] = UNSET
+    language: Union[Unset, Language] = Language.FR
     hdbscan_settings: Union[Unset, "HdbscanSettings"] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -59,7 +60,9 @@ class Workspace:
         if not isinstance(self.updated_at, Unset):
             updated_at = self.updated_at.isoformat()
 
-        language = self.language
+        language: Union[Unset, str] = UNSET
+        if not isinstance(self.language, Unset):
+            language = self.language.value
 
         hdbscan_settings: Union[Unset, Dict[str, Any]] = UNSET
         if not isinstance(self.hdbscan_settings, Unset):
@@ -119,7 +122,12 @@ class Workspace:
         else:
             updated_at = isoparse(_updated_at)
 
-        language = d.pop("language", UNSET)
+        _language = d.pop("language", UNSET)
+        language: Union[Unset, Language]
+        if isinstance(_language, Unset):
+            language = UNSET
+        else:
+            language = Language(_language)
 
         _hdbscan_settings = d.pop("hdbscan_settings", UNSET)
         hdbscan_settings: Union[Unset, HdbscanSettings]
