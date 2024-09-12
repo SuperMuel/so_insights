@@ -2,25 +2,56 @@
 
 ## Introduction
 
-The SO Insights Analyzer is a powerful component of the SO Insights project, designed to process large volumes of articles, identify topics through clustering, and evaluate them and generate human-readable insights using LLMs. It works in tandem with the Ingester component to provide high-level analysis of collected data.
+The SO Insights Analyzer is a powerful component of the SO Insights project, designed to process large volumes of articles, identify topics through clustering, and generate human-readable insights using LLMs. It works in tandem with the Ingester component to provide high-level analysis of collected data.
+
+## Key Concepts
+
+Before diving into the features, let's explain some key concepts:
+
+- **Embedding**: A numerical representation of text that captures its semantic meaning. Embeddings allow us to compare and analyze text data mathematically.
+- **Vector**: In this context, a vector is the mathematical representation of an embedding. Each article is represented as a vector in a high-dimensional space.
+- **Clustering**: The process of grouping similar articles together based on their vector representations.
+- **HDBSCAN**: Hierarchical Density-Based Spatial Clustering of Applications with Noise, the algorithm we use for clustering.
+- **Large Language Model (LLM)**: An AI system trained to understand and generate human-like text. We use LLMs to generate summaries, evaluations, and insights.
 
 ## Features
 
-- Clustering using HDBSCAN algorithm
-- Generation of titles and summaries for clusters using LLMs
-- Evaluation of clusters based on user preferences using LLMs
-- Asynchronous design
-- Command line interface
-- Watching for tasks and executing them
+- **Clustering using HDBSCAN algorithm**: Groups similar articles together, helping identify main themes and topics across large sets of articles.
+- **Generation of titles and summaries for clusters using LLMs**: Provides human-readable overviews of each cluster's content.
+- **Evaluation of clusters based on user preferences using LLMs**: Assesses the relevance and quality of identified topics to the workspace's focus.
+- **Generation of conversation starters**: Creates engaging questions based on the analyzed data to facilitate user interaction with the chatbot.
+- **Task watching and execution**: Automatically processes new clustering tasks as they arrive.
+
+## Key Components
+
+1. **Analyzer** (analyzer.py): The core class that orchestrates the entire analysis process.
+2. **ClusteringEngine** (clustering_engine.py): Performs the HDBSCAN clustering on article embeddings.
+3. **ClusterOverviewGenerator** (cluster_overview_generator.py): Generates summaries for each cluster using LLMs.
+4. **ClusterEvaluator** (evaluator.py): Assesses the relevance of clusters to the workspace's focus.
+5. **SessionSummarizer** (session_summary_generator.py): Creates an overall summary of a clustering session.
+6. **ConversationStartersGenerator** (starters_generator.py): Generates engaging questions based on the analyzed data.
+7. **VectorRepository** (vector_repository.py): Interfaces with Pinecone to retrieve article embeddings.
+
+## Benefits
+
+- **Topic Discovery**: Automatically identifies main themes and topics in large sets of articles.
+- **Content Summarization**: Provides concise overviews of clustered content, saving time in information processing.
+- **Relevance Assessment**: Evaluates the importance of discovered topics to the user's interests.
+- **User Engagement**: Generates conversation starters to encourage interaction with the analyzed data using the chatbot.
+- **Flexibility**: Adapts to different languages and topics as defined by each workspace.
 
 ## Prerequisites
 
 - Python 3.12 or higher
-- MongoDB
-- Pinecone Index
-- OpenAI API Key
+- MongoDB populated with articles found by the Ingester
+- Pinecone Vector Database with embeddings of the articles from the Ingester
+- OpenAI API Key for LLM-based tasks
+
+Optional:
+- Langsmith project and API key for monitoring LLM performance
 
 ## Installation
+
 Install dependencies using Poetry:
 ```
 poetry install
@@ -32,6 +63,7 @@ poetry install
 
    ```
    MONGODB_URI=your_mongodb_uri
+   MONGODB_DATABASE=your_mongodb_database_name
    PINECONE_API_KEY=your_pinecone_api_key
    PINECONE_INDEX=your_pinecone_index_name
    OPENAI_API_KEY=your_openai_api_key
@@ -43,46 +75,41 @@ poetry install
 
 The Analyzer provides several command-line interfaces:
 
-1. Analyze a specific workspace:
-   ```
-   poetry run analyzer analyze <workspace_id> [--days <number_of_days>]
-   ```
+```bash
+# Create analysis tasks
+poetry run analyzer create-analysis-tasks [WORKSPACE_IDS] [--days DAYS]
 
-2. Analyze all workspaces:
-   ```
-   poetry run analyzer analyze-all [--days <number_of_days>]
-   ```
+# Generate overviews
+poetry run analyzer generate-overviews SESSION_IDS [--only-missing]
 
-3. Generate overviews for specific clustering sessions:
-   ```
-   poetry run analyzer generate-overviews <session_id1> <session_id2> ... [--only-missing]
-   ```
+# Evaluate clusters
+poetry run analyzer evaluate SESSION_IDS
 
-4. Evaluate clusters:
-   ```
-   poetry run analyzer evaluate <session_id1> <session_id2> ...
-   ```
+# Generate conversation starters
+poetry run analyzer generate-starters
 
-5. Repair missing overviews, evaluations and session_summaries:
-   ```
-   poetry run analyzer repair
-   ```
+# Summarize a session
+poetry run analyzer summarize-session SESSION_ID
 
-6. Watch for tasks and execute them in the background:
-   ```
-   poetry run python main.py watch
-   ```
+# Repair missing data
+poetry run analyzer repair
 
-## Architecture
+# Watch for and process tasks
+poetry run analyzer watch [--interval SECONDS] [--max-runtime SECONDS]
+```
 
-The Analyzer follows a modular architecture:
 
-- `main.py`: Entry point and CLI commands
-- `src/analyzer.py`: Core analysis logic
-- `src/clustering_engine.py`: HDBSCAN-based clustering
-- `src/cluster_overview_generator.py`: Cluster summary generation
-- `src/evaluator.py`: Cluster evaluation
-- `src/vector_repository.py`: Pinecone interface to retrieve vectors
+## Key Models
+
+The analyzer works with several important data models:
+
+- **Workspace**: Represents a project or topic, containing settings and metadata for all related content.
+- **Article**: Represents a single piece of content (e.g., news article, blog post) collected during ingestion.
+- **ClusteringSession**: Represents a single run of the clustering process on a set of articles. It also maintains the state of the task.
+- **Cluster**: A group of related articles identified during clustering.
+- **ClusterOverview**: A summary of a cluster's content, including a title and brief description.
+- **ClusterEvaluation**: An assessment of a cluster's relevance and quality.
+- **Starters**: Predefined conversation starters or prompts for the workspace's chatbot.
 
 ## Testing
 

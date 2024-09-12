@@ -43,11 +43,30 @@ class ClusterOverviewOutput(BaseModel):
 
 
 class ClusterOverviewGenerator:
+    """
+    Generates overviews for clusters of articles using an LLM.
+
+    This class handles the process of formatting articles, fetching the prompt from langsmith hub,
+    and generating titles and summaries for clusters.
+
+    Note : These methods also updates the cluster objects with the generated overviews or error messages, but
+    we should consider moving these somewhere else. This class should be focused on generating the overviews, not
+    updating the models.
+    """
+
     def __init__(
         self,
         llm: BaseChatModel,
         max_articles: int = settings.OVERVIEW_GENERATION_MAX_ARTICLES,
     ):
+        """
+        Initialize the ClusterOverviewGenerator.
+
+        Args:
+            llm (BaseChatModel): The language model to use for generating overviews.
+            max_articles (int): Maximum number of articles to provide to the LLM for generating the overview.
+        """
+
         self.llm: BaseChatModel = llm
         self.max_articles = max_articles
         self.chain = self._create_chain()
@@ -64,6 +83,16 @@ class ClusterOverviewGenerator:
         articles = await Article.find(In(Article.id, cluster.articles_ids)).to_list()
         if not articles:
             raise RuntimeError(f"No articles found for cluster {cluster.id}")
+
+        assert all([article.id in cluster.articles_ids for article in articles])
+        articles = sorted(
+            articles,
+            key=lambda x: cluster.articles_ids.index(x.id),  # type:ignore
+        )
+
+        # Assert that the articles are in the same order as the cluster, to get most relevant articles first
+        assert [article.id for article in articles] == cluster.articles_ids
+
         return SetOfUniqueArticles(articles).limit(self.max_articles)
 
     async def _get_formatted_articles(self, cluster: Cluster) -> str:
@@ -93,8 +122,20 @@ class ClusterOverviewGenerator:
         clusters: list[Cluster],
         max_concurrency: int = settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
     ) -> None:
+        """
+        Generate overviews for multiple clusters concurrently, then update the cluster
+        objects with the generated overviews or error messages.
+
+        Args:
+            clusters (list[Cluster]): List of clusters to generate overviews for.
+            max_concurrency (int): Maximum number of concurrent overview generations.
+
+        Raises:
+            RuntimeError: If overview generation fails for any clusters.
+        """
+
         if not clusters:
-            logger.warn("Empty clusters list, skipping overview generation")
+            logger.warning("Empty clusters list, skipping overview generation")
             return
         logger.info(f"Generating overviews for {len(clusters)} clusters")
         overviews: list[ClusterOverviewOutput | Exception] = await self.chain.abatch(  # type:ignore
@@ -135,6 +176,15 @@ class ClusterOverviewGenerator:
         max_concurrency: int = settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
         only_missing: bool = False,
     ) -> None:
+        """
+        Generate overviews for all clusters in a clustering session.
+
+        Args:
+            session (ClusteringSession): The clustering session to process.
+            max_concurrency (int): Maximum number of concurrent overview generations.
+            only_missing (bool): If True, only generate overviews for clusters without existing overviews.
+        """
+
         logger.info(f"Generating overviews for session {session.id}")
         clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
         logger.info(f"Found {len(clusters)} clusters")
@@ -145,44 +195,3 @@ class ClusterOverviewGenerator:
 
         await self.generate_overviews(clusters, max_concurrency=max_concurrency)
         logger.info(f"Finished generating overviews for session {session.id}")
-
-
-# async def _main():
-#     from shared.db import get_client, my_init_beanie
-#     from src.analyzer_settings import AnalyzerSettings
-
-#     load_dotenv()
-
-#     logging.basicConfig(
-#         level=logging.INFO,
-#         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-#         handlers=[logging.StreamHandler()],
-#     )
-#     llm = init_chat_model("gpt-4o-mini")
-
-#     # structured_llm = llm.with_structured_output(ClusterOverview)
-
-#     # print(structured_llm.output_schema.schema())
-
-#     settings = AnalyzerSettings()
-
-#     mongo_client = get_client(settings.MONGODB_URI)
-#     await my_init_beanie(mongo_client)
-
-#     session = await ClusteringSession.get("66bb8eee8267db888758dd24")
-#     assert session
-#     clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
-#     cluster = clusters[0]
-
-#     generator = ClusterOverviewGenerator(llm=init_chat_model("gpt-4o-mini"))
-
-#     overview = await generator.generate_overview(cluster=cluster)
-#     print(overview)
-
-#     # await generator.generate_overviews_for_session(session)
-
-
-# if __name__ == "__main__":
-#     import asyncio
-
-#     asyncio.run(_main())

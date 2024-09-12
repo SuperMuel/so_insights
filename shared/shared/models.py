@@ -46,6 +46,10 @@ class HdbscanSettings(BaseModel):
         default=1,
         description="Number of samples in a neighborhood for a point to be considered as a core point",
     )
+    cluster_selection_epsilon: float = Field(
+        default=0.0,
+        description="A distance threshold. Clusters below this value will be merged.",
+    )
 
 
 class Workspace(Document):
@@ -84,6 +88,22 @@ class Workspace(Document):
             ClusteringSession.workspace_id == self.id,
         ).sort(
             -ClusteringSession.data_end  # type:ignore
+        )
+
+    async def get_starters(self) -> list["Starters"]:
+        return await Starters.find(
+            Starters.workspace_id == self.id,
+        ).to_list()
+
+    async def get_last_starters(self) -> "Starters | None":
+        return (
+            await Starters.find(
+                Starters.workspace_id == self.id,
+            )
+            .sort(
+                -Starters.created_at  # type:ignore
+            )
+            .first_or_none()
         )
 
 
@@ -547,9 +567,6 @@ class Cluster(Document):
 
     class Settings:
         name = DBSettings().mongodb_clusters_collection
-
-    async def get_articles(self) -> list[Article]:
-        return await Article.find_many({"_id": {"$in": self.articles_ids}}).to_list()
 
 
 class Starters(Document):

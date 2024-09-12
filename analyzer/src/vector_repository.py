@@ -4,15 +4,46 @@ from itertools import batched
 
 
 class ArticleEmbedding(BaseModel):
+    """
+    Represents an article's embedding in vector space.
+
+    Attributes:
+        id (str): The unique identifier of the article.
+        embedding (list[float]): The vector representation of the article.
+    """
+
     id: str
     embedding: list[float]
 
 
 class PineconeVectorRepository:
+    """
+    A repository for fetching article embeddings from a Pinecone vector database.
+
+    This class provides methods to retrieve article embeddings in batches,
+    which is useful for efficient querying of large datasets.
+    """
+
     def __init__(self, index: GRPCIndex) -> None:
         self.index = index
 
     def fetch_vectors(self, ids: list[str], namespace: str) -> list[ArticleEmbedding]:
+        """
+        Fetch article embeddings from the Pinecone index.
+
+        This method retrieves embeddings for the given article IDs in batches
+        to optimize performance when dealing with large numbers of articles.
+
+        Args:
+            ids (list[str]): List of article IDs to fetch embeddings for.
+            namespace (str): The namespace in the Pinecone index to query.
+
+        Returns:
+            list[ArticleEmbedding]: A list of ArticleEmbedding objects containing
+                                    the fetched embeddings.
+
+        """
+
         all_ids: list[str] = []
         all_vectors: list[list[float]] = []
 
@@ -31,28 +62,3 @@ class PineconeVectorRepository:
             ArticleEmbedding(id=id, embedding=vector)
             for id, vector in zip(all_ids, all_vectors)
         ]
-
-
-if __name__ == "__main__":
-    from pinecone.grpc import PineconeGRPC as Pinecone
-    from src.analyzer_settings import AnalyzerSettings
-
-    settings = AnalyzerSettings()
-
-    # pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-    pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-    index = pc.Index(settings.PINECONE_INDEX)
-
-    ids = ["667d1ef6fc45eb48396a6a0c"]
-    response = index.fetch(ids, namespace="66a3a6374a283178ee5bc60a")
-
-    _ids = [x["id"] for x in response["vectors"].values()]
-    vectors = [x["values"] for x in response["vectors"].values()]
-
-    assert _ids == ids
-
-    repo = PineconeVectorRepository(index)
-
-    vectors = repo.fetch_vectors(ids, namespace="66a3a6374a283178ee5bc60a")
-
-    print(vectors)

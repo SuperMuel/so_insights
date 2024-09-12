@@ -14,6 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class ClusterResult(BaseModel):
+    """
+    Represents the result of a single cluster in the clustering process.
+
+    Attributes:
+        id (int): Unique identifier for the cluster.
+        center (list[float]): The centroid of the cluster.
+        articles (list[ArticleEmbedding]): Articles in the cluster, sorted by distance to the center.
+    """
+
     id: int
     center: list[float]
     articles: list[ArticleEmbedding] = Field(
@@ -34,14 +43,35 @@ class ClusterResult(BaseModel):
 
         return self
 
+    @model_validator(mode="after")
+    def validate_embedding_dimensions(self) -> Self:
+        if not self.articles:
+            raise ValueError("A cluster must contain at least one article")
+
+        center_dim = len(self.center)
+        for article in self.articles:
+            if len(article.embedding) != center_dim:
+                raise ValueError(
+                    f"Mismatched embedding dimensions. Expected {center_dim}, got {len(article.embedding)}"
+                )
+
+        return self
+
 
 class ClusteringResult(BaseModel):
-    """The clusters found and the noise articles. Clusters are sorted by the number of articles they contain, in descending order."""
+    """
+    Represents the overall result of the clustering process.
+
+    Attributes:
+        clusters (list[ClusterResult]): List of clusters found, sorted by size in descending order.
+        noise (list[ArticleEmbedding]): List of articles not assigned to any cluster.
+        clustering_duration_s (float): Duration of the clustering process in seconds.
+    """
 
     clusters: list[ClusterResult]
     noise: list[ArticleEmbedding]
     clustering_duration_s: float = Field(
-        ..., description="Duration of clustering in seconds"
+        ..., description="Duration of clustering in seconds", ge=0
     )
 
     @model_validator(mode="after")
@@ -51,20 +81,45 @@ class ClusteringResult(BaseModel):
 
 
 class ClusteringEngine:
+    """
+    Handles the clustering process for articles using the HDBSCAN algorithm.
+    """
+
     def _get_hdbscan(self, hdbscan_settings: HdbscanSettings) -> hdbscan.HDBSCAN:
         return hdbscan.HDBSCAN(
-            min_cluster_size=hdbscan_settings.min_cluster_size,
-            min_samples=hdbscan_settings.min_samples,
+            **hdbscan_settings.model_dump(exclude_none=True, exclude_unset=True)
         )
 
     @staticmethod
     def get_cluster_center(points: np.ndarray) -> np.ndarray:
+        """
+        Calculates the center of a cluster given its points.
+
+        Args:
+            points (np.ndarray): Array of points in the cluster.
+
+        Returns:
+            np.ndarray: The center point of the cluster.
+        """
+
         return np.mean(points, axis=0)
 
     @staticmethod
     def get_closest_points(
         points: np.ndarray, center: np.ndarray, n: int = 5
     ) -> list[int]:
+        """
+        Finds the indices of the n closest points to a given center.
+
+        Args:
+            points (np.ndarray): Array of points to search.
+            center (np.ndarray): The center point to measure distance from.
+            n (int, optional): Number of closest points to return.
+
+        Returns:
+            list[int]: Indices of the n closest points.
+        """
+
         distances = euclidean_distances([center], points)[0]  # type:ignore
         return np.argsort(distances)[:n].tolist()
 
@@ -73,6 +128,17 @@ class ClusteringEngine:
         articles: list[ArticleEmbedding],
         hdbscan_settings: HdbscanSettings,
     ) -> ClusteringResult:
+        """
+        Performs clustering on the given articles using HDBSCAN.
+
+        Args:
+            articles (list[ArticleEmbedding]): List of articles to cluster.
+            hdbscan_settings (HdbscanSettings): Configuration for the HDBSCAN algorithm.
+
+        Returns:
+            ClusteringResult: The result of the clustering process, including clusters and noise.
+        """
+
         logger.info("Performing clustering...")
         matrix = np.array([article.embedding for article in articles])
 

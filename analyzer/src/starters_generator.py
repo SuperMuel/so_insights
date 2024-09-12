@@ -1,3 +1,4 @@
+from typing import Any
 from langchain.chat_models.base import BaseChatModel
 from langchain import hub
 from pydantic import BaseModel, Field
@@ -30,7 +31,11 @@ ChatStartersChain = Runnable[ConversationStartersGenerationInput, _QuestionsOutp
 
 
 class ConversationStartersGenerator:
-    """This class is responsible for generating questions (starters) about the collected data, so they can be used as starters in the chatbot."""
+    """
+    Generates engaging questions based on analyzed data to initiate conversations in the chatbot.
+    These questions serve as conversation starters, encouraging user interaction with the insights
+    derived from the clustering process.
+    """
 
     def __init__(self, llm: BaseChatModel):
         self.llm = llm
@@ -39,38 +44,61 @@ class ConversationStartersGenerator:
     def _create_chain(self) -> ChatStartersChain:
         prompt = hub.pull("questions-gen")
         structured_llm = self.llm.with_structured_output(_QuestionsOutput)
-        return (
-            RunnableLambda(
-                lambda input: {
-                    "n": input.n,
-                    "data": "\n\n".join(
-                        [f"**{o.title}**\n{o.summary}" for o in input.data]
-                    ),
-                    "language": input.language.to_full_name(),
-                }
-            )
-            | prompt
-            | structured_llm
-        ).with_config(run_name="conversation_starters_chain")
+
+        def _format_input(input: ConversationStartersGenerationInput) -> dict[str, Any]:
+            return {
+                "n": input.n,
+                "data": "\n\n".join(
+                    [f"**{o.title}**\n{o.summary}" for o in input.data]
+                ),
+                "language": input.language.to_full_name(),
+            }
+
+        return (RunnableLambda(_format_input) | prompt | structured_llm).with_config(
+            run_name="conversation_starters_chain"
+        )
 
     def get_chain(self) -> ChatStartersChain:
         return self.chain
 
     async def abatch(
-        self, inputs: list[ConversationStartersGenerationInput]
+        self,
+        inputs: list[ConversationStartersGenerationInput],
+        metadata: dict[str, Any] = {},
     ) -> list[_QuestionsOutput]:
-        return await self.chain.abatch(inputs)
+        """
+        Generates conversation starters for multiple inputs in batch.
+        """
+
+        return await self.chain.abatch(inputs, config={"metadata": metadata})
 
     async def ainvoke(
-        self, input: ConversationStartersGenerationInput
+        self,
+        input: ConversationStartersGenerationInput,
+        metadata: dict[str, Any] = {},
     ) -> _QuestionsOutput:
-        return await self.chain.ainvoke(input)
+        """
+        Generates conversation starters for a single input asynchronously.
+        """
+
+        return await self.chain.ainvoke(input, config={"metadata": metadata})
 
     async def generate_starters_for_workspace(
         self,
         workspace: Workspace,
         n: int = 4,
     ) -> None:
+        """
+        Generates and saves conversation starters for a specific workspace.
+
+        Processes the most recent and relevant cluster overviews to create
+        engaging questions tailored to the workspace's content and language.
+
+        Args:
+            workspace (Workspace): The workspace for which to generate starters.
+            n (int): The number of starters to generate (default: 4).
+        """
+
         assert n > 0
         logger.info(
             f"Generating chat starters for workspace {workspace.id} ({workspace.name})"
@@ -94,14 +122,14 @@ class ConversationStartersGenerator:
                 break
 
         if not overviews:
-            logger.warn(f"No overviews found for workspace {workspace.id}")
+            logger.warning(f"No overviews found for workspace {workspace.id}")
             return
 
         input = ConversationStartersGenerationInput(
             n=n, data=overviews, language=workspace.language
         )
 
-        output = await self.ainvoke(input)
+        output = await self.ainvoke(input, metadata={"workspace_id": workspace.id})
 
         assert workspace.id
         starters = await Starters(

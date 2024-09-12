@@ -77,8 +77,11 @@ def create_analysis_tasks(
     ),
     days: int = typer.Option(1, "--days", "-d", help="Number of days to analyze"),
 ):
-    """Create analysis tasks for specific workspaces or all workspaces.
-    This command will analyze data from the past 'n' days specified by the --days option.
+    """
+    Creates analysis tasks for specified workspaces or all workspaces.
+
+    This command creates a ClusteringSession for each workspace, with a "Pending" status. The session will
+    be processed by the watch command, which will run the clustering and analysis tasks.
     """
 
     async def _create_analysis_tasks():
@@ -159,6 +162,12 @@ def generate_overviews(
 
 @app.command()
 def evaluate(session_ids: list[str]):
+    """
+    Evaluates clusters of given session IDs. The clusters should have overviews generated before running this command.
+
+    This will overwrite existing evaluations for the clusters.
+    """
+
     async def _evaluate():
         mongo_client, analyzer = await setup()
 
@@ -179,11 +188,33 @@ def evaluate(session_ids: list[str]):
 
 
 @app.command()
-def generate_starters() -> None:
+def generate_starters(
+    workspace_ids: Optional[list[str]] = typer.Argument(
+        None,
+        help="List of workspace IDs to generate starters for. If not provided, starters will be generated for all workspaces.",
+    ),
+) -> None:
+    """
+    Generate conversation starters for the given workspace IDs. If no workspace IDs are provided, starters will be generated for all workspaces.
+
+    This will fetch the latest clustering sessions of each workspace and generate conversation starters based on the most recent and relevant cluster overviews.
+    """
+
     async def _generate_starters():
         mongo_client, analyzer = await setup()
 
-        workspaces = await Workspace.find_all().to_list()
+        if workspace_ids is None:
+            workspaces = await Workspace.find_all().to_list()
+        else:
+            workspaces = []
+            for workspace_id in workspace_ids:
+                workspace = await Workspace.get(workspace_id)
+                if workspace:
+                    workspaces.append(workspace)
+                else:
+                    typer.echo(
+                        f"No workspace found for the given id: {workspace_id}", err=True
+                    )
 
         for workspace in workspaces:
             await analyzer.starters_generator.generate_starters_for_workspace(workspace)
@@ -195,6 +226,14 @@ def generate_starters() -> None:
 
 @app.command()
 def summarize_session(session_id: str) -> None:
+    """
+    Generate a summary for the given session ID.
+
+    This will generate a summary for the session based on the most relevant clusters within the session.
+
+    This will overwrite any existing summary for the session.
+    """
+
     async def _summarize_session():
         mongo_client, analyzer = await setup()
 
@@ -230,10 +269,12 @@ def repair():
         for session in sessions:
             typer.echo(f"Repairing session: {session.id} ({session.pretty_print()})")
             workspace = await Workspace.get(session.workspace_id)
-            assert workspace
+            assert workspace and session.id
 
             # Get all clusters for the session
             clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
+
+            evaluations_changed = False
 
             # Generate missing overviews
             clusters_without_overview = [c for c in clusters if not c.overview]
@@ -246,21 +287,31 @@ def repair():
 
             # Generate missing evaluations
             clusters_without_evaluation = [c for c in clusters if not c.evaluation]
+
             if clusters_without_evaluation:
                 typer.echo(
                     f"Generating {len(clusters_without_evaluation)} missing evaluations"
                 )
                 evaluator = ClusterEvaluator(llm=llm)
-                await evaluator.evaluate_clusters(clusters_without_evaluation)
-                await analyzer.starters_generator.generate_starters_for_workspace(
-                    workspace
+                await evaluator.evaluate_clusters(
+                    clusters_without_evaluation,
+                    session_id=str(session.id),
                 )
+                evaluations_changed = True
 
             await analyzer.update_relevancy_counts(session)
 
             if not session.summary or clusters_without_evaluation:
                 typer.echo(f"Generating summary for session: {session.id}")
                 await analyzer.session_summarizer.generate_summary_for_session(session)
+
+            if evaluations_changed or not (await workspace.get_last_starters()):
+                typer.echo(
+                    f"Generating conversation starters for workspace: {workspace.id}"
+                )
+                await analyzer.starters_generator.generate_starters_for_workspace(
+                    workspace
+                )
 
             typer.echo(f"Completed repairs for session: {session.id}")
 

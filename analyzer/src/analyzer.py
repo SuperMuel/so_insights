@@ -36,6 +36,11 @@ def id_to_str(id: PydanticObjectId | None) -> str:
 
 
 class Analyzer:
+    """
+    Orchestrates the entire analysis process for clustering sessions, including
+    data retrieval, clustering, overview generation, evaluation, and summarization.
+    """
+
     def __init__(
         self,
         vector_repository: PineconeVectorRepository,
@@ -53,6 +58,25 @@ class Analyzer:
         self.session_summarizer = session_summarizer
 
     async def handle_session(self, session: ClusteringSession) -> ClusteringSession:
+        """
+        Processes a clustering session from start to finish.
+
+        Performs the following steps:
+        1. Retrieves articles and their vector representations
+        2. Executes clustering
+        3. Generates cluster overviews
+        4. Evaluates clusters
+        5. Generates conversation starters and session summary
+
+        Handles exceptions and updates session status accordingly.
+
+        Args:
+            session (ClusteringSession): The session to be processed.
+
+        Returns:
+            ClusteringSession: The updated session after processing.
+        """
+
         try:
             assert session.status in [
                 Status.pending,
@@ -181,6 +205,16 @@ class Analyzer:
         return session
 
     async def update_relevancy_counts(self, session: ClusteringSession):
+        """
+        Updates the relevancy counts for a clustering session based on cluster evaluations.
+
+        Calculates and sets the counts for highly relevant, somewhat relevant, and irrelevant
+        clusters in the session.
+
+        Args:
+            session (ClusteringSession): The session to update.
+        """
+
         evaluated_clusters = await Cluster.find(
             Cluster.session_id == session.id,
             Exists(Cluster.evaluation),
