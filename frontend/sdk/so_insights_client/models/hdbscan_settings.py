@@ -15,16 +15,21 @@ class HdbscanSettings:
         min_cluster_size (Union[Unset, int]): Minimum number of points required to form a cluster Default: 3.
         min_samples (Union[Unset, int]): Number of samples in a neighborhood for a point to be considered as a core
             point Default: 1.
+        cluster_selection_epsilon (Union[Unset, float]): A distance threshold. Clusters below this value will be merged.
+            Default: 0.0.
     """
 
     min_cluster_size: Union[Unset, int] = 3
     min_samples: Union[Unset, int] = 1
+    cluster_selection_epsilon: Union[Unset, float] = 0.0
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         min_cluster_size = self.min_cluster_size
 
         min_samples = self.min_samples
+
+        cluster_selection_epsilon = self.cluster_selection_epsilon
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -33,6 +38,8 @@ class HdbscanSettings:
             field_dict["min_cluster_size"] = min_cluster_size
         if min_samples is not UNSET:
             field_dict["min_samples"] = min_samples
+        if cluster_selection_epsilon is not UNSET:
+            field_dict["cluster_selection_epsilon"] = cluster_selection_epsilon
 
         return field_dict
 
@@ -43,9 +50,12 @@ class HdbscanSettings:
 
         min_samples = d.pop("min_samples", UNSET)
 
+        cluster_selection_epsilon = d.pop("cluster_selection_epsilon", UNSET)
+
         hdbscan_settings = cls(
             min_cluster_size=min_cluster_size,
             min_samples=min_samples,
+            cluster_selection_epsilon=cluster_selection_epsilon,
         )
 
         hdbscan_settings.additional_properties = d
