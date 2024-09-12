@@ -2,15 +2,16 @@
 
 ## Introduction
 
-The SO Insights Ingester is a crucial component of the SO Insights project, designed to collect, process, and store articles from various online sources. It performs web searches based on predefined queries and stores them in both MongoDB and Pinecone vector database for efficient retrieval and analysis.
+The SO Insights Ingester is a crucial component of the SO Insights project, designed to collect, process, and store articles from various online sources. It performs web searches and RSS feed ingestion based on predefined queries and configurations, storing the results in both MongoDB and Pinecone vector database for efficient retrieval and analysis.
 
 ## Features
 
 - Asynchronous web searching using DuckDuckGo
+- RSS feed ingestion
 - Storage in MongoDB for structured data
 - Indexing in Pinecone for vector search capabilities
-- Command-line interface
-- Watching for tasks and executing them
+- Command-line interface for various operations
+- Task watching and execution system
 
 ## Prerequisites
 
@@ -43,27 +44,57 @@ poetry install
 
 The Ingester provides several command-line interfaces:
 
-1. Run ingestion for a single config:
+1. Create an ingestion task for a single config:
    ```
-   poetry run python main.py create-ingestion-task <config_id> 
-   ```
-
-2. Run ingestion for all search configs:
-   ```
-   poetry run python main.py create-ingestion-tasks 
+   poetry run python main.py create-ingestion-task <config_id>
    ```
 
-3. Upsert articles for a specific workspace:
+2. Create ingestion tasks for all configs:
    ```
-   poetry run python main.py upsert <workspace_id> [--force]
-   ```
-
-4. Upsert articles for all workspaces:
-   ```
-   poetry run python main.py upsert-all
+   poetry run python main.py create-ingestion-tasks [--workspace-id <workspace_id>] [--type <ingestion_type>]
    ```
 
-5. Watch for tasks and execute them in the background:
+3. Sync vector database:
    ```
-   poetry run python main.py watch
+   poetry run python main.py sync-vector-db [--workspace-id <workspace_id>] [--force]
    ```
+
+4. Watch for tasks and execute them:
+   ```
+   poetry run python main.py watch [--interval <seconds>] [--max-runtime <seconds>]
+   ```
+
+## Project Structure
+
+```
+ingester
+├── main.py               # Main entry point and CLI commands
+├── pyproject.toml        # Project configuration and dependencies
+├── README.md             # Project documentation
+├── src
+│   ├── ingester_settings.py     # Configuration settings
+│   ├── mongo_db_operations.py   # MongoDB operations
+│   ├── rss.py                   # RSS feed ingestion
+│   ├── search.py                # Web search functionality
+│   ├── vector_indexing.py       # Vector database operations
+│   └── __init__.py
+└── tests
+    ├── test_rss.py              # Tests for RSS functionality
+    └── __init__.py
+```
+
+## Core Functionalities
+
+- Task Creation: Ingestion tasks are created based on configurations.
+- Web Search: Performs searches using DuckDuckGo API based on predefined queries.
+- RSS Feed Ingestion: Fetches and processes articles from RSS feeds.
+- Data Storage: Stores articles in MongoDB and indexes them in Pinecone.
+- Vector Synchronization: Ensures MongoDB and Pinecone are in sync.
+
+## Testing
+
+Run tests using pytest:
+
+```
+poetry run pytest
+```
