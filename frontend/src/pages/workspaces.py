@@ -2,6 +2,7 @@ from collections import defaultdict
 
 import arrow
 import pandas as pd
+from sdk.so_insights_client.models.status import Status
 from shared.util import validate_url
 import streamlit as st
 from sdk.so_insights_client.api.ingestion_configs import (
@@ -579,7 +580,8 @@ def _history_section(workspace: Workspace):
 
     for run in runs:
         if run.end_at:
-            date_str = f"Completed {arrow.get(run.end_at).humanize()}"
+            verb = "Completed" if run.status == Status.COMPLETED else "Failed"
+            date_str = f"{verb} {arrow.get(run.end_at).humanize()}"
         elif run.start_at:
             date_str = f"Started {arrow.get(run.start_at).humanize()}"
         else:
