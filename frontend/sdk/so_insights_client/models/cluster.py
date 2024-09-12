@@ -16,18 +16,27 @@ T = TypeVar("T", bound="Cluster")
 
 @_attrs_define
 class Cluster:
-    """
-    Attributes:
-        workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        session_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        articles_count (int): Number of articles in the cluster.
-        articles_ids (List[str]): IDs of articles in the cluster, sorted by their distance to the cluster center
-        field_id (Union[None, Unset, str]): MongoDB document ObjectID
-        overview (Union['ClusterOverview', None, Unset]):
-        overview_generation_error (Union[None, Unset, str]):
-        evaluation (Union['ClusterEvaluation', None, Unset]):
-        feedback (Union['ClusterFeedback', None, Unset]):
-        first_image (Union[None, Unset, str]):
+    """Represents a group of related articles identified during clustering.
+
+    A Cluster is the result of the grouping process. It contains multiple articles
+    that the system has determined are related in some way. Each cluster includes
+    references to its articles, an overview summarizing the cluster's theme,
+    an evaluation of its quality, and any user feedback received.
+
+    Clusters are the key output of the analysis process, providing a structured way
+    to understand and navigate large amounts of collected content.
+
+        Attributes:
+            workspace_id (str): ID of the workspace this cluster belongs to Example: 5eb7cf5a86d9755df3a6c593.
+            session_id (str): ID of the clustering session that created this cluster Example: 5eb7cf5a86d9755df3a6c593.
+            articles_count (int): Number of articles in the cluster
+            articles_ids (List[str]): IDs of articles in the cluster, sorted by their distance to the cluster center
+            field_id (Union[None, Unset, str]): MongoDB document ObjectID
+            overview (Union['ClusterOverview', None, Unset]): Generated overview of the cluster's content
+            overview_generation_error (Union[None, Unset, str]): Error message if overview generation failed
+            evaluation (Union['ClusterEvaluation', None, Unset]): Evaluation of the cluster's relevance and quality
+            feedback (Union['ClusterFeedback', None, Unset]): User feedback on the cluster
+            first_image (Union[None, Unset, str]): URL of the first image found in the cluster's articles
     """
 
     workspace_id: str

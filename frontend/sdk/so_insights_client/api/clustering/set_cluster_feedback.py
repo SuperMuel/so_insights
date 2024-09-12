@@ -75,7 +75,13 @@ def sync_detailed(
     Args:
         workspace_id (str):
         cluster_id (str):
-        body (ClusterFeedback):
+        body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
+            cluster.
+
+            This simple model allows users to indicate whether they find a particular
+            cluster of articles relevant or not. It's a way to incorporate human judgment
+            into the system's organization of content, which can help improve the
+            cluster evaluation process over time.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -112,7 +118,13 @@ def sync(
     Args:
         workspace_id (str):
         cluster_id (str):
-        body (ClusterFeedback):
+        body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
+            cluster.
+
+            This simple model allows users to indicate whether they find a particular
+            cluster of articles relevant or not. It's a way to incorporate human judgment
+            into the system's organization of content, which can help improve the
+            cluster evaluation process over time.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -144,7 +156,13 @@ async def asyncio_detailed(
     Args:
         workspace_id (str):
         cluster_id (str):
-        body (ClusterFeedback):
+        body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
+            cluster.
+
+            This simple model allows users to indicate whether they find a particular
+            cluster of articles relevant or not. It's a way to incorporate human judgment
+            into the system's organization of content, which can help improve the
+            cluster evaluation process over time.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -179,7 +197,13 @@ async def asyncio(
     Args:
         workspace_id (str):
         cluster_id (str):
-        body (ClusterFeedback):
+        body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
+            cluster.
+
+            This simple model allows users to indicate whether they find a particular
+            cluster of articles relevant or not. It's a way to incorporate human judgment
+            into the system's organization of content, which can help improve the
+            cluster evaluation process over time.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

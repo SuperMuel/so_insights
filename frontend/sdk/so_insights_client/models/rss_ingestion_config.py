@@ -13,16 +13,19 @@ T = TypeVar("T", bound="RssIngestionConfig")
 
 @_attrs_define
 class RssIngestionConfig:
-    """
-    Attributes:
-        workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        title (str):
-        rss_feed_url (str):
-        field_id (Union[None, Unset, str]): MongoDB document ObjectID
-        created_at (Union[Unset, datetime.datetime]):
-        updated_at (Union[Unset, datetime.datetime]):
-        type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.RSS.
-        last_run_at (Union[None, Unset, datetime.datetime]):
+    """Configuration for ingesting data from RSS feeds.
+
+    This config specifies an RSS feed to collect content from.
+
+        Attributes:
+            workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
+            title (str):
+            rss_feed_url (str):
+            field_id (Union[None, Unset, str]): MongoDB document ObjectID
+            created_at (Union[Unset, datetime.datetime]):
+            updated_at (Union[Unset, datetime.datetime]):
+            type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.RSS.
+            last_run_at (Union[None, Unset, datetime.datetime]):
     """
 
     workspace_id: str

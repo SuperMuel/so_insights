@@ -8,7 +8,7 @@ T = TypeVar("T", bound="ClusteringSessionMetadata")
 
 @_attrs_define
 class ClusteringSessionMetadata:
-    """ """
+    """Additional metadata about the clustering session"""
 
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 

@@ -17,29 +17,38 @@ T = TypeVar("T", bound="ClusteringSession")
 
 @_attrs_define
 class ClusteringSession:
-    """
-    Attributes:
-        workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        data_start (datetime.datetime):
-        data_end (datetime.datetime):
-        nb_days (int):
-        field_id (Union[None, Unset, str]): MongoDB document ObjectID
-        created_at (Union[Unset, datetime.datetime]):
-        session_start (Union[None, Unset, datetime.datetime]):
-        session_end (Union[None, Unset, datetime.datetime]):
-        status (Union[Unset, Status]):  Default: Status.PENDING.
-        error (Union[None, Unset, str]):
-        metadata (Union[Unset, ClusteringSessionMetadata]):
-        articles_count (Union[None, Unset, int]): Number of articles on which the clustering was performed, including
-            noise.
-        clusters_count (Union[None, Unset, int]):
-        relevant_clusters_count (Union[None, Unset, int]):
-        somewhat_relevant_clusters_count (Union[None, Unset, int]):
-        irrelevant_clusters_count (Union[None, Unset, int]):
-        noise_articles_ids (Union[List[str], None, Unset]):
-        noise_articles_count (Union[None, Unset, int]):
-        clustered_articles_count (Union[None, Unset, int]): Number of articles in clusters, excluding noise.
-        summary (Union[None, Unset, str]):
+    """Represents a session of grouping similar articles together.
+
+    A ClusteringSession is like a large-scale organization effort. It takes all the
+    articles collected within a certain time frame and groups them based on their
+    similarities. This helps in identifying trends, recurring themes, or related
+    pieces of information across many articles.
+
+    The session keeps track of various statistics about the clustering process,
+    such as how many groups were formed, how many articles were processed, and
+    how relevant or useful these groups are estimated to be.
+
+        Attributes:
+            workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
+            data_start (datetime.datetime): Start date of the data range used for clustering
+            data_end (datetime.datetime): End date of the data range used for clustering
+            nb_days (int): Number of days in the data range
+            field_id (Union[None, Unset, str]): MongoDB document ObjectID
+            created_at (Union[Unset, datetime.datetime]): Timestamp when the session was created
+            session_start (Union[None, Unset, datetime.datetime]): Timestamp when the clustering session started
+            session_end (Union[None, Unset, datetime.datetime]): Timestamp when the clustering session ended
+            status (Union[Unset, Status]):  Default: Status.PENDING.
+            error (Union[None, Unset, str]): Error message if the session failed
+            metadata (Union[Unset, ClusteringSessionMetadata]): Additional metadata about the clustering session
+            articles_count (Union[None, Unset, int]): Number of articles processed in this session
+            clusters_count (Union[None, Unset, int]): Total number of clusters formed
+            relevant_clusters_count (Union[None, Unset, int]): Number of clusters deemed highly relevant
+            somewhat_relevant_clusters_count (Union[None, Unset, int]): Number of clusters deemed somewhat relevant
+            irrelevant_clusters_count (Union[None, Unset, int]): Number of clusters deemed not relevant
+            noise_articles_ids (Union[List[str], None, Unset]): IDs of articles classified as noise
+            noise_articles_count (Union[None, Unset, int]): Number of articles classified as noise
+            clustered_articles_count (Union[None, Unset, int]): Number of articles successfully clustered
+            summary (Union[None, Unset, str]): Overall summary of the clusteres deemed relevant
     """
 
     workspace_id: str

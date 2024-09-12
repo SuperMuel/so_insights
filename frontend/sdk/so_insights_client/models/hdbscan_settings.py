@@ -12,8 +12,9 @@ T = TypeVar("T", bound="HdbscanSettings")
 class HdbscanSettings:
     """
     Attributes:
-        min_cluster_size (Union[Unset, int]):  Default: 3.
-        min_samples (Union[Unset, int]):  Default: 1.
+        min_cluster_size (Union[Unset, int]): Minimum number of points required to form a cluster Default: 3.
+        min_samples (Union[Unset, int]): Number of samples in a neighborhood for a point to be considered as a core
+            point Default: 1.
     """
 
     min_cluster_size: Union[Unset, int] = 3

@@ -15,21 +15,24 @@ T = TypeVar("T", bound="SearchIngestionConfig")
 
 @_attrs_define
 class SearchIngestionConfig:
-    """
-    Attributes:
-        workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        title (str):
-        queries (List[str]):
-        region (Region):
-        max_results (int):
-        time_limit (TimeLimit):
-        first_run_max_results (int):
-        first_run_time_limit (TimeLimit):
-        field_id (Union[None, Unset, str]): MongoDB document ObjectID
-        created_at (Union[Unset, datetime.datetime]):
-        updated_at (Union[Unset, datetime.datetime]):
-        type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.SEARCH.
-        last_run_at (Union[None, Unset, datetime.datetime]):
+    """Configuration for ingesting data from web searches.
+
+    This config tells the system how to perform web searches to gather content.
+
+        Attributes:
+            workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
+            title (str):
+            queries (List[str]): List of search queries to use for ingestion
+            region (Region):
+            max_results (int): Maximum number of results to fetch per query
+            time_limit (TimeLimit):
+            first_run_max_results (int): Maximum number of results to fetch per query on the first run
+            first_run_time_limit (TimeLimit):
+            field_id (Union[None, Unset, str]): MongoDB document ObjectID
+            created_at (Union[Unset, datetime.datetime]):
+            updated_at (Union[Unset, datetime.datetime]):
+            type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.SEARCH.
+            last_run_at (Union[None, Unset, datetime.datetime]):
     """
 
     workspace_id: str

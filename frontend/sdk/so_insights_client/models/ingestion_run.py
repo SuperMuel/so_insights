@@ -13,17 +13,20 @@ T = TypeVar("T", bound="IngestionRun")
 
 @_attrs_define
 class IngestionRun:
-    """
-    Attributes:
-        workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        config_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        field_id (Union[None, Unset, str]): MongoDB document ObjectID
-        created_at (Union[Unset, datetime.datetime]):
-        start_at (Union[None, Unset, datetime.datetime]):
-        end_at (Union[None, Unset, datetime.datetime]):
-        status (Union[Unset, Status]):  Default: Status.PENDING.
-        error (Union[None, Unset, str]):
-        n_inserted (Union[None, Unset, int]):
+    """Represents a single execution of an ingestion process.
+
+    An IngestionRun tracks the details of one attempt to collect data using an IngestionConfig.
+
+        Attributes:
+            workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
+            config_id (str): ID of the ingestion config used for this run Example: 5eb7cf5a86d9755df3a6c593.
+            field_id (Union[None, Unset, str]): MongoDB document ObjectID
+            created_at (Union[Unset, datetime.datetime]):
+            start_at (Union[None, Unset, datetime.datetime]): Timestamp when the run started
+            end_at (Union[None, Unset, datetime.datetime]): Timestamp when the run ended
+            status (Union[Unset, Status]):  Default: Status.PENDING.
+            error (Union[None, Unset, str]): Error message if the run failed
+            n_inserted (Union[None, Unset, int]): Number of new articles inserted in the DB during this run
     """
 
     workspace_id: str

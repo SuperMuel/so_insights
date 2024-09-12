@@ -10,11 +10,22 @@ T = TypeVar("T", bound="ClusterEvaluation")
 
 @_attrs_define
 class ClusterEvaluation:
-    """
-    Attributes:
-        justification (str): Your explanation for the relevance level.
-        relevance_level (ClusterEvaluationRelevanceLevel):
-        confidence_score (float):
+    """Represents an assessment of a cluster's quality and relevance to the workspace.
+
+    After articles are grouped into clusters, it's important to understand how
+    good these groupings are for the workspace owner. The ClusterEvaluation provides
+    a way to score and explain the relevance of a cluster.
+
+    It includes a justification for the evaluation, a relevance level
+    (like "highly relevant", "somewhat relevant", or "not relevant"), and a
+    confidence score for this evaluation.
+
+    Done automatically by LLM after clustering and overview generation.
+
+        Attributes:
+            justification (str): Your explanation for the relevance level.
+            relevance_level (ClusterEvaluationRelevanceLevel):
+            confidence_score (float):
     """
 
     justification: str
