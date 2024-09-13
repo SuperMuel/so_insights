@@ -3,6 +3,9 @@ from datetime import timedelta
 
 import arrow
 import pandas as pd
+from sdk.so_insights_client.models.rss_ingestion_config_update import (
+    RssIngestionConfigUpdate,
+)
 from sdk.so_insights_client.models.status import Status
 from shared.util import validate_url
 import streamlit as st
@@ -10,6 +13,7 @@ from sdk.so_insights_client.api.ingestion_configs import (
     create_rss_ingestion_config,
     create_search_ingestion_config,
     list_ingestion_configs,
+    update_rss_ingestion_config,
     update_search_ingestion_config,
 )
 from sdk.so_insights_client.api.ingestion_runs import (
@@ -66,7 +70,19 @@ def region_to_full_name(region: Region) -> str:
 
 
 @st.dialog("Create a new workspace")
-def _create_new_workspace():
+def _create_new_workspace_dialog():
+    """
+    Creates a new workspace using a Streamlit dialog.
+
+    This function displays a form within a dialog allowing users to input:
+    - Workspace name (required)
+    - Workspace description
+    - Primary language
+
+    Upon submission, it creates a new workspace and adds it to the session state.
+    If successful, it displays a success toast and reruns the app.
+    """
+
     with st.form(
         "new_workspace_form",
         border=False,
@@ -109,6 +125,20 @@ def _create_new_workspace():
 
 
 def _edit_workspace_form(workspace: Workspace):
+    """
+    Displays a form for editing an existing workspace.
+
+    This function allows users to modify:
+    - Workspace name
+    - Description
+    - Primary language
+    - Advanced HDBSCAN settings (min_cluster_size and min_samples)
+
+    Args:
+        workspace (Workspace): The workspace object to be edited.
+
+    Updates the workspace in the backend if changes are confirmed.
+    """
     with st.form("edit_workspace_form"):
         updated_name = st.text_input(label="Name", value=workspace.name)
         updated_description = st.text_area(
@@ -197,7 +227,12 @@ def _fetch_ingestion_configs(
 
 
 @st.dialog("Update config")
-def update_config(workspace: Workspace, config: SearchIngestionConfig):
+def update_search_config_dialog(workspace: Workspace, config: SearchIngestionConfig):
+    """
+    Displays a dialog for updating an existing search ingestion configuration.
+
+    Updates the configuration in the backend if changes are submitted.
+    """
     with st.form(
         key=f"update_form_{config.field_id}",
         border=False,
@@ -267,6 +302,51 @@ def update_config(workspace: Workspace, config: SearchIngestionConfig):
                 st.error(f"Failed to update configuration. Error: {response}")
 
 
+@st.dialog("Update RSS config")
+def update_rss_config_dialog(workspace: Workspace, config: RssIngestionConfig):
+    """
+    Displays a dialog for updating an existing RSS ingestion configuration.
+
+    Updates the configuration in the backend if changes are submitted.
+    """
+    with st.form(
+        key=f"update_form_{config.field_id}",
+        border=False,
+    ):
+        st.subheader("Update Configuration")
+        updated_title = st.text_input("Update Title", value=config.title, max_chars=30)
+        updated_rss_feed_url = st.text_input(
+            "Update RSS Feed URL",
+            value=config.rss_feed_url,
+            help="Enter the URL of the RSS feed you want to monitor",
+        )
+
+        if st.form_submit_button("Update Configuration"):
+            if not updated_title.strip() or not updated_rss_feed_url.strip():
+                st.error("Please fill in both the title and RSS feed URL.")
+            elif not validate_url(updated_rss_feed_url):
+                st.error("Invalid RSS feed URL. Please enter a valid URL.")
+            else:
+                update_data = RssIngestionConfigUpdate(
+                    title=updated_title,
+                    rss_feed_url=updated_rss_feed_url,
+                )
+                response = update_rss_ingestion_config.sync(
+                    client=client,
+                    workspace_id=str(workspace.field_id),
+                    rss_ingestion_config_id=str(config.field_id),
+                    body=update_data,
+                )
+                if isinstance(response, RssIngestionConfig):
+                    create_toast(
+                        f"Configuration '**{updated_title}**' updated successfully!",
+                        icon="✅",
+                    )
+                    st.rerun()
+                else:
+                    st.error(f"Failed to update configuration. Error: {response}")
+
+
 @st.dialog("Create Ingestion Run")
 def create_new_ingestion_run(workspace: Workspace, config_id: str, config_title: str):
     st.subheader(f"Create Ingestion Run for '{config_title}'")
@@ -332,10 +412,14 @@ def _show_one_data_source(
                 key=f"update_search_ingestion_config_{config.field_id}",
                 use_container_width=True,
             ):
-                if not isinstance(config, SearchIngestionConfig):
-                    st.error("Editing RSS configurations is not supported yet.")
+                if isinstance(config, SearchIngestionConfig):
+                    update_search_config_dialog(workspace, config)
+                elif isinstance(config, RssIngestionConfig):
+                    update_rss_config_dialog(workspace, config)
                 else:
-                    update_config(workspace, config)
+                    st.error(
+                        f"Unknown configuration type {type(config)} for {config}. Please contact support."
+                    )
 
         with col2:
             if st.button(
@@ -685,7 +769,7 @@ if not workspace:
 else:
     with st.sidebar:
         if st.sidebar.button("➕Create New Workspace", use_container_width=True):
-            _create_new_workspace()
+            _create_new_workspace_dialog()
 
         st.divider()
 
