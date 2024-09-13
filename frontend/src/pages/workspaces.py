@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import timedelta
 
 import arrow
 import pandas as pd
@@ -563,6 +564,19 @@ def _create_articles_found_chart(runs: list[IngestionRun]):
     st.line_chart(df, x="date", y="articles", height=300)
 
 
+def _time_between_runs(runs: list[IngestionRun]) -> timedelta:
+    if not runs:
+        return timedelta.min
+
+    starts = [run.start_at for run in runs if run.start_at]
+    ends = [run.end_at for run in runs if run.end_at]
+
+    if not starts or not ends:
+        return timedelta.min
+
+    return max(ends) - min(starts)
+
+
 @st.fragment(run_every=settings.INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S)
 def _history_section(workspace: Workspace):
     col1, col2 = st.columns([3, 1])
@@ -575,7 +589,7 @@ def _history_section(workspace: Workspace):
 
     runs = _fetch_ingestion_runs(workspace)
 
-    if runs:
+    if len(runs) > 1 and _time_between_runs(runs) > timedelta(days=1):
         _create_articles_found_chart([run for run in runs if run.n_inserted])
 
     if not runs:
