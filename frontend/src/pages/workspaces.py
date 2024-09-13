@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
+import warnings
 
 import arrow
 import pandas as pd
@@ -348,7 +349,16 @@ def update_rss_config_dialog(workspace: Workspace, config: RssIngestionConfig):
 
 
 @st.dialog("Create Ingestion Run")
-def create_new_ingestion_run(workspace: Workspace, config_id: str, config_title: str):
+def create_new_ingestion_run_dialog(
+    workspace: Workspace, config_id: str, config_title: str
+):
+    """
+    Initiates a new ingestion run for a specific configuration.
+
+    This function displays a dialog with a button to start the ingestion process.
+
+    If pressed, creates a new pending ingestion run in the backend.
+    """
     st.subheader(f"Create Ingestion Run for '{config_title}'")
 
     if st.button("Start Ingestion Process"):
@@ -370,7 +380,10 @@ def create_new_ingestion_run(workspace: Workspace, config_id: str, config_title:
             st.rerun()
 
 
-def _show_search_config_details(workspace, config: SearchIngestionConfig):
+def _show_search_config_details(config: SearchIngestionConfig):
+    """
+    Displays detailed information about a search ingestion configuration.
+    """
     st.metric("Region", region_to_full_name(config.region))
     st.write(f"**Search Queries ({len(config.queries)}):**")
 
@@ -386,7 +399,7 @@ def _show_search_config_details(workspace, config: SearchIngestionConfig):
     st.write(f"**Last Run:** {humanized_last_run or 'Not run yet'}")
 
 
-def _show_rss_config_details(workspace, config: RssIngestionConfig):
+def _show_rss_config_details(config: RssIngestionConfig):
     st.metric("RSS Feed URL", config.rss_feed_url)
 
     humanized_last_run = (
@@ -398,11 +411,20 @@ def _show_rss_config_details(workspace, config: RssIngestionConfig):
 def _show_one_data_source(
     workspace: Workspace, config: SearchIngestionConfig | RssIngestionConfig
 ):
+    """
+    Displays details and management options for a single data source configuration.
+
+    This function creates an expandable section for each configuration, showing:
+    - Configuration details
+    - Edit button
+    - Disable configuration button
+    - Start ingestion run button
+    """
     with st.expander(f"**{config.title}**"):
         if isinstance(config, SearchIngestionConfig):
-            _show_search_config_details(workspace, config)
+            _show_search_config_details(config)
         else:
-            _show_rss_config_details(workspace, config)
+            _show_rss_config_details(config)
 
         col1, col2, col3 = st.columns([1, 1, 1])
 
@@ -445,13 +467,20 @@ def _show_one_data_source(
                 key=f"create_ingestion_run_{config.field_id}",
                 use_container_width=True,
             ):
-                create_new_ingestion_run(
+                create_new_ingestion_run_dialog(
                     workspace, config_title=config.title, config_id=str(config.field_id)
                 )
 
 
 @st.dialog("Create New Data Source")
-def _create_new_search_data_source(workspace: Workspace):
+def _create_new_search_data_source_dialog(workspace: Workspace):
+    """
+    Displays a dialog for creating a new search ingestion configuration.
+
+    - Creates a new search ingestion configuration in the backend.
+    - Optionally starts an ingestion run for the new configuration.
+    """
+
     with st.form(
         "create_search_ingestion_config",
         border=False,
@@ -556,6 +585,12 @@ def _create_new_search_data_source(workspace: Workspace):
 
 @st.dialog("Create New RSS Data Source")
 def _create_new_rss_data_source(workspace: Workspace):
+    """
+    Displays a dialog for creating a new RSS ingestion configuration.
+
+    - Creates a new RSS ingestion configuration in the backend.
+    - Optionally starts an ingestion run for the new configuration.
+    """
     with st.form(
         "create_rss_ingestion_config",
         border=False,
@@ -619,13 +654,20 @@ def _create_new_rss_data_source(workspace: Workspace):
 
 
 def _data_sources_section(workspace: Workspace):
+    """
+    Displays the data sources section of the workspace page.
+
+    This function shows:
+    - Buttons to create new search and RSS data sources
+    - A list of existing data sources with their details and management options
+    """
     col1, col2, col3 = st.columns([3, 1, 1])
     col1.subheader("📰 Data sources")
     if col2.button(
         "➕ New Web Search Source",
         use_container_width=True,
     ):
-        _create_new_search_data_source(workspace)
+        _create_new_search_data_source_dialog(workspace)
 
     if col3.button(
         "➕ New RSS Data Source",
@@ -648,6 +690,9 @@ def _data_sources_section(workspace: Workspace):
 
 
 def _fetch_ingestion_runs(workspace: Workspace) -> list[IngestionRun]:
+    """
+    Retrieves all ingestion runs for a given workspace.
+    """
     runs = list_ingestion_runs.sync(client=client, workspace_id=str(workspace.field_id))
 
     if isinstance(runs, HTTPValidationError) or runs is None:
@@ -658,9 +703,13 @@ def _fetch_ingestion_runs(workspace: Workspace) -> list[IngestionRun]:
 
 
 def _create_articles_found_chart(runs: list[IngestionRun]):
+    """
+    Creates and displays a line chart showing the number of articles found per day.
+    """
     graph_data = defaultdict(int)
 
     if not runs:
+        warnings.warn("No runs found to create graph.")
         return
 
     for run in runs:
@@ -681,6 +730,14 @@ def _create_articles_found_chart(runs: list[IngestionRun]):
 
 
 def _time_between_runs(runs: list[IngestionRun]) -> timedelta:
+    """
+    Calculates the total time span covered by a list of ingestion runs.
+
+    This function finds the time between the earliest start time and the latest end time
+    across all provided runs.
+
+    Returns timedelta.min if no valid runs are found.
+    """
     if not runs:
         return timedelta.min
 
@@ -695,6 +752,18 @@ def _time_between_runs(runs: list[IngestionRun]) -> timedelta:
 
 @st.fragment(run_every=settings.INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S)
 def _history_section(workspace: Workspace):
+    """
+    Displays the history of ingestion runs for a given workspace.
+
+    This function shows:
+    - A refresh button
+    - A chart of articles found per day (if applicable)
+    - Detailed information about each ingestion run
+
+    The section automatically refreshes every INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S seconds.
+    It only reruns the fragment to update the displayed information.
+    """
+
     col1, col2 = st.columns([3, 1])
     col1.subheader("🕘 History")
     if col2.button(
