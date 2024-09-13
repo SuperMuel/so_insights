@@ -34,6 +34,8 @@ SO Insights consists of four main components:
 
 The Ingester component is responsible for:
 - Performing web searches to online news sources based on user predefined queries
+- Ingesting articles from RSS feeds
+- Coming soon : Ingesting data from Twitter, Linkedin.. 
 - Storing articles in MongoDB and indexing them in Pinecone
 - Watching for tasks and executing them in the background
 
@@ -43,6 +45,7 @@ The Analyzer component handles:
 - Clustering of articles using HDBSCAN algorithm
 - Generating titles summaries for clusters using LLMs
 - Evaluating the relevance and quality of clusters based on user preferences
+- Generating conversation starters for the chatbot
 - Watching for tasks and executing them in the background
 
 ### Backend
@@ -53,11 +56,21 @@ The Backend provides:
 ### Frontend
 
 The Frontend offers a Streamlit interface for:
+
 - Managing workspaces and search queries
+- Configuring data sources (web search and RSS feeds)
 - Manually triggering ingestion and analysis tasks
 - Viewing ingestion results and cluster analyses
-- Interacting with a Chatbot with Retrieval-Augmented-Generation (RAG) 
-- Generating content for blog posts, Linkedin, Twitter/X, etc based on detected topics with images.
+- Interacting with a Chatbot using Retrieval-Augmented Generation (RAG)
+- Generating content for blog posts, LinkedIn, Twitter/X, etc., based on detected topics with AI-generated images
+
+### Shared
+
+The Shared component provides:
+
+- Common data models used across the system
+- Utility functions for database operations, language handling, and more
+- Shared configurations and settings
 
 ## Tech Stack
 
