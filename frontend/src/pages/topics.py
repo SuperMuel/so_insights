@@ -112,6 +112,8 @@ def _list_sessions(workspace: Workspace):
 
         status.write(f"ID : {session.field_id}")
         status.write(f"Status : {session.status}")
+        if session.error:
+            status.write(f"Error : {session.error}")
         status.write(f"Created at {session.created_at}")
         status.write(f"Started at {session.session_start}")
         status.write(f"Ended at {session.session_end}")
