@@ -19,7 +19,7 @@ import streamlit as st
 from src.shared import (
     get_workspace_or_stop,
     language_to_str,
-    select_session,
+    select_session_or_stop,
     get_client,
 )
 from langchain.chat_models import init_chat_model
@@ -88,7 +88,7 @@ def select_clusters(workspace: Workspace):
     # TODO : add relevancy filter
     with st.form("select_clusters"):
         st.info("Choose the topics you wish to discuss in the content. ⬇️", icon="ℹ️")
-        session = select_session(client, workspace)
+        session = select_session_or_stop(client, workspace)
 
         assert workspace.field_id and session.field_id
 

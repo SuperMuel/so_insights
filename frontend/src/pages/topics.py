@@ -27,7 +27,7 @@ from src.shared import (
     dates_to_session_label,
     get_client,
     get_workspace_or_stop,
-    select_session,
+    select_session_or_stop,
     task_status_to_st_status,
 )
 from streamlit.elements.lib.mutable_status_container import StatusContainer
@@ -79,7 +79,7 @@ with st.sidebar:
 
     st.divider()
 
-    selected_session = select_session(client, workspace)
+    selected_session = select_session_or_stop(client, workspace)
 
 
 st.title("🔎 Topics detection")
@@ -88,6 +88,10 @@ CLUSTERS_PER_PAGE = settings.CLUSTERS_PER_PAGE
 
 
 def _list_sessions(workspace: Workspace):
+    """
+    Displays a list of clustering sessions for the given workspace, with details in expandable sections.
+    """
+
     sessions = list_clustering_sessions.sync(
         client=client,
         workspace_id=str(workspace.field_id),
@@ -170,6 +174,21 @@ if selected_session.summary:
 
 
 def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
+    """
+    Renders a list of clusters with their details and associated articles.
+
+    For each cluster, this function displays:
+    - Cluster image (if available)
+    - Cluster title and summary
+    - List of articles in the cluster with titles and snippets
+    - A feedback mechanism for users to rate the cluster
+
+    Args:
+        clusters (list[ClusterWithArticles]): List of clusters to display.
+        tab_id (str): Identifier for the current tab, used for unique keys.
+
+    Handles empty cluster lists and errors in overview generation.
+    """
     if not clusters:
         st.warning("No topics found.")
         return
@@ -227,6 +246,37 @@ def fetch_clusters(
     return clusters_with_articles
 
 
+def display_pagination(
+    total_items: int, items_per_page: int, current_page: int, filter: str
+) -> None:
+    """
+    Displays pagination controls and handles page changes.
+
+    Args:
+    total_items (int): Total number of items to paginate.
+    items_per_page (int): Number of items to display per page.
+    current_page (int): The current page number.
+    filter (str): A unique identifier for the current view, used for session state keys.
+
+    Returns:
+    None
+    """
+    total_pages = (total_items + items_per_page - 1) // items_per_page
+
+    if total_pages > 1:
+        new_page = st.radio(
+            "Page",
+            options=range(1, total_pages + 1),
+            index=current_page - 1,
+            horizontal=True,
+            key=f"{filter}_pagination",
+        )
+
+        if new_page != current_page:
+            st.session_state[f"page_{filter}"] = new_page
+            st.rerun()
+
+
 tab_title_to_filter = {
     "Relevant": RelevancyFilter.HIGHLY_RELEVANT,
     "Somewhat relevant": RelevancyFilter.SOMEWHAT_RELEVANT,
@@ -259,16 +309,9 @@ for tab, filter in zip(tabs, tab_title_to_filter.values()):
             tab_id=str(filter),
         )
 
-        total_pages = len(clusters_with_articles) // CLUSTERS_PER_PAGE + 1
-        if total_pages > 1:
-            new_page = st.radio(
-                "Page",
-                options=range(1, total_pages + 1),
-                index=page - 1,
-                horizontal=True,
-                key=f"{filter}_pagination",
-            )
-
-            if new_page != page:
-                st.session_state[f"page_{filter}"] = new_page
-                st.rerun()
+        display_pagination(
+            total_items=len(clusters_with_articles),
+            items_per_page=CLUSTERS_PER_PAGE,
+            current_page=page,
+            filter=str(filter),
+        )

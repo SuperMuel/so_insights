@@ -20,6 +20,10 @@ def get_client():
 
 
 def get_workspace_or_stop() -> Workspace:
+    """
+    Retrieves the current workspace from session state or stops the app execution.
+    """
+
     if not (workspace := st.session_state.get("workspace")):
         st.error("Please select a workspace first.")
         st.stop()
@@ -27,7 +31,12 @@ def get_workspace_or_stop() -> Workspace:
 
 
 def create_toast(text: str, icon: str = "🚀") -> None:
-    """Workaround for showing toasts where you have to use st.rerun() just after."""
+    """
+    Creates a toast notification and stores it in session state. Use show_all_toasts() to display all toasts
+    created by this function.
+
+    This function is a workaround for showing toasts when st.rerun() is used immediately after.
+    """
     created_at = datetime.now()
     st.session_state.toasts = st.session_state.get("toasts", []) + [
         {"text": text, "icon": icon, "created_at": created_at}
@@ -35,6 +44,16 @@ def create_toast(text: str, icon: str = "🚀") -> None:
 
 
 def show_all_toasts():
+    """
+    Displays all pending toast notifications and removes expired ones.
+
+    This function should be called at the beginning of each app run to show
+    and manage toast notifications.
+
+    Side effects:
+        - Displays toasts using st.toast().
+        - Removes expired toasts from st.session_state.toasts.
+    """
     toasts = st.session_state.get("toasts", [])
     TOAST_DURATION = timedelta(seconds=5)
     to_delete = []
@@ -48,7 +67,11 @@ def show_all_toasts():
         toasts.remove(toast)
 
 
-def select_session(client: Client, workspace: Workspace) -> ClusteringSession:
+def select_session_or_stop(client: Client, workspace: Workspace) -> ClusteringSession:
+    """
+    Allows the user to select a clustering session for the current workspace.
+    Stops the app if no sessions are found or selected.
+    """
     sessions = list_clustering_sessions.sync(
         client=client,
         workspace_id=str(workspace.field_id),
@@ -75,6 +98,12 @@ def select_session(client: Client, workspace: Workspace) -> ClusteringSession:
 
 
 def language_to_str(language: Language) -> str:
+    """
+    Converts a Language enum to its English display name.
+
+    Returns:
+        str: The capitalized English display name of the language.
+    """
     locale = Locale(language.value)
     display_name = locale.get_display_name("en")
     assert display_name
@@ -82,6 +111,19 @@ def language_to_str(language: Language) -> str:
 
 
 def language_to_localized_str(language: Language) -> str:
+    """
+    Converts a Language enum to its localized display name.
+
+    Returns:
+        str: The capitalized localized display name of the language.
+
+    Example:
+        >>> language_to_localized_str(Language.EN)
+        'English'
+
+        >>> language_to_localized_str(Language.FR)
+        'Français'
+    """
     locale = Locale(language.value)
     display_name = locale.get_display_name(language.value)
     assert display_name
@@ -89,6 +131,12 @@ def language_to_localized_str(language: Language) -> str:
 
 
 def task_status_to_st_status(status: Status) -> Literal["running", "complete", "error"]:
+    """
+    Maps a task Status to a Streamlit status string.
+
+    Returns:
+        Literal["running", "complete", "error"]: The corresponding Streamlit status string.
+    """
     status_map: dict[Status, Literal["running", "complete", "error"]] = {
         Status.PENDING: "running",
         Status.RUNNING: "running",
@@ -99,8 +147,16 @@ def task_status_to_st_status(status: Status) -> Literal["running", "complete", "
     return status_map[status]
 
 
-# Helper function to add ordinal suffixes to numbers
 def ordinal(n):
+    """
+    Converts an integer to its ordinal representation.
+
+    Args:
+        n (int): The number to convert.
+
+    Returns:
+        str: The ordinal representation of the number (e.g., "1st", "2nd", "3rd", "4th").
+    """
     if 10 <= n % 100 <= 20:
         suffix = "th"
     else:
@@ -110,6 +166,31 @@ def ordinal(n):
 
 # Main function to create human-readable session labels
 def dates_to_session_label(start: datetime, end: datetime) -> str:
+    """
+    Creates a human-readable label for a date range.
+
+    This function generates a descriptive label for a clustering session based on its start and end dates.
+    It handles various cases such as single day, week, month, year, and custom ranges.
+
+    Args:
+        start (datetime): The start date of the session.
+        end (datetime): The end date of the session.
+
+    Returns:
+        str: A human-readable label describing the date range.
+
+    Raises:
+        ValueError: If the start date is after the end date.
+
+    Examples:
+        >>> dates_to_session_label(datetime(2023, 1, 1), datetime(2023, 1, 1))
+        'January 1st'
+        >>> dates_to_session_label(datetime(2023, 1, 1), datetime(2023, 12, 31))
+        'Year 2023'
+        >>> dates_to_session_label(datetime(2023, 1, 15), datetime(2023, 1, 20))
+        '15th to 20th January'
+    """
+
     if start > end:
         raise ValueError("Start date must be before end date.")
 

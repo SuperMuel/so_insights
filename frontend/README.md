@@ -1,47 +1,79 @@
 # SO Insights Frontend
 
-A Streamlit-based web interface for the SO Insights project, providing access to workspace management, data ingestion, chatbot interaction, and topic analysis features.
+The Streamlit-based web interface for the SO Insights project, providing a comprehensive platform for workspace management, data analysis, content generation, and chatbot interaction.
 
 ## Features
 
-- Workspace management
-- Data sources management
-- Chatbot for data interaction
-- Topic analysis visualization
-- Content generation based on detected topics
+- **Workspace Management**: Create, edit, and switch between workspaces for different projects or topics.
+- **Data Sources Management**: Configure and manage both web search and RSS feed ingestion sources, and more coming soon.
+- **Topic Analysis**: Visualize and interact with clustering results from ingested data. Provide feedback to improve subsequent analyses.
+- **Content Studio**: Generate social media content and blog posts based on analyzed topics, with AI-generated text and images.
+- **Chatbot Interface**: Interact with your data through natural language queries.
 
 ## Prerequisites
 
 - Python 3.12+
 - Working Backend API
-- API Key(s) for the chatbot LLM
-- Voyage API key for retrieving documents
+- API Keys for:
+  - OpenAI (for GPT models)
+  - Anthropic (for Claude models)
+  - VoyageAI (for embeddings)
+  - Pinecone (for vector database)
+  - GetImg.ai (for image generation)
 
 ## Quick Start
+
 1. Install dependencies:
     ```
     poetry install
     ```
 
 2. Set up environment variables:
-   Create a `.env` file with:
+   Create a `.env` file with the following variables:
    ```
    SO_INSIGHTS_API_URL=your_backend_api_url
    VOYAGEAI_API_KEY=your_voyageai_api_key
    PINECONE_API_KEY=your_pinecone_api_key
    PINECONE_INDEX=your_pinecone_index
+   OPENAI_API_KEY=your_openai_api_key
+   ANTHROPIC_API_KEY=your_anthropic_api_key
+   GETIMG_API_KEY=your_getimg_api_key
    ```
 
-4. Locally run the application:
+   If you with to log LLM calls using [Langsmith](https://www.langchain.com/langsmith) :  
+   ```
+   LANGCHAIN_PROJECT=<your_langsmith_project>
+   LANGCHAIN_API_KEY=<your_langsmith_api_key>
+   LANGCHAIN_TRACING_V2=true
+   ```
+
+3. Locally run the application:
    ```
    poetry run streamlit run app.py
    ```
 
 ## Project Structure
 
-- `app.py`: Main entry point
-- `src/`: Utility functions and settings
+- `app.py`: Main entry point and navigation setup
+- `src/`:
+  - `pages/`: Individual page implementations (workspaces, topics, content_studio, chatbot)
+  - `shared.py`: Shared utility functions
+  - `app_settings.py`: Application settings and configuration
+  - `content_generation.py`: Functions for content generation
+  - `image_generation.py`: Functions for image generation
 - `sdk/`: Generated API client for backend communication
+
+## Key Components
+
+1. **Workspaces**: Manage multiple workspaces for different projects or topics.
+2. **Topics**: Analyze and visualize detected topics in collected articles.
+3. **Content Studio**: Generate content for various platforms (Twitter, LinkedIn, blog posts) based on analyzed topics.
+4. **Chatbot**: Ask questions about your data using natural language.
+
+## Customization
+
+- The application supports custom logos for light and dark themes. Set `LOGO_LIGHT_URL` and `LOGO_DARK_URL` in your environment variables to use custom logos.
+- Check the settings in `src/app_settings.py` to customize various aspects of the application, such as the number of clusters per page or auto-refresh intervals. Add environment variables to override these settings.
 
 ## Generating Backend SDK
 
@@ -51,7 +83,6 @@ To update the backend SDK used by the frontend:
    ```
    cd ../backend
    ```
-
 2. Run the SDK generation script:
    ```
    poetry run python generate_client_sdk.py -o ../frontend/sdk
