@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.http_validation_error import HTTPValidationError
+from ...models.search_ingestion_config import SearchIngestionConfig
 from ...models.search_ingestion_config_create import SearchIngestionConfigCreate
 from ...types import Response
 
@@ -33,9 +34,9 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[HTTPValidationError, SearchIngestionConfigCreate]]:
+) -> Optional[Union[HTTPValidationError, SearchIngestionConfig]]:
     if response.status_code == HTTPStatus.CREATED:
-        response_201 = SearchIngestionConfigCreate.from_dict(response.json())
+        response_201 = SearchIngestionConfig.from_dict(response.json())
 
         return response_201
     if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
@@ -50,7 +51,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[HTTPValidationError, SearchIngestionConfigCreate]]:
+) -> Response[Union[HTTPValidationError, SearchIngestionConfig]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -64,7 +65,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     body: SearchIngestionConfigCreate,
-) -> Response[Union[HTTPValidationError, SearchIngestionConfigCreate]]:
+) -> Response[Union[HTTPValidationError, SearchIngestionConfig]]:
     """Create Search Ingestion Config
 
     Args:
@@ -76,7 +77,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, SearchIngestionConfigCreate]]
+        Response[Union[HTTPValidationError, SearchIngestionConfig]]
     """
 
     kwargs = _get_kwargs(
@@ -96,7 +97,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     body: SearchIngestionConfigCreate,
-) -> Optional[Union[HTTPValidationError, SearchIngestionConfigCreate]]:
+) -> Optional[Union[HTTPValidationError, SearchIngestionConfig]]:
     """Create Search Ingestion Config
 
     Args:
@@ -108,7 +109,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, SearchIngestionConfigCreate]
+        Union[HTTPValidationError, SearchIngestionConfig]
     """
 
     return sync_detailed(
@@ -123,7 +124,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     body: SearchIngestionConfigCreate,
-) -> Response[Union[HTTPValidationError, SearchIngestionConfigCreate]]:
+) -> Response[Union[HTTPValidationError, SearchIngestionConfig]]:
     """Create Search Ingestion Config
 
     Args:
@@ -135,7 +136,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, SearchIngestionConfigCreate]]
+        Response[Union[HTTPValidationError, SearchIngestionConfig]]
     """
 
     kwargs = _get_kwargs(
@@ -153,7 +154,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     body: SearchIngestionConfigCreate,
-) -> Optional[Union[HTTPValidationError, SearchIngestionConfigCreate]]:
+) -> Optional[Union[HTTPValidationError, SearchIngestionConfig]]:
     """Create Search Ingestion Config
 
     Args:
@@ -165,7 +166,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, SearchIngestionConfigCreate]
+        Union[HTTPValidationError, SearchIngestionConfig]
     """
 
     return (

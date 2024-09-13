@@ -50,7 +50,7 @@ async def get_search_ingestion_config(ingestion_config: ExistingSearchIngestionC
 
 @router.post(
     "/search",
-    response_model=SearchIngestionConfigCreate,
+    response_model=SearchIngestionConfig,
     status_code=status.HTTP_201_CREATED,
     operation_id="create_search_ingestion_config",
 )
