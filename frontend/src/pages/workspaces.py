@@ -414,6 +414,12 @@ def _create_new_search_data_source(workspace: Workspace):
         )
         assert isinstance(time_limit, TimeLimit)
 
+        create_run = st.checkbox(
+            "Start collecting articles right away",
+            value=True,
+            help="If checked, the system will immediately begin searching for and collecting articles based on your configuration.",
+        )
+
         if st.form_submit_button(
             "Submit",
             use_container_width=True,
@@ -432,10 +438,8 @@ def _create_new_search_data_source(workspace: Workspace):
                     region=region or Region.WT_WT,
                     max_results=int(max_results),
                     time_limit=time_limit,
-                    first_run_max_results=int(
-                        max_results
-                    ),  # Using the same value for simplicity
-                    first_run_time_limit=time_limit,  # Using the same value for simplicity
+                    first_run_max_results=int(max_results),
+                    first_run_time_limit=time_limit,
                 )
 
                 response = create_search_ingestion_config.sync(
@@ -445,9 +449,20 @@ def _create_new_search_data_source(workspace: Workspace):
                 )
 
                 if isinstance(response, SearchIngestionConfig):
-                    st.success(
-                        f"Search Configuration '**{config_title}**' created successfully!"
+                    create_toast(
+                        f"Search Configuration '**{config_title}**' created successfully!",
+                        "✅",
                     )
+                    if create_run:
+                        ingestion_run = create_ingestion_run.sync(
+                            client=client,
+                            workspace_id=str(workspace.field_id),
+                            ingestion_config_id=str(response.field_id),
+                        )
+                        if isinstance(ingestion_run, IngestionRun):
+                            create_toast("Ingestion run started successfully!", "🚀")
+                        else:
+                            create_toast("Failed to start ingestion run.", icon="❌")
                     st.rerun()
                 else:
                     st.error(
@@ -473,6 +488,12 @@ def _create_new_rss_data_source(workspace: Workspace):
             help="Enter the URL of the RSS feed you want to monitor",
         )
 
+        create_run = st.checkbox(
+            "Start collecting articles right away",
+            value=True,
+            help="If checked, the system will immediately begin fetching articles from the RSS feed.",
+        )
+
         if st.form_submit_button(
             "Submit",
             use_container_width=True,
@@ -494,9 +515,20 @@ def _create_new_rss_data_source(workspace: Workspace):
                 )
 
                 if isinstance(response, RssIngestionConfig):
-                    st.success(
-                        f"RSS Configuration '**{config_title}**' created successfully!"
+                    create_toast(
+                        f"RSS Configuration '**{config_title}**' created successfully!",
+                        "✅",
                     )
+                    if create_run:
+                        ingestion_run = create_ingestion_run.sync(
+                            client=client,
+                            workspace_id=str(workspace.field_id),
+                            ingestion_config_id=str(response.field_id),
+                        )
+                        if isinstance(ingestion_run, IngestionRun):
+                            create_toast("Ingestion run started successfully!", "🚀")
+                        else:
+                            create_toast("Failed to start ingestion run.", icon="❌")
                     st.rerun()
                 else:
                     st.error(f"Failed to create RSS configuration. Error: {response}")

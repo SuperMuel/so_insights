@@ -59,6 +59,8 @@ async def create_search_ingestion_config(
 ):
     assert workspace.id
 
+    # TODO : prevent creation of config with same title case and whitespace insensitive
+
     new_config = SearchIngestionConfig(
         **config.model_dump(),
         workspace_id=workspace.id,
