@@ -247,6 +247,14 @@ with st.sidebar:
                 value="Artistic style, black and white, minimalist. Low contrast, soothing. Avoid overly futuristic elements.\nIf multiple topics provided, segment the image into multiple parts",
             )
 
+    custom_instructions = st.text_area(
+        "Custom Instructions",
+        height=100,
+        value="",
+        placeholder="Do not use emojis. Write 'AI' instead of 'Artificial Intelligence'.",
+        help="These instructions will be added to the content generation prompt to tailor the output to your needs.",
+    )
+
     assert model
 
 
@@ -306,6 +314,7 @@ if st.sidebar.button(
         examples=examples,
         language=language,
         stream=True,
+        custom_instructions=custom_instructions,
     )
 
 if stream is None:

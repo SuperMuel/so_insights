@@ -13,6 +13,7 @@ def create_social_media_content(
     examples: list[str],
     language: Language,
     stream: bool = False,
+    custom_instructions: str = "",
 ):
     prompt_template = hub.pull("simple-content-gen")
 
@@ -33,6 +34,7 @@ def create_social_media_content(
             ]
         ),
         "language": language_to_str(language),
+        "custom_instructions": custom_instructions,
     }
 
     if stream:
