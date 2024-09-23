@@ -206,6 +206,14 @@ with st.sidebar:
         if examples_key not in st.session_state:
             st.session_state[examples_key] = [""]
 
+        custom_instructions = st.text_area(
+            "Custom Instructions",
+            height=100,
+            value="",
+            placeholder="Do not use emojis. Write 'AI' instead of 'Artificial Intelligence'.",
+            help="These instructions will be added to the content generation prompt to tailor the output to your needs.",
+        )
+
         with st.popover(
             "📚 Example Content",
             use_container_width=True,
@@ -246,14 +254,6 @@ with st.sidebar:
                 height=100,
                 value="Artistic style, black and white, minimalist. Low contrast, soothing. Avoid overly futuristic elements.\nIf multiple topics provided, segment the image into multiple parts",
             )
-
-    custom_instructions = st.text_area(
-        "Custom Instructions",
-        height=100,
-        value="",
-        placeholder="Do not use emojis. Write 'AI' instead of 'Artificial Intelligence'.",
-        help="These instructions will be added to the content generation prompt to tailor the output to your needs.",
-    )
 
     assert model
 
