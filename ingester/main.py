@@ -213,7 +213,7 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
 
     assert run.end_at and run.status in [Status.completed, Status.failed]
     logger.info(
-        "Finished processing ingestion run. Found {run.n_inserted} new articles."
+        f"Finished processing ingestion run. Found {run.n_inserted} new articles."
     )
 
 
