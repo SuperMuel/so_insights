@@ -25,7 +25,13 @@ async def create_workspace(workspace: WorkspaceCreate):
     operation_id="list_workspaces",
 )
 async def list_workspaces():
-    return await Workspace.find_all().to_list()
+    return (
+        await Workspace.find_all()
+        .sort(
+            Workspace.created_at,  # type: ignore
+        )
+        .to_list()
+    )
 
 
 @router.get(
