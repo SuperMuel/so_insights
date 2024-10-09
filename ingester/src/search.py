@@ -177,7 +177,8 @@ async def perform_search(
                 max_results=max_results,
                 time_limit=time_limit,
             )
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to perform search: {e}")
             consecutive_failures += 1
             continue
 
