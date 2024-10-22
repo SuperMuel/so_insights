@@ -157,33 +157,19 @@ async def perform_search(
     """
     all_articles = []
 
-    consecutive_failures = 0
     successfull_queries = 0
 
     for i, query in enumerate(queries):
         if verbose:
             logger.info(f"Searching for query {i + 1}/{len(queries)}: '{query}'")
-        if consecutive_failures >= stop_after_consecutive_failures:
-            logger.error(
-                f"Stopping search after {stop_after_consecutive_failures} consecutive failures"
-            )
-            break
 
-        try:
-            results = await search(
-                ddgs=ddgs,
-                query=query,
-                region=region,
-                max_results=max_results,
-                time_limit=time_limit,
-            )
-        except Exception as e:
-            logger.error(f"Failed to perform search: {e}")
-            consecutive_failures += 1
-            continue
-
-        successfull_queries += 1
-        consecutive_failures = 0
+        results = await search(
+            ddgs=ddgs,
+            query=query,
+            region=region,
+            max_results=max_results,
+            time_limit=time_limit,
+        )
 
         articles = map(BaseArticle.try_parse, results)
         all_articles.extend(filter(None, articles))
