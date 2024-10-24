@@ -1,14 +1,10 @@
+import datetime
+import warnings
 from collections import defaultdict
 from datetime import timedelta
-import warnings
 
 import arrow
 import pandas as pd
-from sdk.so_insights_client.models.rss_ingestion_config_update import (
-    RssIngestionConfigUpdate,
-)
-from sdk.so_insights_client.models.status import Status
-from shared.util import validate_url
 import streamlit as st
 from sdk.so_insights_client.api.ingestion_configs import (
     create_rss_ingestion_config,
@@ -35,6 +31,9 @@ from sdk.so_insights_client.models.rss_ingestion_config import RssIngestionConfi
 from sdk.so_insights_client.models.rss_ingestion_config_create import (
     RssIngestionConfigCreate,
 )
+from sdk.so_insights_client.models.rss_ingestion_config_update import (
+    RssIngestionConfigUpdate,
+)
 from sdk.so_insights_client.models.search_ingestion_config import SearchIngestionConfig
 from sdk.so_insights_client.models.search_ingestion_config_create import (
     SearchIngestionConfigCreate,
@@ -42,10 +41,12 @@ from sdk.so_insights_client.models.search_ingestion_config_create import (
 from sdk.so_insights_client.models.search_ingestion_config_update import (
     SearchIngestionConfigUpdate,
 )
+from sdk.so_insights_client.models.status import Status
 from sdk.so_insights_client.models.time_limit import TimeLimit
 from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
 
 import shared.region
+from shared.util import validate_url
 from src.app_settings import AppSettings
 from src.shared import (
     create_toast,
@@ -706,10 +707,10 @@ def _create_articles_found_chart(runs: list[IngestionRun]):
     """
     Creates and displays a line chart showing the number of articles found per day.
     """
-    graph_data = defaultdict(int)
+    graph_data: defaultdict[datetime.date, int] = defaultdict(int)
 
-    if not runs:
-        warnings.warn("No runs found to create graph.")
+    if len(runs) < 2:
+        warnings.warn("Not enough data to create a chart.")
         return
 
     for run in runs:
@@ -717,11 +718,13 @@ def _create_articles_found_chart(runs: list[IngestionRun]):
             date = run.end_at.date()
             graph_data[date] += run.n_inserted
 
-    # Add 0 for all days without data, from the first to today
+    # Ensure all days from the first date to the last date have data, filling in 0 for missing days
     if graph_data:
         first_date = min(graph_data.keys())
         last_date = max(graph_data.keys())
-        for date in arrow.Arrow.range("day", first_date, last_date):
+        for date in arrow.Arrow.range(
+            "day", arrow.get(first_date), arrow.get(last_date), tz="UTC"
+        ):
             if date.date() not in graph_data:
                 graph_data[date.date()] = 0
 
