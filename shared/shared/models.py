@@ -253,7 +253,7 @@ class IngestionRun(Document):
     def is_pending(self) -> bool:
         return self.status == Status.pending
 
-    async def mark_as_finished(self, status: Status, error: str | None = None):
+    async def mark_as_finished(self, status: Status, *, error: str | None = None):
         """
         Finish the process and update the status, end time, and error (if any).
         Parameters:

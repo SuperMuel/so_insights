@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import AnyUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,12 +12,14 @@ class IngesterSettings(BaseSettings):
 
     # Search settings
     MAX_RETRIES_PER_QUERY: int = 2
-    RETRY_SLEEP_TIME_S: int = 5
+    MIN_RETRY_SLEEP_TIME_S: int = 3
+    MAX_RETRY_SLEEP_TIME_S: int = 10
     SLEEP_BETWEEN_QUERIES_S: int = 4
     QUERY_TIMEOUT: int = 30
     VERBOSE_SEARCH: bool = Field(
         default=True, description="Whether to log each search query during the search"
     )
+    PROXY: AnyUrl | None = None
 
     # Embeddings settings
     VOYAGEAI_API_KEY: str = Field(default=...)
@@ -34,3 +36,8 @@ class IngesterSettings(BaseSettings):
     POLLING_INTERVAL_S: int = 10
     MAX_RUNTIME_S: int = 30 * 60  # 30 minutes
     PORT: int = 8081
+
+
+settings = IngesterSettings()
+
+__all__ = ["settings"]

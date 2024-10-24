@@ -15,15 +15,19 @@ from pydantic import (
     field_validator,
 )
 from shared.util import validate_url
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import (
+    after_log,
+    before_sleep_log,
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+)
 
-from src.ingester_settings import IngesterSettings
+from src.ingester_settings import settings
 
 import logging
 
 logger = logging.getLogger(__name__)
-
-settings = IngesterSettings()
 
 
 class BaseArticle(BaseModel):
@@ -78,8 +82,22 @@ class BaseArticle(BaseModel):
 @retry(
     reraise=True,
     stop=stop_after_attempt(settings.MAX_RETRIES_PER_QUERY),
-    wait=wait_fixed(settings.RETRY_SLEEP_TIME_S),
+    wait=wait_exponential(
+        multiplier=1,
+        min=settings.MIN_RETRY_SLEEP_TIME_S,
+        max=settings.MAX_RETRY_SLEEP_TIME_S,
+    ),
+    before_sleep=before_sleep_log(logger, logging.INFO),
+    after=after_log(logger, logging.INFO),
 )
+class SearchException(Exception):
+    """Custom exception for search-related errors."""
+
+    def __init__(self, message: str, original_exception: Exception):
+        super().__init__(f"{message}: {original_exception}")
+        self.original_exception = original_exception
+
+
 async def search(
     ddgs: AsyncDDGS,
     query,
@@ -103,14 +121,19 @@ async def search(
         list[dict[str, str]]: A list of dictionaries containing search results.
 
     Raises:
-        Exception: If the search fails after maximum retries.
+        SearchException: If the search fails after maximum retries.
     """
-    return await ddgs.anews(
-        keywords=query,
-        region=region,
-        max_results=max_results,
-        timelimit=time_limit,
-    )
+
+    try:
+        return await ddgs.anews(
+            keywords=query,
+            region=region,
+            max_results=max_results,
+            timelimit=time_limit,
+        )
+    except Exception as e:
+        logger.error(f"Search '{query}' failed: {e}")
+        raise SearchException(f"Search '{query}' failed", e)
 
 
 class _SearchResult:
@@ -133,7 +156,6 @@ async def perform_search(
     region: Region,
     max_results: int,
     time_limit: TimeLimit,
-    stop_after_consecutive_failures: int = 5,
     verbose: bool = False,
 ) -> _SearchResult:
     """

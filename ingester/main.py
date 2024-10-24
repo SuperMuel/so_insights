@@ -186,7 +186,7 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
         match config.type:
             case IngestionConfigType.search:
                 assert isinstance(config, SearchIngestionConfig)
-                articles = await handle_search_ingestion_config(
+                articles: list[Article] = await handle_search_ingestion_config(
                     ddgs=ddgs, run=run, config=config
                 )
             case IngestionConfigType.rss:
@@ -194,7 +194,7 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
                 articles = await handle_rss_ingestion_config(config, run)
 
     except Exception as e:
-        logger.info(f"Error while processing ingestion run: {e}")
+        logger.error(f"Error while processing ingestion run: {e}")
         return await run.mark_as_finished(Status.failed, error=str(e))
 
     assert all([article.ingestion_run_id for article in articles])
@@ -221,7 +221,16 @@ async def setup():
     mongo_client = get_client(settings.MONGODB_URI)
     await my_init_beanie(mongo_client)
 
-    ddgs = AsyncDDGS(timeout=settings.QUERY_TIMEOUT)
+    logger.info("Setting up DDGS client...")
+    proxy = str(settings.PROXY) if settings.PROXY else None
+
+    if proxy:
+        logger.info(f"Using proxy: {proxy}")
+
+    ddgs = AsyncDDGS(
+        timeout=settings.QUERY_TIMEOUT,
+        proxy=str(settings.PROXY) if settings.PROXY else None,
+    )
 
     return mongo_client, ddgs
 
