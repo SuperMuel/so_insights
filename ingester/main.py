@@ -229,7 +229,7 @@ async def setup():
 
     ddgs = AsyncDDGS(
         timeout=settings.QUERY_TIMEOUT,
-        proxy=str(settings.PROXY) if settings.PROXY else None,
+        proxy=proxy,
     )
 
     return mongo_client, ddgs
