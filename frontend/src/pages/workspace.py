@@ -717,6 +717,10 @@ def _create_articles_found_chart(runs: list[IngestionRun]):
             date = run.end_at.date()
             graph_data[date] += run.n_inserted
 
+    # if today's date is not in the graph data, add it with 0 articles
+    if arrow.now().date() not in graph_data:
+        graph_data[arrow.now().date()] = 0
+
     # Convert to pandas DataFrame and sort by date
     df = pd.DataFrame(
         [(date, count) for date, count in graph_data.items()],
