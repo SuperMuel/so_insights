@@ -25,3 +25,4 @@ EXPOSE ${PORT}
 
 # Set the entrypoint to the main.py script
 ENTRYPOINT ["poetry", "run", "python", "main.py"]
+CMD [ "watch" ]
