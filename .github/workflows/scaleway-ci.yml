@@ -27,3 +27,20 @@ jobs:
         docker push ${{ secrets.CONTAINER_REGISTRY_ENDPOINT }}/so-insights-api
         docker push ${{ secrets.CONTAINER_REGISTRY_ENDPOINT }}/so-insights-frontend
 
+    - name: Configure Scaleway CLI
+      run: |
+        scw config set access-key ${{ secrets.SCW_ACCESS_KEY }}
+        scw config set secret-key ${{ secrets.SCW_SECRET_KEY }}
+        scw config set default-organization-id ${{ secrets.SCW_ORGANIZATION_ID }}
+        scw config set default-project-id ${{ secrets.SCW_PROJECT_ID }}
+        scw config set default-region ${{ secrets.SCW_REGION }}
+
+    - name: Deploy API to Scaleway Serverless Containers
+      run: |
+        # Update container with the new image
+        scw container container update your-api-container-id image=$REGISTRY_URL/$NAMESPACE/so-insights-api
+            
+    - name: Deploy Frontend to Scaleway Serverless Containers
+      run: |
+        # Update container with the new image
+        scw container container update your-frontend-container-id image=$REGISTRY_URL/$NAMESPACE/so-insights-frontend
