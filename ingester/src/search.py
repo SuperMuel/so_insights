@@ -142,12 +142,10 @@ class _SearchResult:
 
     Attributes:
         articles (list[BaseArticle]): A list of parsed BaseArticle instances.
-        successfull_queries (int): The number of successful queries performed.
     """
 
-    def __init__(self, articles: list[BaseArticle], successfull_queries: int):
+    def __init__(self, articles: list[BaseArticle]):
         self.articles = articles
-        self.successfull_queries = successfull_queries
 
 
 async def perform_search(
@@ -179,8 +177,6 @@ async def perform_search(
     """
     all_articles = []
 
-    successfull_queries = 0
-
     for i, query in enumerate(queries):
         if verbose:
             logger.info(f"Searching for query {i + 1}/{len(queries)}: '{query}'")
@@ -198,7 +194,7 @@ async def perform_search(
 
         await asyncio.sleep(settings.SLEEP_BETWEEN_QUERIES_S)
 
-    return _SearchResult(all_articles, successfull_queries)
+    return _SearchResult(all_articles)
 
 
 def deduplicate_articles(articles: list[BaseArticle]) -> list[BaseArticle]:
@@ -222,10 +218,7 @@ async def perform_search_and_deduplicate_results(
         time_limit=time_limit,
         verbose=settings.VERBOSE_SEARCH,
     )
-    logger.info(
-        f"{result.successfull_queries}/{len(queries)} queries were successful. "
-        f"Found {len(result.articles)} (undeduplicated) articles"
-    )
+    logger.info(f"Found {len(result.articles)} (undeduplicated) articles")
     articles = deduplicate_articles(result.articles)
     logger.info(f"Deduplicated to {len(articles)} articles")
     return articles
