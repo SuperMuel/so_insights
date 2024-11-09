@@ -100,6 +100,30 @@
             "problemMatcher": []
         },
         {
+            "label": "Build API Docker Image",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "build",
+                "-t",
+                "so-insights-api",
+                "-f",
+                "api.Dockerfile",
+                "."
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "Tag and Push Frontend Docker Image",
             "type": "shell",
             "dependsOn": "Build Frontend Docker Image",
@@ -107,6 +131,27 @@
             "args": [
                 "-c",
                 "docker tag so-insights-frontend:latest rg.fr-par.scw.cloud/so-insight-registry/so-insights-frontend:latest && docker push rg.fr-par.scw.cloud/so-insight-registry/so-insights-frontend:latest"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Tag and Push API Docker Image",
+            "type": "shell",
+            "dependsOn": "Build API Docker Image",
+            "command": "sh",
+            "args": [
+                "-c",
+                "docker tag so-insights-api:latest rg.fr-par.scw.cloud/so-insight-registry/so-insights-api:latest && docker push rg.fr-par.scw.cloud/so-insight-registry/so-insights-api:latest"
             ],
             "group": {
                 "kind": "build",
