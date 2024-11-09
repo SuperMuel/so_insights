@@ -12,6 +12,7 @@ from langchain_core.runnables import Runnable, RunnableLambda
 
 from langchain import hub
 from langchain_core.language_models.chat_models import BaseChatModel
+from src.analyzer_settings import analyzer_settings
 
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ class ClusterEvaluator:
 
     def __init__(self, llm: BaseChatModel):
         self.llm = llm
-        self.prompt = hub.pull("cluster_eval")
+        self.prompt = hub.pull(analyzer_settings.CLUSTER_EVAL_PROMPT_REF)
         self.structured_llm = llm.with_structured_output(ClusterEvaluation)
         self.chain: EvaluationChain = (
             RunnableLambda(ClusterEvaluationInput.to_chain_input)

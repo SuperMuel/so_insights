@@ -37,3 +37,14 @@ class AppSettings(BaseSettings):
     CLUSTERS_PER_PAGE: int = 30
 
     INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S: int = 15
+
+    # Prompts references to Langsmith Hub
+    SIMPLE_CONTENT_GEN_PROMPT_REF: str = "simple-content-gen"
+    IMAGE_GEN_PROMPT_REF: str = "img-gen"
+    CONTEXTUALIZE_PROMPT_REF: str = "contextualize"
+    QA_RAG_PROMPT_REF: str = "qa-rag"
+
+
+app_settings = AppSettings()
+
+__all__ = ["app_settings"]

@@ -18,3 +18,8 @@ class APISettings(BaseSettings):
         )
     )
     PORT: int = Field(default=8000)
+
+
+api_settings = APISettings()
+
+__all__ = ["api_settings"]

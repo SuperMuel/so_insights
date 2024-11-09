@@ -11,6 +11,8 @@ from shared.models import (
 from langchain_core.runnables import Runnable, RunnableLambda
 import logging
 
+from src.analyzer_settings import analyzer_settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ class ConversationStartersGenerator:
         self.chain = self._create_chain()
 
     def _create_chain(self) -> ChatStartersChain:
-        prompt = hub.pull("questions-gen")
+        prompt = hub.pull(analyzer_settings.CONVERSATION_STARTERS_PROMPT_REF)
         structured_llm = self.llm.with_structured_output(_QuestionsOutput)
 
         def _format_input(input: ConversationStartersGenerationInput) -> dict[str, Any]:

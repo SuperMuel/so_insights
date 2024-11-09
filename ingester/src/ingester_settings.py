@@ -38,6 +38,6 @@ class IngesterSettings(BaseSettings):
     PORT: int = 8081
 
 
-settings = IngesterSettings()
+ingester_settings = IngesterSettings()
 
-__all__ = ["settings"]
+__all__ = ["ingester_settings"]

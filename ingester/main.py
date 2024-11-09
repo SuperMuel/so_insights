@@ -16,7 +16,7 @@ from beanie.odm.operators.update.general import Set
 from dotenv import load_dotenv
 from duckduckgo_search import AsyncDDGS
 from langchain_voyageai import VoyageAIEmbeddings
-from src.ingester_settings import IngesterSettings
+from src.ingester_settings import ingester_settings
 from src.search import (
     perform_search_and_deduplicate_results,
 )
@@ -37,7 +37,6 @@ import uvicorn
 
 load_dotenv()
 
-settings = IngesterSettings()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,7 +56,7 @@ async def healthz():
 
 async def run_server():
     config = uvicorn.Config(
-        app=api, host="0.0.0.0", port=settings.PORT, log_level="info"
+        app=api, host="0.0.0.0", port=ingester_settings.PORT, log_level="info"
     )
     server = uvicorn.Server(config)
     await server.serve()
@@ -66,9 +65,9 @@ async def run_server():
 app = typer.Typer()
 
 embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for parameters "_client", "_aclient"
-    voyage_api_key=settings.VOYAGEAI_API_KEY,
-    model=settings.EMBEDDING_MODEL,
-    batch_size=settings.EMBEDDING_BATCH_SIZE,
+    voyage_api_key=ingester_settings.VOYAGEAI_API_KEY,
+    model=ingester_settings.EMBEDDING_MODEL,
+    batch_size=ingester_settings.EMBEDDING_BATCH_SIZE,
 )
 
 
@@ -218,17 +217,17 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
 
 
 async def setup():
-    mongo_client = get_client(settings.MONGODB_URI)
+    mongo_client = get_client(ingester_settings.MONGODB_URI)
     await my_init_beanie(mongo_client)
 
     logger.info("Setting up DDGS client...")
-    proxy = str(settings.PROXY) if settings.PROXY else None
+    proxy = str(ingester_settings.PROXY) if ingester_settings.PROXY else None
 
     if proxy:
         logger.info(f"Using proxy: {proxy}")
 
     ddgs = AsyncDDGS(
-        timeout=settings.QUERY_TIMEOUT,
+        timeout=ingester_settings.QUERY_TIMEOUT,
         proxy=proxy,
     )
 
@@ -366,13 +365,13 @@ def sync_vector_db(
 @app.command()
 def watch(
     interval: int = typer.Option(
-        settings.POLLING_INTERVAL_S,
+        ingester_settings.POLLING_INTERVAL_S,
         "--interval",
         "-i",
         help="Check interval in seconds",
     ),
     max_runtime: int = typer.Option(
-        settings.MAX_RUNTIME_S,
+        ingester_settings.MAX_RUNTIME_S,
         "--max-runtime",
         "-r",
         help="Maximum runtime in seconds before exiting",

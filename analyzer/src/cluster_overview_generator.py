@@ -11,11 +11,10 @@ from shared.models import (
 )
 from beanie.operators import In
 from shared.set_of_unique_articles import SetOfUniqueArticles
-from src.analyzer_settings import AnalyzerSettings
+from src.analyzer_settings import analyzer_settings
 from langchain_core.runnables import Runnable, RunnableLambda
 import logging
 
-settings = AnalyzerSettings()
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,7 @@ class ClusterOverviewGenerator:
     def __init__(
         self,
         llm: BaseChatModel,
-        max_articles: int = settings.OVERVIEW_GENERATION_MAX_ARTICLES,
+        max_articles: int = analyzer_settings.OVERVIEW_GENERATION_MAX_ARTICLES,
     ):
         """
         Initialize the ClusterOverviewGenerator.
@@ -105,7 +104,7 @@ class ClusterOverviewGenerator:
         return workspace.language
 
     def _create_chain(self) -> Runnable[Cluster, ClusterOverviewOutput]:
-        prompt = hub.pull("articles_overview")
+        prompt = hub.pull(analyzer_settings.ARTICLES_OVERVIEW_PROMPT_REF)
         structured_llm = self.llm.with_structured_output(ClusterOverviewOutput)
 
         return (
@@ -120,7 +119,7 @@ class ClusterOverviewGenerator:
     async def generate_overviews(  # TODO : consider moving what updates the models to the analyzer class
         self,
         clusters: list[Cluster],
-        max_concurrency: int = settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
+        max_concurrency: int = analyzer_settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
     ) -> None:
         """
         Generate overviews for multiple clusters concurrently, then update the cluster
@@ -173,7 +172,7 @@ class ClusterOverviewGenerator:
     async def generate_overviews_for_session(
         self,
         session: ClusteringSession,
-        max_concurrency: int = settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
+        max_concurrency: int = analyzer_settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
         only_missing: bool = False,
     ) -> None:
         """

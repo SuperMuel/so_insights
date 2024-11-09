@@ -10,7 +10,7 @@ from pymongo import IndexModel
 
 from shared.language import Language
 from shared.region import Region
-from shared.db_settings import DBSettings
+from shared.db_settings import db_settings
 
 from pydantic import StringConstraints
 
@@ -81,7 +81,7 @@ class Workspace(Document):
     )
 
     class Settings:
-        name: str = DBSettings().mongodb_workspaces_collection
+        name: str = db_settings.mongodb_workspaces_collection
 
     def get_sorted_sessions(self) -> FindMany["ClusteringSession"]:
         return ClusteringSession.find(
@@ -129,7 +129,7 @@ class IngestionConfig(Document):
 
     class Settings:
         is_root = True
-        name = DBSettings().mongodb_ingestion_configs_collection
+        name = db_settings.mongodb_ingestion_configs_collection
 
     async def get_last_run(self) -> Self | None:
         return await (
@@ -242,7 +242,7 @@ class IngestionRun(Document):
     )
 
     class Settings:
-        name = DBSettings().mongodb_ingestion_runs_collection
+        name = db_settings.mongodb_ingestion_runs_collection
 
     def is_finished(self) -> bool:
         return self.status in [Status.completed, Status.failed]
@@ -347,7 +347,7 @@ class Article(Document):
         return v[:100] if len(v) > 100 else v
 
     class Settings:
-        name = DBSettings().mongodb_articles_collection
+        name = db_settings.mongodb_articles_collection
         indexes = [
             IndexModel(
                 [
@@ -438,7 +438,7 @@ class ClusteringSession(Document):
         return f"{self.data_start.strftime('%d %B %Y')} → {self.data_end.strftime('%d %B %Y')}"
 
     class Settings:
-        name = DBSettings().mongodb_clustering_sessions_collection
+        name = db_settings.mongodb_clustering_sessions_collection
 
     async def get_sorted_clusters(
         self,
@@ -566,7 +566,7 @@ class Cluster(Document):
     )
 
     class Settings:
-        name = DBSettings().mongodb_clusters_collection
+        name = db_settings.mongodb_clusters_collection
 
 
 class Starters(Document):
@@ -583,4 +583,4 @@ class Starters(Document):
     created_at: PastDatetime = Field(default_factory=utc_datetime_factory)
 
     class Settings:
-        name: str = DBSettings().mongodb_starters_collection
+        name: str = db_settings.mongodb_starters_collection

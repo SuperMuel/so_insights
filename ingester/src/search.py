@@ -23,7 +23,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from src.ingester_settings import settings
+from src.ingester_settings import ingester_settings
 
 import logging
 
@@ -81,11 +81,11 @@ class BaseArticle(BaseModel):
 
 @retry(
     reraise=True,
-    stop=stop_after_attempt(settings.MAX_RETRIES_PER_QUERY),
+    stop=stop_after_attempt(ingester_settings.MAX_RETRIES_PER_QUERY),
     wait=wait_exponential(
         multiplier=1,
-        min=settings.MIN_RETRY_SLEEP_TIME_S,
-        max=settings.MAX_RETRY_SLEEP_TIME_S,
+        min=ingester_settings.MIN_RETRY_SLEEP_TIME_S,
+        max=ingester_settings.MAX_RETRY_SLEEP_TIME_S,
     ),
     before_sleep=before_sleep_log(logger, logging.INFO),
     after=after_log(logger, logging.INFO),
@@ -192,7 +192,7 @@ async def perform_search(
         articles = map(BaseArticle.try_parse, results)
         all_articles.extend(filter(None, articles))
 
-        await asyncio.sleep(settings.SLEEP_BETWEEN_QUERIES_S)
+        await asyncio.sleep(ingester_settings.SLEEP_BETWEEN_QUERIES_S)
 
     return _SearchResult(all_articles)
 
@@ -216,7 +216,7 @@ async def perform_search_and_deduplicate_results(
         region=region,
         max_results=max_results,
         time_limit=time_limit,
-        verbose=settings.VERBOSE_SEARCH,
+        verbose=ingester_settings.VERBOSE_SEARCH,
     )
     logger.info(f"Found {len(result.articles)} (undeduplicated) articles")
     articles = deduplicate_articles(result.articles)

@@ -3,6 +3,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from sdk.so_insights_client.models.cluster_overview import ClusterOverview
 from sdk.so_insights_client.models.language import Language
+from src.app_settings import app_settings
 from src.shared import language_to_str
 
 
@@ -15,7 +16,7 @@ def create_social_media_content(
     stream: bool = False,
     custom_instructions: str = "",
 ):
-    prompt_template = hub.pull("simple-content-gen")
+    prompt_template = hub.pull(app_settings.SIMPLE_CONTENT_GEN_PROMPT_REF)
 
     chain = (prompt_template | llm | StrOutputParser()).with_config(
         run_name="content_gen_chain"

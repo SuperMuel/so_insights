@@ -8,7 +8,7 @@ from langchain.chains import create_history_aware_retriever
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from sdk.so_insights_client.api.starters import get_latest_starters
 from shared.set_of_unique_articles import SetOfUniqueArticles
-from src.app_settings import AppSettings
+from src.app_settings import app_settings
 from src.shared import get_client, get_workspace_or_stop
 import streamlit as st
 from langchain.chat_models import init_chat_model
@@ -54,11 +54,9 @@ class _ArticleDocument:
         )
 
 
-settings = AppSettings()
-
 embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameters "_client", "_aclient"
-    voyage_api_key=settings.VOYAGEAI_API_KEY,
-    model=settings.EMBEDDING_MODEL,
+    voyage_api_key=app_settings.VOYAGEAI_API_KEY,
+    model=app_settings.EMBEDDING_MODEL,
 )
 
 
@@ -124,8 +122,8 @@ with st.sidebar:
 
 assert workspace.field_id
 docsearch = PineconeVectorStore(
-    pinecone_api_key=settings.PINECONE_API_KEY,
-    index_name=settings.PINECONE_INDEX,
+    pinecone_api_key=app_settings.PINECONE_API_KEY,
+    index_name=app_settings.PINECONE_INDEX,
     embedding=embeddings,
     namespace=workspace.field_id,
     text_key="title",  # Page content of retrieved documents will be set to the articles titles
@@ -175,7 +173,7 @@ selected_starter = show_starters(fetch_starters(workspace.field_id))
 
 # @st.cache_resource()
 def _fetch_contextualize_prompt():
-    return hub.pull("contextualize-prompt")
+    return hub.pull(app_settings.CONTEXTUALIZE_PROMPT_REF)
 
 
 def _create_history_aware_retriever(retriever: VectorStoreRetriever):
@@ -185,7 +183,7 @@ def _create_history_aware_retriever(retriever: VectorStoreRetriever):
 
 # @st.cache_resource()
 def _fetch_qa_prompt():
-    return hub.pull("so-insights-qa")
+    return hub.pull(app_settings.QA_RAG_PROMPT_REF)
 
 
 def convert_docs(docs: Iterable[Document]) -> SetOfUniqueArticles:
@@ -227,7 +225,7 @@ def create_chain(retriever: VectorStoreRetriever):
 
 
 search_kwargs = {
-    "k": settings.RETRIEVER_K,
+    "k": app_settings.RETRIEVER_K,
     # Filter by date
     "filter": {
         "date": {

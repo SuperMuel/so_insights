@@ -9,14 +9,14 @@ import streamlit as st
 
 from sdk.so_insights_client.client import Client
 from sdk.so_insights_client.models.workspace import Workspace
-from src.app_settings import AppSettings
+from src.app_settings import app_settings
 from typing import Literal
 from sdk.so_insights_client.models.status import Status
 
 
 @st.cache_resource
 def get_client():
-    return Client(base_url=AppSettings().SO_INSIGHTS_API_URL)
+    return Client(base_url=app_settings.SO_INSIGHTS_API_URL)
 
 
 def get_workspace_or_stop() -> Workspace:

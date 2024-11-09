@@ -1,5 +1,5 @@
 from beanie import init_beanie
-from shared.db_settings import DBSettings
+from shared.db_settings import db_settings
 from shared.models import (
     Cluster,
     RssIngestionConfig,
@@ -23,7 +23,7 @@ def get_client(mongodb_uri):
 
 async def my_init_beanie(client):
     await init_beanie(
-        database=client[DBSettings().mongodb_database],
+        database=client[db_settings.mongodb_database],
         document_models=[
             Workspace,
             IngestionConfig,

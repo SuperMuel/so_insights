@@ -2,11 +2,9 @@ from pydantic import BaseModel, Field
 import requests
 from langchain.chat_models.base import BaseChatModel
 from sdk.so_insights_client.models.cluster_overview import ClusterOverview
-from src.app_settings import AppSettings
+from src.app_settings import app_settings
 
 from langchain import hub
-
-settings = AppSettings()
 
 
 class GetImgAI:
@@ -19,7 +17,7 @@ class GetImgAI:
         self.headers = {
             "accept": "application/json",
             "content-type": "application/json",
-            "authorization": f"Bearer {settings.GETIMG_API_KEY}",
+            "authorization": f"Bearer {app_settings.GETIMG_API_KEY}",
         }
 
     def generate_image_url(self, prompt: str) -> str:
@@ -39,7 +37,7 @@ def generate_image_prompt(
     overviews: list[ClusterOverview],
     extra_instructions: str | None = None,
 ) -> ImagePromptOutput:
-    prompt_template = hub.pull("img-gen")
+    prompt_template = hub.pull(app_settings.IMAGE_GEN_PROMPT_REF)
 
     chain = prompt_template | llm.with_structured_output(ImagePromptOutput)
 

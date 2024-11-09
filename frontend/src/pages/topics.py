@@ -10,7 +10,7 @@ from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
 
 
 from sdk.so_insights_client.models.workspace import Workspace
-from src.app_settings import AppSettings
+from src.app_settings import app_settings
 import streamlit as st
 from millify import millify
 
@@ -34,7 +34,6 @@ from streamlit.elements.lib.mutable_status_container import StatusContainer
 
 client = get_client()
 workspace = get_workspace_or_stop()
-settings = AppSettings()
 
 
 with st.sidebar:
@@ -84,7 +83,7 @@ with st.sidebar:
 
 st.title("🔎 Topics detection")
 
-CLUSTERS_PER_PAGE = settings.CLUSTERS_PER_PAGE
+CLUSTERS_PER_PAGE = app_settings.CLUSTERS_PER_PAGE
 
 
 def _list_sessions(workspace: Workspace):

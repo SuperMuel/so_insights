@@ -6,11 +6,10 @@ from shared.models import ClusterOverview, ClusteringSession, Workspace
 from langchain_core.runnables import Runnable, RunnableLambda
 import logging
 from langchain_core.output_parsers import StrOutputParser
-from src.analyzer_settings import AnalyzerSettings
+from src.analyzer_settings import analyzer_settings
 
 
 logger = logging.getLogger(__name__)
-settings = AnalyzerSettings()
 
 
 class SessionSummaryInput(BaseModel):
@@ -50,10 +49,10 @@ class SessionSummarizer:
 
         include_summary = (
             len(overviews)
-            < settings.INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD
+            < analyzer_settings.INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD
         )
 
-        overviews = overviews[: settings.SESSION_SUMMARY_MAX_CLUSTERS]
+        overviews = overviews[: analyzer_settings.SESSION_SUMMARY_MAX_CLUSTERS]
 
         if include_summary:
             return "\n\n".join(
@@ -69,7 +68,7 @@ class SessionSummarizer:
         }
 
     def _create_chain(self) -> SessionSummaryChain:
-        prompt = hub.pull("big-summary")
+        prompt = hub.pull(analyzer_settings.BIG_SUMMARY_PROMPT_REF)
         return (
             RunnableLambda(self.format_input) | prompt | self.llm | StrOutputParser()
         ).with_config(run_name="session_summary_chain")

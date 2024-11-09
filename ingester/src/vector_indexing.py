@@ -11,15 +11,13 @@ from beanie import PydanticObjectId
 
 from shared.models import Article, Workspace
 
-from src.ingester_settings import IngesterSettings
+from src.ingester_settings import ingester_settings
 
 
 logger = logging.getLogger(__name__)
 
 
 PineconeIndexGetter = Callable[[str | PydanticObjectId], PineconeVectorStore]
-
-settings = IngesterSettings()
 
 
 def article_to_document(article: Article) -> Document:
@@ -63,8 +61,8 @@ def get_pinecone_index(
         PineconeVectorStore: A configured PineconeVectorStore object.
     """
     return PineconeVectorStore(
-        pinecone_api_key=settings.PINECONE_API_KEY,
-        index_name=settings.PINECONE_INDEX,
+        pinecone_api_key=ingester_settings.PINECONE_API_KEY,
+        index_name=ingester_settings.PINECONE_INDEX,
         embedding=embeddings,
         namespace=str(namespace),
     )

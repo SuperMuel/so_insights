@@ -47,7 +47,7 @@ from sdk.so_insights_client.models.workspace_create import WorkspaceCreate
 
 import shared.region
 from shared.util import validate_url
-from src.app_settings import AppSettings
+from src.app_settings import app_settings
 from src.shared import (
     create_toast,
     get_client,
@@ -55,7 +55,6 @@ from src.shared import (
     task_status_to_st_status,
 )
 
-settings = AppSettings()
 
 client = get_client()
 
@@ -761,7 +760,7 @@ def _time_between_runs(runs: list[IngestionRun]) -> timedelta:
     return max(ends) - min(starts)
 
 
-@st.fragment(run_every=settings.INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S)
+@st.fragment(run_every=app_settings.INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S)
 def _history_section(workspace: Workspace):
     """
     Displays the history of ingestion runs for a given workspace.

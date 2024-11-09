@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from sdk.so_insights_client.api.workspaces import list_workspaces
-from src.app_settings import AppSettings
+from src.app_settings import app_settings
 from src.shared import get_client
 import streamlit as st
 from streamlit_theme import st_theme
@@ -60,16 +60,14 @@ def _select_workspace(client, on_change) -> None:
 if __name__ == "__main__":
     load_dotenv()
 
-    settings = AppSettings()
-
     st.set_page_config(layout="wide")
 
     theme = st_theme()
     if theme and (base := theme.get("base")):
-        if base == "light" and settings.LOGO_LIGHT_URL:
-            st.logo(settings.LOGO_LIGHT_URL)
-        elif base == "dark" and settings.LOGO_DARK_URL:
-            st.logo(settings.LOGO_DARK_URL)
+        if base == "light" and app_settings.LOGO_LIGHT_URL:
+            st.logo(app_settings.LOGO_LIGHT_URL)
+        elif base == "dark" and app_settings.LOGO_DARK_URL:
+            st.logo(app_settings.LOGO_DARK_URL)
 
     pg = st.navigation(
         [

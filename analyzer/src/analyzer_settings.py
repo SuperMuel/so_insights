@@ -35,3 +35,14 @@ class AnalyzerSettings(BaseSettings):
     POLLING_INTERVAL_S: int = 10
     MAX_RUNTIME_S: int = 30 * 60  # 30 minutes
     PORT: int = 8082
+
+    # Prompts references to Langsmith Hub
+    ARTICLES_OVERVIEW_PROMPT_REF: str = "articles-overview"
+    CLUSTER_EVAL_PROMPT_REF: str = "cluster-eval"
+    BIG_SUMMARY_PROMPT_REF: str = "big-summary"
+    CONVERSATION_STARTERS_PROMPT_REF: str = "conversation-starters"
+
+
+analyzer_settings = AnalyzerSettings()
+
+__all__ = ["analyzer_settings"]

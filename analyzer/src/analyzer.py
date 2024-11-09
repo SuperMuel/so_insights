@@ -15,7 +15,7 @@ from shared.models import (
 
 import logging
 
-from src.analyzer_settings import AnalyzerSettings
+from src.analyzer_settings import analyzer_settings
 from src.evaluator import ClusterEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
@@ -25,8 +25,6 @@ from src.util import get_first_valid_image
 from src.vector_repository import PineconeVectorRepository
 
 logger = logging.getLogger(__name__)
-
-settings = AnalyzerSettings()
 
 
 def id_to_str(id: PydanticObjectId | None) -> str:
@@ -110,7 +108,7 @@ class Analyzer:
             if not all_articles:
                 raise ValueError("No articles found.")
 
-            if len(all_articles) < settings.MIN_ARTICLES_FOR_CLUSTERING:
+            if len(all_articles) < analyzer_settings.MIN_ARTICLES_FOR_CLUSTERING:
                 raise ValueError("Not enough articles to cluster.")
 
             vectors = self.vector_repository.fetch_vectors(

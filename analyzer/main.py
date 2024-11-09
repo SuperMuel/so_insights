@@ -16,7 +16,7 @@ import typer
 from dotenv import load_dotenv
 from pinecone.grpc import PineconeGRPC as Pinecone
 from src.analyzer import Analyzer
-from src.analyzer_settings import AnalyzerSettings
+from src.analyzer_settings import analyzer_settings
 from src.clustering_engine import ClusteringEngine
 from src.vector_repository import PineconeVectorRepository
 from langchain.chat_models import init_chat_model
@@ -27,7 +27,6 @@ import uvicorn
 
 load_dotenv()
 
-settings = AnalyzerSettings()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,11 +40,11 @@ app = typer.Typer()
 
 
 async def setup():
-    mongo_client = get_client(settings.MONGODB_URI)
+    mongo_client = get_client(analyzer_settings.MONGODB_URI)
     await my_init_beanie(mongo_client)
 
-    pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-    index = pc.Index(settings.PINECONE_INDEX)
+    pc = Pinecone(api_key=analyzer_settings.PINECONE_API_KEY)
+    index = pc.Index(analyzer_settings.PINECONE_INDEX)
     vector_repository = PineconeVectorRepository(index)
 
     clustering_engine = ClusteringEngine()
@@ -330,7 +329,7 @@ async def healthz():
 
 async def run_server():
     config = uvicorn.Config(
-        app=api, host="0.0.0.0", port=settings.PORT, log_level="info"
+        app=api, host="0.0.0.0", port=analyzer_settings.PORT, log_level="info"
     )
     server = uvicorn.Server(config)
     await server.serve()
@@ -339,13 +338,13 @@ async def run_server():
 @app.command()
 def watch(
     interval: int = typer.Option(
-        settings.POLLING_INTERVAL_S,
+        analyzer_settings.POLLING_INTERVAL_S,
         "--interval",
         "-i",
         help="Check interval in seconds",
     ),
     max_runtime: int = typer.Option(
-        settings.MAX_RUNTIME_S,
+        analyzer_settings.MAX_RUNTIME_S,
         "--max-runtime",
         "-r",
         help="Maximum runtime in seconds before exiting",

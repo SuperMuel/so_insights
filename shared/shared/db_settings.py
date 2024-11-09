@@ -17,3 +17,8 @@ class DBSettings(BaseSettings):
     mongodb_clustering_sessions_collection: str = "clustering_sessions"
     mongodb_starters_collection: str = "starters"
     mongodb_ingestion_configs_collection: str = "ingestion_configs"
+
+
+db_settings = DBSettings()
+
+__all__ = ["db_settings"]
