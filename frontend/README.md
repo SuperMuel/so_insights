@@ -89,3 +89,19 @@ To update the backend SDK used by the frontend:
    ```
 
 This command will generate the SDK based on the current backend API and place it in the `frontend/sdk` directory.
+
+
+# Docker
+
+To build the docker image, run : 
+
+```bash
+docker build -t so-insights-frontend -f frontend.Dockerfile .
+```
+
+To run the docker image, run :
+
+```bash
+docker run -p 8501:8501  -e STREAMLIT_SERVER_PORT=8501 -e STREAMLIT_SERVER_ADDRESS=localhost  -e SO_INSIGHTS_API_URL="<api_url>" --env-file .\frontend\.env     -t so-insights-frontend
+```
+

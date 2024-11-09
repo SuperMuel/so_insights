@@ -74,6 +74,93 @@
                 "panel": "shared"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Build Frontend Docker Image",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "build",
+                "-t",
+                "so-insights-frontend",
+                "-f",
+                "frontend.Dockerfile",
+                "."
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Tag and Push Frontend Docker Image",
+            "type": "shell",
+            "dependsOn": "Build Frontend Docker Image",
+            "command": "sh",
+            "args": [
+                "-c",
+                "docker tag so-insights-frontend:latest rg.fr-par.scw.cloud/so-insight-registry/so-insights-frontend:latest && docker push rg.fr-par.scw.cloud/so-insight-registry/so-insights-frontend:latest"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Tag and Push Analyzer Docker Image",
+            "type": "shell",
+            "dependsOn": "Build Analyzer Docker Image",
+            "command": "sh",
+            "args": [
+                "-c",
+                "docker tag so-insights-analyzer:latest rg.fr-par.scw.cloud/so-insight-registry/so-insights-analyzer:latest && docker push rg.fr-par.scw.cloud/so-insight-registry/so-insights-analyzer:latest"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Tag and Push Ingester Docker Image",
+            "type": "shell",
+            "dependsOn": "Build Ingester Docker Image",
+            "command": "sh",
+            "args": [
+                "-c",
+                "docker tag so-insights-ingester:latest rg.fr-par.scw.cloud/so-insight-registry/so-insights-ingester:latest && docker push rg.fr-par.scw.cloud/so-insight-registry/so-insights-ingester:latest"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
         }
     ]
 }
