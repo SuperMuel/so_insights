@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import AnyUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,7 +20,7 @@ class IngesterSettings(BaseSettings):
     VERBOSE_SEARCH: bool = Field(
         default=True, description="Whether to log each search query during the search"
     )
-    PROXY: AnyUrl | None = None
+    PROXY: AnyUrl | Literal["tb"] | None = None
 
     # Embeddings settings
     VOYAGEAI_API_KEY: str = Field(default=...)
@@ -28,7 +29,7 @@ class IngesterSettings(BaseSettings):
 
     # Vector database settings
     PINECONE_API_KEY: str = Field(default=...)
-    PINECONE_INDEX: str = Field(default=...)
+    PINECONE_INDEX: str = Field(default="so-insights")
 
     MONGODB_URI: str = Field(default=...)
 

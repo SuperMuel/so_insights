@@ -24,19 +24,29 @@
             "type": "debugpy",
             "request": "launch",
             "module": "streamlit",
+            "cwd": "${workspaceFolder}/frontend",
             "args": [
                 "run",
-                "frontend/app.py",
+                "app.py",
                 "--server.port",
                 "8501"
             ],
             "console": "integratedTerminal",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/frontend"
-            },
             "justMyCode": true,
             "consoleName": "Frontend"
         },
+        {
+            "name": "Run Analyzer",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "cwd": "${workspaceFolder}/analyzer",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "watch"
+            ]
+        }
     ],
     "compounds": [
         {

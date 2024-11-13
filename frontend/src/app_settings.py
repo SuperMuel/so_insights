@@ -20,7 +20,7 @@ class AppSettings(BaseSettings):
     EMBEDDING_BATCH_SIZE: int = 128
 
     PINECONE_API_KEY: str = Field(default=...)
-    PINECONE_INDEX: str = Field(default=...)
+    PINECONE_INDEX: str = Field(default="so-insights")
 
     RETRIEVER_K: int = 30
 

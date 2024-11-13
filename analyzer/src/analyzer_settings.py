@@ -13,7 +13,7 @@ class AnalyzerSettings(BaseSettings):
     MONGODB_URI: str = Field(default=...)
 
     PINECONE_API_KEY: str = Field(default=...)
-    PINECONE_INDEX: str = Field(default=...)
+    PINECONE_INDEX: str = Field(default="so-insights")
 
     # minimum number of articles required to start clustering
     MIN_ARTICLES_FOR_CLUSTERING: int = 10
