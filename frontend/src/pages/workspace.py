@@ -795,7 +795,10 @@ def _history_section(workspace: Workspace):
 
     configs = _fetch_ingestion_configs(workspace)
 
-    for run in runs:
+    MAX_RUNS_TO_DISPLAY = app_settings.MAX_RUNS_TO_DISPLAY
+
+    displayed_runs = runs[:MAX_RUNS_TO_DISPLAY]
+    for run in displayed_runs:
         if run.end_at:
             verb = "Completed" if run.status == Status.COMPLETED else "Failed"
             date_str = f"{verb} {arrow.get(run.end_at).humanize()}"
@@ -839,6 +842,9 @@ def _history_section(workspace: Workspace):
 
         if run.error:
             status.error(f"**Error:** {run.error}")
+
+    if len(runs) > MAX_RUNS_TO_DISPLAY:
+        st.write(f"+{len(runs) - MAX_RUNS_TO_DISPLAY} more")
 
 
 workspace = st.session_state.get("workspace")

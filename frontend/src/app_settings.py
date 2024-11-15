@@ -36,6 +36,10 @@ class AppSettings(BaseSettings):
 
     CLUSTERS_PER_PAGE: int = 30
 
+    # Temporary limit the number of ingestion_runs to display in the workspaces page to improve performance.
+    # In the future, implement pagination instead of just trimming the list.
+    MAX_RUNS_TO_DISPLAY: int = 30
+
     INGESTION_HISTORY_AUTO_REFRESH_INTERVAL_S: int = 15
 
     # Prompts references to Langsmith Hub
