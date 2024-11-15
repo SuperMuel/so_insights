@@ -847,17 +847,12 @@ def _history_section(workspace: Workspace):
         st.write(f"+{len(runs) - MAX_RUNS_TO_DISPLAY} more")
 
 
-workspace = st.session_state.get("workspace")
+if st.sidebar.button("➕Create New Workspace", use_container_width=True):
+    _create_new_workspace_dialog()
 
-if not workspace:
-    st.info("Select a workspace from the sidebar or create a new one.")
-else:
+if workspace := st.session_state.get("workspace"):
     with st.sidebar:
-        if st.sidebar.button("➕Create New Workspace", use_container_width=True):
-            _create_new_workspace_dialog()
-
         st.divider()
-
         st.subheader("My Workspace")
         _edit_workspace_form(workspace)
 

@@ -21,7 +21,6 @@ def _select_workspace(client, on_change) -> None:
     Side effects:
         - Updates st.session_state.workspace with the selected workspace.
         - Displays error or warning messages if no workspaces are found or there's an error.
-        - Stops the app execution if no workspaces are available or there's an error.
     """
     workspaces = list_workspaces.sync(client=client)
 
@@ -31,7 +30,7 @@ def _select_workspace(client, on_change) -> None:
 
     if not workspaces:
         st.warning("No workspaces found. Start by creating a new workspace.")
-        st.stop()
+        return None
 
     index = 0
 
