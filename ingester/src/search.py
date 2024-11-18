@@ -79,6 +79,14 @@ class BaseArticle(BaseModel):
         return None
 
 
+class SearchException(Exception):
+    """Custom exception for search-related errors."""
+
+    def __init__(self, message: str, original_exception: Exception):
+        super().__init__(f"{message}: {original_exception}")
+        self.original_exception = original_exception
+
+
 @retry(
     reraise=True,
     stop=stop_after_attempt(ingester_settings.MAX_RETRIES_PER_QUERY),
@@ -90,14 +98,6 @@ class BaseArticle(BaseModel):
     before_sleep=before_sleep_log(logger, logging.INFO),
     after=after_log(logger, logging.INFO),
 )
-class SearchException(Exception):
-    """Custom exception for search-related errors."""
-
-    def __init__(self, message: str, original_exception: Exception):
-        super().__init__(f"{message}: {original_exception}")
-        self.original_exception = original_exception
-
-
 async def search(
     ddgs: AsyncDDGS,
     query,
