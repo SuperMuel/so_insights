@@ -55,7 +55,7 @@ class _ArticleDocument:
 
 
 embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameters "_client", "_aclient"
-    voyage_api_key=app_settings.VOYAGEAI_API_KEY,
+    voyage_api_key=app_settings.VOYAGEAI_API_KEY.get_secret_value(),
     model=app_settings.EMBEDDING_MODEL,
 )
 
@@ -122,7 +122,7 @@ with st.sidebar:
 
 assert workspace.field_id
 docsearch = PineconeVectorStore(
-    pinecone_api_key=app_settings.PINECONE_API_KEY,
+    pinecone_api_key=app_settings.PINECONE_API_KEY.get_secret_value(),
     index_name=app_settings.PINECONE_INDEX,
     embedding=embeddings,
     namespace=workspace.field_id,

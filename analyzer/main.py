@@ -40,10 +40,10 @@ app = typer.Typer()
 
 
 async def setup():
-    mongo_client = get_client(analyzer_settings.MONGODB_URI)
+    mongo_client = get_client(analyzer_settings.MONGODB_URI.get_secret_value())
     await my_init_beanie(mongo_client)
 
-    pc = Pinecone(api_key=analyzer_settings.PINECONE_API_KEY)
+    pc = Pinecone(api_key=analyzer_settings.PINECONE_API_KEY.get_secret_value())
     index = pc.Index(analyzer_settings.PINECONE_INDEX)
     vector_repository = PineconeVectorRepository(index)
 
@@ -320,6 +320,14 @@ def repair():
 
 
 api = FastAPI()
+
+
+@api.get("/")
+async def root():
+    return {
+        "message": "Welcome to so-insights-analyzer",
+        "analyzer_settings": analyzer_settings.model_dump(),
+    }
 
 
 @api.get("/healthz")

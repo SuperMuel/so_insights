@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import FastAPI
+from pydantic import SecretStr
 from src.mongo_db_operations import insert_articles_in_mongodb
 from src.rss import ingest_rss_feed
 from src.vector_indexing import (
@@ -51,7 +52,10 @@ api = FastAPI()
 
 @api.get("/")
 async def root():
-    return {"message": "Welcome to so-insights-ingester"}
+    return {
+        "message": "Welcome to so-insights-ingester",
+        "ingester_settings": ingester_settings.model_dump(),
+    }
 
 
 @api.get("/healthz")
@@ -73,7 +77,7 @@ logger.info(
     f"Setting up VoyageAI embeddings with model '{ingester_settings.EMBEDDING_MODEL}' and batch size {ingester_settings.EMBEDDING_BATCH_SIZE}"
 )
 embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for parameters "_client", "_aclient"
-    voyage_api_key=ingester_settings.VOYAGEAI_API_KEY,
+    voyage_api_key=ingester_settings.VOYAGEAI_API_KEY.get_secret_value(),
     model=ingester_settings.EMBEDDING_MODEL,
     batch_size=ingester_settings.EMBEDDING_BATCH_SIZE,
 )
@@ -229,9 +233,13 @@ async def setup():
     await my_init_beanie(mongo_client)
 
     logger.info("Setting up DDGS client...")
-    proxy = str(ingester_settings.PROXY) if ingester_settings.PROXY else None
-
-    if proxy:
+    if proxy := (
+        ingester_settings.PROXY.get_secret_value()
+        if isinstance(ingester_settings.PROXY, SecretStr)
+        else str(ingester_settings.PROXY)
+        if ingester_settings.PROXY
+        else None
+    ):
         logger.info(f"Using proxy: {proxy}")
 
     ddgs = AsyncDDGS(

@@ -1,5 +1,6 @@
 from typing import Literal
-from pydantic import AnyUrl, Field
+
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,18 +21,18 @@ class IngesterSettings(BaseSettings):
     VERBOSE_SEARCH: bool = Field(
         default=True, description="Whether to log each search query during the search"
     )
-    PROXY: AnyUrl | Literal["tb"] | None = None
+    PROXY: SecretStr | Literal["tb"] | None = None
 
     # Embeddings settings
-    VOYAGEAI_API_KEY: str = Field(default=...)
+    VOYAGEAI_API_KEY: SecretStr = Field(default=...)
     EMBEDDING_MODEL: str = "voyage-3"
     EMBEDDING_BATCH_SIZE: int = 128
 
     # Vector database settings
-    PINECONE_API_KEY: str = Field(default=...)
+    PINECONE_API_KEY: SecretStr = Field(default=...)
     PINECONE_INDEX: str = Field(default="so-insights")
 
-    MONGODB_URI: str = Field(default=...)
+    MONGODB_URI: SecretStr = Field(default=...)
 
     # Watcher settings
     POLLING_INTERVAL_S: int = 10

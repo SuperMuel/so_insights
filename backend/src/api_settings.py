@@ -1,8 +1,9 @@
 # base settings using pydantic-settings to define the MONGODB_URI and PORT variables from env
 
 import os
+
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
 
 
 class APISettings(BaseSettings):
@@ -12,7 +13,7 @@ class APISettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-    MONGODB_URI: str = (
+    MONGODB_URI: SecretStr = (
         Field(  # If generating client sdk on github_action, ignore the uri
             default="mongodb://localhost:27017" if os.getenv("GITHUB_ACTIONS") else ...
         )

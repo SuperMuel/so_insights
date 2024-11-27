@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,9 +10,9 @@ class AnalyzerSettings(BaseSettings):
         extra="ignore",
     )
 
-    MONGODB_URI: str = Field(default=...)
+    MONGODB_URI: SecretStr = Field(default=...)
 
-    PINECONE_API_KEY: str = Field(default=...)
+    PINECONE_API_KEY: SecretStr = Field(default=...)
     PINECONE_INDEX: str = Field(default="so-insights")
 
     # minimum number of articles required to start clustering
@@ -27,7 +27,7 @@ class AnalyzerSettings(BaseSettings):
     # when the number of clusters found is less than this value
     # we will also include the clusters summaries (instead of just the titles)
     # as material for the summary of session
-    INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD: int = Field(default=10)
+    INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD: int = Field(default=30)
 
     SESSION_SUMMARY_MAX_CLUSTERS: int = 400
 

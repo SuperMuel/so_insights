@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     load_dotenv()
 
-    client = get_client(api_settings.MONGODB_URI)
+    client = get_client(api_settings.MONGODB_URI.get_secret_value())
 
     await my_init_beanie(client)
 

@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 
@@ -15,19 +15,19 @@ class AppSettings(BaseSettings):
         default=... if os.getenv("DYNO") else "http://localhost:8000"
     )
 
-    VOYAGEAI_API_KEY: str = Field(default=...)
+    VOYAGEAI_API_KEY: SecretStr = Field(default=...)
     EMBEDDING_MODEL: str = "voyage-3"
     EMBEDDING_BATCH_SIZE: int = 128
 
-    PINECONE_API_KEY: str = Field(default=...)
+    PINECONE_API_KEY: SecretStr = Field(default=...)
     PINECONE_INDEX: str = Field(default="so-insights")
 
     RETRIEVER_K: int = 30
 
-    OPENAI_API_KEY: str = Field(default=...)
-    ANTHROPIC_API_KEY: str = Field(default=...)
+    OPENAI_API_KEY: SecretStr = Field(default=...)
+    ANTHROPIC_API_KEY: SecretStr = Field(default=...)
 
-    GETIMG_API_KEY: str = Field(default=...)
+    GETIMG_API_KEY: SecretStr = Field(default=...)
 
     LOGO_LIGHT_URL: str | None = None
     LOGO_DARK_URL: str | None = None
