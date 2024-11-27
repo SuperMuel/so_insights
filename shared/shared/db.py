@@ -1,23 +1,33 @@
+import logging
+
 from beanie import init_beanie
+from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import SecretStr
+
 from shared.db_settings import db_settings
 from shared.models import (
+    Article,
     Cluster,
+    ClusteringSession,
+    IngestionConfig,
+    IngestionRun,
     RssIngestionConfig,
     SearchIngestionConfig,
-    Workspace,
-    IngestionRun,
-    ClusteringSession,
-    Article,
     Starters,
-    IngestionConfig,
+    Workspace,
 )
-from motor.motor_asyncio import AsyncIOMotorClient
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 def get_client(mongodb_uri):
+    if isinstance(mongodb_uri, SecretStr):
+        mongodb_uri = mongodb_uri.get_secret_value()
+    elif isinstance(mongodb_uri, str):
+        pass
+    else:
+        raise ValueError("mongodb_uri must be a string or SecretStr")
+
     return AsyncIOMotorClient(mongodb_uri)
 
 
