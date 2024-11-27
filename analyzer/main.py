@@ -36,7 +36,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 async def setup():

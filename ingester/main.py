@@ -71,7 +71,7 @@ async def run_server():
     await server.serve()
 
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 logger.info(
     f"Setting up VoyageAI embeddings with model '{ingester_settings.EMBEDDING_MODEL}' and batch size {ingester_settings.EMBEDDING_BATCH_SIZE}"
