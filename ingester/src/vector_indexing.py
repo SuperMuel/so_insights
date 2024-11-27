@@ -1,18 +1,16 @@
-from langchain_pinecone import PineconeVectorStore
-from typing import Callable
-from itertools import batched
-from langchain_core.documents import Document
-from src.mongo_db_operations import mark_articles_as_vector_indexed
-from langchain_core.embeddings import Embeddings
-
 import logging
+from itertools import batched
+from typing import Callable
 
 from beanie import PydanticObjectId
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
+from langchain_pinecone import PineconeVectorStore
+from tqdm.asyncio import tqdm
 
 from shared.models import Article, Workspace
-
 from src.ingester_settings import ingester_settings
-
+from src.mongo_db_operations import mark_articles_as_vector_indexed
 
 logger = logging.getLogger(__name__)
 
@@ -105,10 +103,10 @@ async def sync_workspace_with_vector_db(
 
     nb_batches = len(articles) // batch_size + 1
 
-    for i, batch in enumerate(batched(articles, batch_size)):
-        logger.info(
-            f"Upserting articles for workspace {workspace.id} ({i + 1}/{nb_batches})"
-        )
+    for batch in tqdm(
+        batched(articles, batch_size), total=nb_batches, desc="Upserting articles"
+    ):
+        logger.info(f"Upserting articles for workspace {workspace.id}")
         documents = [article_to_document(article) for article in batch]
         await index.aadd_documents(
             documents, ids=[str(article.id) for article in batch]
