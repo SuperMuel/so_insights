@@ -49,6 +49,11 @@ logger = logging.getLogger(__name__)
 api = FastAPI()
 
 
+@api.get("/")
+async def root():
+    return {"message": "Welcome to so-insights-ingester"}
+
+
 @api.get("/healthz")
 async def healthz():
     return {"status": "ok"}
