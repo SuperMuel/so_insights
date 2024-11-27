@@ -189,10 +189,10 @@ with st.sidebar:
         assert language
 
         models_labels = {
-            "claude-3-5-sonnet-20240620": "Claude-3.5 Sonnet (Recommended)",
+            "claude-3-5-sonnet-20241022": "Claude 3.5 Sonnet (Recommended)",
             "gpt-4o-mini": "GPT-4o Mini",
             "gpt-4o": "GPT-4o",
-            "claude-3-haiku-20240307": "Claude-3 Haiku",
+            "claude-3-5-haiku-20241022": "Claude 3.5 Haiku",
         }
 
         model = st.selectbox(
