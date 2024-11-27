@@ -24,7 +24,7 @@ class IngesterSettings(BaseSettings):
 
     # Embeddings settings
     VOYAGEAI_API_KEY: str = Field(default=...)
-    EMBEDDING_MODEL: str = "voyage-large-2-instruct"
+    EMBEDDING_MODEL: str = "voyage-3"
     EMBEDDING_BATCH_SIZE: int = 128
 
     # Vector database settings

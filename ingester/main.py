@@ -64,6 +64,9 @@ async def run_server():
 
 app = typer.Typer()
 
+logger.info(
+    f"Setting up VoyageAI embeddings with model '{ingester_settings.EMBEDDING_MODEL}' and batch size {ingester_settings.EMBEDDING_BATCH_SIZE}"
+)
 embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for parameters "_client", "_aclient"
     voyage_api_key=ingester_settings.VOYAGEAI_API_KEY,
     model=ingester_settings.EMBEDDING_MODEL,
@@ -331,6 +334,12 @@ def sync_vector_db(
         "--workspace-id",
         help="To upsert articles for a specific workspace. If not provided, articles will be upserted for all workspaces.",
     ),
+    exclude_workspace_ids: Optional[list[str]] = typer.Option(
+        None,
+        "-e",
+        "--exclude-workspace-ids",
+        help="To exclude specific workspaces from the upsert. Provide a comma-separated list of workspace ids.",
+    ),
     force: bool = typer.Option(
         False, "--force", help="Force upsert even if the articles are already indexed"
     ),
@@ -348,6 +357,19 @@ def sync_vector_db(
             workspaces = [workspace]
         else:
             workspaces = await Workspace.find_all().to_list()
+
+        if exclude_workspace_ids:
+            assert all(
+                "," not in id for id in exclude_workspace_ids
+            ), "Don't use comas to separate workspace ids. Use multiple `-e` instead"
+            logger.info(f"Excluding {exclude_workspace_ids}")
+            workspaces = [
+                workspace
+                for workspace in workspaces
+                if str(workspace.id) not in exclude_workspace_ids
+            ]
+
+        logger.info(f"Syncing {len(workspaces)} workspaces with vector db.")
 
         for i, workspace in enumerate(workspaces):
             logger.info(
