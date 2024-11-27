@@ -214,18 +214,26 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
     workspace = await Workspace.get(run.workspace_id)
     assert workspace and workspace.id
 
-    await sync_workspace_with_vector_db(
-        workspace=workspace,
-        index=get_pinecone_index(workspace.id, embeddings),
-        force=False,
-    )
-
     await run.mark_as_finished(Status.completed)
 
     assert run.end_at and run.status in [Status.completed, Status.failed]
     logger.info(
         f"Finished processing ingestion run. Found {run.n_inserted} new articles."
     )
+
+    try:
+        await sync_workspace_with_vector_db(
+            workspace=workspace,
+            index=get_pinecone_index(workspace.id, embeddings),
+            force=False,
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error while syncing articles with vector db. Ingestion Run is stil marked as succesfull. Error :  {e.__class__.__name__}: {str(e)}"
+        )
+        # Don't mark the ingestion run as failed. A vector indexing error is not tied to the ingestion run itself.
+        raise e
 
 
 async def setup():

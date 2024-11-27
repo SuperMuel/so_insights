@@ -69,6 +69,13 @@ def _get_language_index(language: Language) -> int:
 def region_to_full_name(region: Region) -> str:
     return shared.region.Region(region).get_full_name()
 
+def format_time_limit(time_limit: TimeLimit) -> str:
+    return {
+        TimeLimit.D: "1 Day",
+        TimeLimit.W: "1 Week",
+        TimeLimit.M: "1 Month",
+        TimeLimit.Y: "1 Year",
+    }[time_limit]
 
 @st.dialog("Create a new workspace")
 def _create_new_workspace_dialog():
@@ -267,12 +274,8 @@ def update_search_config_dialog(workspace: Workspace, config: SearchIngestionCon
             "Time Limit",
             options=[TimeLimit.D, TimeLimit.W, TimeLimit.M, TimeLimit.Y],
             value=config.time_limit,
-            format_func=lambda x: {
-                "d": "1 Day",
-                "w": "1 Week",
-                "m": "1 Month",
-                "y": "1 Year",
-            }[x],
+            format_func=format_time_limit,
+            help="How far back in time to search for articles on each execution",
         )
         assert isinstance(updated_time_limit, TimeLimit)
 
@@ -361,7 +364,7 @@ def create_new_ingestion_run_dialog(
     """
     st.subheader(f"Create Ingestion Run for '{config_title}'")
 
-    if st.button("Start Ingestion Process"):
+    if st.button("Start Ingestion Process", use_container_width=True):
         response = create_ingestion_run.sync(
             client=client,
             workspace_id=str(workspace.field_id),
@@ -391,7 +394,7 @@ def _show_search_config_details(config: SearchIngestionConfig):
         st.markdown(" ".join([f"`{query}`" for query in config.queries]))
 
     st.write(f"**Max Results:** {config.max_results}")
-    st.write(f"**Time Limit:** {config.time_limit}")
+    st.write(f"**Time Limit:** {format_time_limit(config.time_limit)}")
 
     humanized_last_run = (
         arrow.get(config.last_run_at).humanize() if config.last_run_at else None
@@ -426,7 +429,7 @@ def _show_one_data_source(
         else:
             _show_rss_config_details(config)
 
-        col1, col2, col3 = st.columns([1, 1, 1])
+        col1, col2 = st.columns(2)
 
         with col1:
             if st.button(
@@ -442,26 +445,7 @@ def _show_one_data_source(
                     st.error(
                         f"Unknown configuration type {type(config)} for {config}. Please contact support."
                     )
-
         with col2:
-            if st.button(
-                "🗑️ Disable Configuration",
-                key=f"disable_search_ingestion_config_{config.field_id}",
-                use_container_width=True,
-            ):
-                if st.checkbox(
-                    "Confirm                    ",
-                    key=f"confirm_disable_{config.field_id}",
-                ):
-                    st.error("Disable functionality not implemented yet.")
-                    # create_toast(
-                    #     f"Configuration '**{config.title}**' disabled successfully!",
-                    #     icon="🗑️",
-                    # )
-                    # st.rerun()
-                else:
-                    st.warning("Please confirm the action by checking the box.")
-        with col3:
             if st.button(
                 "🚀 Start Ingestion Run",
                 key=f"create_ingestion_run_{config.field_id}",
@@ -566,7 +550,7 @@ def _create_new_search_data_source_dialog(workspace: Workspace):
                         f"Search Configuration '**{config_title}**' created successfully!",
                         "✅",
                     )
-                    if create_run:
+                    if create_run:  # TODO : pass this value in SearchIngestionConfigCreate and let the backend handle it
                         ingestion_run = create_ingestion_run.sync(
                             client=client,
                             workspace_id=str(workspace.field_id),
@@ -661,16 +645,17 @@ def _data_sources_section(workspace: Workspace):
     - Buttons to create new search and RSS data sources
     - A list of existing data sources with their details and management options
     """
-    col1, col2, col3 = st.columns([3, 1, 1])
+    col1, col2, col3 = st.columns([2, 1, 1])
+
     col1.subheader("📰 Data sources")
     if col2.button(
-        "➕ New Web Search Source",
+        "➕ New Keywords Source",
         use_container_width=True,
     ):
         _create_new_search_data_source_dialog(workspace)
 
     if col3.button(
-        "➕ New RSS Data Source",
+        "➕ New RSS Feed Source",
         use_container_width=True,
     ):
         _create_new_rss_data_source(workspace)

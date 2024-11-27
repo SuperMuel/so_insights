@@ -18,9 +18,6 @@ class IngesterSettings(BaseSettings):
     MAX_RETRY_SLEEP_TIME_S: int = 10
     SLEEP_BETWEEN_QUERIES_S: int = 4
     QUERY_TIMEOUT: int = 30
-    VERBOSE_SEARCH: bool = Field(
-        default=True, description="Whether to log each search query during the search"
-    )
     PROXY: SecretStr | Literal["tb"] | None = None
 
     # Embeddings settings

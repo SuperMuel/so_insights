@@ -59,7 +59,7 @@ def get_pinecone_index(
         PineconeVectorStore: A configured PineconeVectorStore object.
     """
     return PineconeVectorStore(
-        pinecone_api_key=ingester_settings.PINECONE_API_KEY,
+        pinecone_api_key=ingester_settings.PINECONE_API_KEY.get_secret_value(),
         index_name=ingester_settings.PINECONE_INDEX,
         embedding=embeddings,
         namespace=str(namespace),

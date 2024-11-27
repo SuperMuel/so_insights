@@ -1,5 +1,6 @@
 import asyncio
 from duckduckgo_search import AsyncDDGS
+from tqdm.asyncio import tqdm
 
 from typing import Annotated, Self
 
@@ -154,7 +155,6 @@ async def perform_search(
     region: Region,
     max_results: int,
     time_limit: TimeLimit,
-    verbose: bool = False,
 ) -> _SearchResult:
     """
     Performs multiple searches based on a list of queries.
@@ -177,10 +177,7 @@ async def perform_search(
     """
     all_articles = []
 
-    for i, query in enumerate(queries):
-        if verbose:
-            logger.info(f"Searching for query {i + 1}/{len(queries)}: '{query}'")
-
+    for query in tqdm(queries):
         results = await search(
             ddgs=ddgs,
             query=query,
@@ -216,7 +213,6 @@ async def perform_search_and_deduplicate_results(
         region=region,
         max_results=max_results,
         time_limit=time_limit,
-        verbose=ingester_settings.VERBOSE_SEARCH,
     )
     logger.info(f"Found {len(result.articles)} (undeduplicated) articles")
     articles = deduplicate_articles(result.articles)
