@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: [ingester, analyzer, api]
+        component: [ingester, analyzer, api, frontend]
     steps:
     - uses: actions/checkout@v2
 
