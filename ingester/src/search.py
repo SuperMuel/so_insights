@@ -177,7 +177,8 @@ async def perform_search(
     """
     all_articles = []
 
-    for query in tqdm(queries):
+    for query in (bar := tqdm(queries)):
+        bar.set_description(f"Searching for '{query}'")
         results = await search(
             ddgs=ddgs,
             query=query,

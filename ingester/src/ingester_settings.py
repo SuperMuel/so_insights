@@ -16,7 +16,7 @@ class IngesterSettings(BaseSettings):
     MAX_RETRIES_PER_QUERY: int = 2
     MIN_RETRY_SLEEP_TIME_S: int = 3
     MAX_RETRY_SLEEP_TIME_S: int = 10
-    SLEEP_BETWEEN_QUERIES_S: int = 4
+    SLEEP_BETWEEN_QUERIES_S: float = 4
     QUERY_TIMEOUT: int = 30
     PROXY: SecretStr | Literal["tb"] | None = None
 
