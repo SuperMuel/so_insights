@@ -143,42 +143,45 @@ class SerperdevProvider(BaseSearchProvider):
         time_limit: TimeLimit,
     ) -> list[BaseArticle]:
         assert queries
-        assert (
-            len(queries) <= 100
-        ), (
-            "Maximum of 100 queries per batch search"
-        )  # TODO: implement multiple batch searches
-
-        logger.info(f"Performing batch search for {len(queries)} queries")
 
         headers = {
             "X-API-KEY": self.api_key.get_secret_value(),
             "Content-Type": "application/json",
         }
 
-        payload = [
-            {
-                "q": query,
-                "num": max_results,
-                "autocorrect": False,
-                **time_limit_to_serper(time_limit),
-                **region_to_gl_hl(region),
-            }
-            for query in queries
-        ]
+        max_batch_size = 100  # Serper.dev maximum batch size
+        total_articles = []
 
-        response = requests.post(self.url, headers=headers, json=payload)
+        # Split queries into chunks of max_batch_size
+        for i in range(0, len(queries), max_batch_size):
+            batch_queries = queries[i : i + max_batch_size]
+            logger.info(f"Performing batch search for {len(batch_queries)} queries")
 
-        response.raise_for_status()
+            payload = [
+                {
+                    "q": query,
+                    "num": max_results,
+                    "autocorrect": False,
+                    **time_limit_to_serper(time_limit),
+                    **region_to_gl_hl(region),
+                }
+                for query in batch_queries
+            ]
 
-        batch_results = response.json()
-        articles = []
+            response = requests.post(self.url, headers=headers, json=payload)
+            response.raise_for_status()
 
-        for result in batch_results:
-            print(result.get("searchParameters"))
-            articles.extend(
-                serper_result_to_base_article(article) for article in result["news"]
-            )
+            batch_results = response.json()
+            batch_articles = []
 
-        logger.info(f"Batch search completed with {len(articles)} articles")
-        return articles
+            for result in batch_results:
+                logger.info(result.get("searchParameters"))
+                batch_articles.extend(
+                    serper_result_to_base_article(article) for article in result["news"]
+                )
+
+            logger.info(f"Batch search completed with {len(batch_articles)} articles")
+            total_articles.extend(batch_articles)
+
+        logger.info(f"Total articles fetched: {len(total_articles)}")
+        return total_articles
