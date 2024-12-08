@@ -62,9 +62,9 @@ def serper_result_to_base_article(article: dict[str, str]) -> BaseArticle:
         title=article["title"],
         body=article["snippet"] if "snippet" in article else "",
         date=serper_date_to_datetime(article["date"]),
-        source=article["source"],
+        source=article["source"] if "source" in article else None,
         url=Url(article["link"]),
-        image=Url(article["image"]) if "image" in article else None,
+        image=Url(article["imageUrl"]) if "imageUrl" in article else None,
         provider="serperdev",
     )
 
@@ -93,7 +93,7 @@ class SerperdevProvider(BaseSearchProvider):
 
         params = {
             "q": query,
-            "num": 20,
+            "num": max_results,
             "autocorrect": False,
             **time_limit_to_serper(time_limit),
         }
@@ -104,22 +104,22 @@ class SerperdevProvider(BaseSearchProvider):
 
         data = response.json()
 
-        credits = data.json()["credits"]
-        search_parameters = data.json()["searchParameters"]
+        credits = data["credits"]
+        search_parameters = data["searchParameters"]
 
-        logger.info("Credits: ", credits)
-        logger.info("Search Parameters: ", search_parameters)
+        logger.info(f"{credits=}")
+        logger.info(f"{search_parameters=}")
 
-        articles = data.json()["news"]
+        articles = data["news"]
 
         return [serper_result_to_base_article(article) for article in articles]
 
-    async def batch_search(
-        self,
-        queries: list[str],
-        *,
-        region: Region,
-        max_results: int,
-        time_limit: TimeLimit,
-    ) -> list[BaseArticle]:
-        raise NotImplementedError
+    # async def batch_search(
+    #     self,
+    #     queries: list[str],
+    #     *,
+    #     region: Region,
+    #     max_results: int,
+    #     time_limit: TimeLimit,
+    # ) -> list[BaseArticle]:
+    #     raise NotImplementedError

@@ -458,6 +458,7 @@ def watch(
         server_task = asyncio.create_task(run_server())
 
         logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
+        logger.info(ingester_settings.model_dump())
         start_time = datetime.now()
 
         try:

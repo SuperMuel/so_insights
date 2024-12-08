@@ -51,12 +51,14 @@ class BaseArticle(BaseModel):
 
     @field_validator("source", mode="before")
     @classmethod
-    def truncate_source(cls, v: str) -> str:
+    def truncate_source(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
         return v[:100] if len(v) > 100 else v
 
     @field_validator("image", mode="before")
     @classmethod
-    def validate_image_url(cls, v: str) -> str | None:
+    def validate_image_url(cls, v: str | None) -> str | None:
         return validate_url(v)
 
 
