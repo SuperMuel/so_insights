@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from sdk.so_insights_client.api.workspaces import list_workspaces
+from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import app_settings
 from src.shared import get_client
 import streamlit as st
@@ -28,6 +29,12 @@ def _select_workspace(client, on_change) -> None:
         st.error("Workspaces not found")
         st.stop()
 
+    if not isinstance(workspaces, list):
+        st.error("An error occurred while fetching workspaces")
+        st.stop()
+
+    assert all(isinstance(w, Workspace) for w in workspaces)
+
     if not workspaces:
         st.warning("No workspaces found. Start by creating a new workspace.")
         return None
@@ -54,6 +61,12 @@ def _select_workspace(client, on_change) -> None:
     )
 
     assert selected
+
+    if selected.enabled is False:
+        st.warning(
+            "**This workspace is disabled !**\nSoInsights have stopped monitoring news articles for this workspace.",
+            icon="⚠️",
+        )
 
 
 if __name__ == "__main__":
