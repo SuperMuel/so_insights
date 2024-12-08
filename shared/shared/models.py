@@ -14,7 +14,6 @@ from pydantic import (
     field_validator,
 )
 from pymongo import IndexModel
-from src.search_providers.base import SearchProvider
 
 from shared.db_settings import db_settings
 from shared.language import Language
@@ -25,6 +24,8 @@ from shared.region import Region
 def utc_datetime_factory():
     return datetime.now(UTC)
 
+
+type SearchProvider = Literal["duckduckgo", "serperdev"]
 
 ModelTitle = Annotated[
     str, StringConstraints(min_length=3, max_length=30, strip_whitespace=True)
