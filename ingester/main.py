@@ -273,7 +273,13 @@ async def setup():
         case "serperdev":
             from src.search_providers.serperdev_provider import SerperdevProvider
 
-            search_provider = SerperdevProvider()
+            api_key = ingester_settings.SERPERDEV_API_KEY
+
+            assert (
+                api_key is not None and len(api_key.get_secret_value()) > 0
+            ), "SerperDev API key is required"
+
+            search_provider = SerperdevProvider(api_key=api_key)
         case _:
             raise ValueError(
                 f"Unknown search provider: {ingester_settings.SEARCH_PROVIDER}"

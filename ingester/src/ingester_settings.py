@@ -14,6 +14,11 @@ class IngesterSettings(BaseSettings):
         extra="ignore",
     )
 
+    SERPERDEV_API_KEY: SecretStr | None = Field(
+        default=None,
+        description="API key for SerperDev search provider. Can be None if using Duckduckgo.",
+    )
+
     # Search settings
     SEARCH_PROVIDER: SearchProvider = "duckduckgo"
     MAX_RETRIES_PER_QUERY: int = 2
