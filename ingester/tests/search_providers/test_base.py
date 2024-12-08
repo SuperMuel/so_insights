@@ -4,7 +4,11 @@ import pytest
 from unittest.mock import AsyncMock
 from shared.region import Region
 from shared.models import TimeLimit
-from src.search_providers.base import BaseArticle, BaseSearchProvider
+from src.search_providers.base import (
+    BaseArticle,
+    BaseSearchProvider,
+    deduplicate_articles_by_url,
+)
 
 
 class MockSearchProvider(BaseSearchProvider):
@@ -93,3 +97,38 @@ async def test_batch_search_empty_queries(search_provider):
 
     assert len(result) == 0
     search_provider._mock_search.assert_not_called()
+
+
+def generate_sample_article(index: int = 0) -> BaseArticle:
+    return BaseArticle(
+        title=f"Test Article {index}",
+        url=Url(f"https://example.com/article{index}"),
+        date=datetime.now(timezone.utc),
+        provider="duckduckgo",
+    )
+
+
+def test_deduplicate_articles_no_duplicates():
+    article1 = generate_sample_article(1)
+    article2 = generate_sample_article(2)
+
+    articles = [article1, article2]
+
+    result = deduplicate_articles_by_url(articles)
+
+    assert len(result) == 2
+    assert article1 in result and article2 in result
+
+
+def test_deduplicate_articles_with_duplicates():
+    article1 = generate_sample_article(1)
+    article2 = generate_sample_article(2)
+    duplicate_article = generate_sample_article(1)
+
+    articles = [article1, duplicate_article, article2]
+
+    result = deduplicate_articles_by_url(articles)
+
+    assert len(result) == 2
+    assert article1 in result or duplicate_article in result
+    assert article2 in result

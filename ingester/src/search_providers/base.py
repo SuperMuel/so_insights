@@ -99,3 +99,10 @@ class BaseSearchProvider(ABC):
         ]
 
         return list(chain.from_iterable(await asyncio.gather(*tasks)))
+
+
+def deduplicate_articles_by_url(articles: list[BaseArticle]) -> list[BaseArticle]:
+    """
+    Deduplicates a list of articles by URL.
+    """
+    return list({article.url: article for article in articles}.values())

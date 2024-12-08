@@ -3,24 +3,21 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI
-from pydantic import SecretStr
-from src.mongo_db_operations import insert_articles_in_mongodb
-from src.rss import ingest_rss_feed
-from src.search_providers.base import BaseSearchProvider
-from src.vector_indexing import (
-    get_pinecone_index,
-    sync_workspace_with_vector_db,
-)
 import typer
+import uvicorn
 from beanie import UpdateResponse
 from beanie.odm.operators.update.general import Set
 from dotenv import load_dotenv
+from fastapi import FastAPI
 from langchain_voyageai import VoyageAIEmbeddings
+from pydantic import SecretStr
 from src.ingester_settings import ingester_settings
-from src.search import (
-    deduplicate_articles,
-    perform_search,
+from src.mongo_db_operations import insert_articles_in_mongodb
+from src.rss import ingest_rss_feed
+from src.search_providers.base import BaseSearchProvider, deduplicate_articles_by_url
+from src.vector_indexing import (
+    get_pinecone_index,
+    sync_workspace_with_vector_db,
 )
 
 from shared.db import get_client, my_init_beanie
@@ -35,7 +32,6 @@ from shared.models import (
     Workspace,
     utc_datetime_factory,
 )
-import uvicorn
 
 load_dotenv()
 
@@ -120,8 +116,7 @@ async def handle_search_ingestion_run(
 
     max_results, time_limit = await config.get_max_results_and_time_limit()
 
-    articles = perform_search(
-        search_provider,
+    articles = await search_provider.batch_search(
         queries=config.queries,
         region=config.region,
         max_results=max_results,
@@ -129,7 +124,7 @@ async def handle_search_ingestion_run(
     )
 
     logger.info(f"Found {len(articles)} (undeduplicated) articles")
-    articles = deduplicate_articles(articles)
+    articles = deduplicate_articles_by_url(articles)
     logger.info(f"Deduplicated to {len(articles)} articles")
 
     return [
@@ -256,8 +251,8 @@ async def setup():
 
     match ingester_settings.SEARCH_PROVIDER:
         case "duckduckgo":
-            from src.search_providers.duckduckgo_provider import DuckDuckGoProvider
             from duckduckgo_search import AsyncDDGS
+            from src.search_providers.duckduckgo_provider import DuckDuckGoProvider
 
             logger.info("Setting up DDGS client...")
             if proxy := (
