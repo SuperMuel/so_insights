@@ -30,6 +30,8 @@ class Workspace:
             updated_at (Union[Unset, datetime.datetime]): Timestamp of the last update to the workspace
             language (Union[Unset, Language]):  Default: Language.FR.
             hdbscan_settings (Union[Unset, HdbscanSettings]):
+            enabled (Union[Unset, bool]): When disabled, nor the ingester nor the analyzer will run for this workspace
+                Default: True.
     """
 
     name: str
@@ -39,6 +41,7 @@ class Workspace:
     updated_at: Union[Unset, datetime.datetime] = UNSET
     language: Union[Unset, Language] = Language.FR
     hdbscan_settings: Union[Unset, "HdbscanSettings"] = UNSET
+    enabled: Union[Unset, bool] = True
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -68,6 +71,8 @@ class Workspace:
         if not isinstance(self.hdbscan_settings, Unset):
             hdbscan_settings = self.hdbscan_settings.to_dict()
 
+        enabled = self.enabled
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -87,6 +92,8 @@ class Workspace:
             field_dict["language"] = language
         if hdbscan_settings is not UNSET:
             field_dict["hdbscan_settings"] = hdbscan_settings
+        if enabled is not UNSET:
+            field_dict["enabled"] = enabled
 
         return field_dict
 
@@ -136,6 +143,8 @@ class Workspace:
         else:
             hdbscan_settings = HdbscanSettings.from_dict(_hdbscan_settings)
 
+        enabled = d.pop("enabled", UNSET)
+
         workspace = cls(
             name=name,
             field_id=field_id,
@@ -144,6 +153,7 @@ class Workspace:
             updated_at=updated_at,
             language=language,
             hdbscan_settings=hdbscan_settings,
+            enabled=enabled,
         )
 
         workspace.additional_properties = d

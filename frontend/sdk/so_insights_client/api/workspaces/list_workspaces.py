@@ -5,14 +5,30 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.http_validation_error import HTTPValidationError
 from ...models.workspace import Workspace
-from ...types import Response
+from ...types import UNSET, Response, Unset
 
 
-def _get_kwargs() -> Dict[str, Any]:
+def _get_kwargs(
+    *,
+    enabled: Union[None, Unset, bool] = UNSET,
+) -> Dict[str, Any]:
+    params: Dict[str, Any] = {}
+
+    json_enabled: Union[None, Unset, bool]
+    if isinstance(enabled, Unset):
+        json_enabled = UNSET
+    else:
+        json_enabled = enabled
+    params["enabled"] = json_enabled
+
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+
     _kwargs: Dict[str, Any] = {
         "method": "get",
         "url": "/workspaces/",
+        "params": params,
     }
 
     return _kwargs
@@ -20,7 +36,7 @@ def _get_kwargs() -> Dict[str, Any]:
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[List["Workspace"]]:
+) -> Optional[Union[HTTPValidationError, List["Workspace"]]]:
     if response.status_code == HTTPStatus.OK:
         response_200 = []
         _response_200 = response.json()
@@ -30,6 +46,10 @@ def _parse_response(
             response_200.append(response_200_item)
 
         return response_200
+    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+        response_422 = HTTPValidationError.from_dict(response.json())
+
+        return response_422
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -38,7 +58,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[List["Workspace"]]:
+) -> Response[Union[HTTPValidationError, List["Workspace"]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -50,18 +70,24 @@ def _build_response(
 def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Response[List["Workspace"]]:
+    enabled: Union[None, Unset, bool] = UNSET,
+) -> Response[Union[HTTPValidationError, List["Workspace"]]]:
     """List Workspaces
+
+    Args:
+        enabled (Union[None, Unset, bool]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Workspace']]
+        Response[Union[HTTPValidationError, List['Workspace']]]
     """
 
-    kwargs = _get_kwargs()
+    kwargs = _get_kwargs(
+        enabled=enabled,
+    )
 
     response = client.get_httpx_client().request(
         **kwargs,
@@ -73,37 +99,48 @@ def sync_detailed(
 def sync(
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Optional[List["Workspace"]]:
+    enabled: Union[None, Unset, bool] = UNSET,
+) -> Optional[Union[HTTPValidationError, List["Workspace"]]]:
     """List Workspaces
+
+    Args:
+        enabled (Union[None, Unset, bool]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['Workspace']
+        Union[HTTPValidationError, List['Workspace']]
     """
 
     return sync_detailed(
         client=client,
+        enabled=enabled,
     ).parsed
 
 
 async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Response[List["Workspace"]]:
+    enabled: Union[None, Unset, bool] = UNSET,
+) -> Response[Union[HTTPValidationError, List["Workspace"]]]:
     """List Workspaces
+
+    Args:
+        enabled (Union[None, Unset, bool]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Workspace']]
+        Response[Union[HTTPValidationError, List['Workspace']]]
     """
 
-    kwargs = _get_kwargs()
+    kwargs = _get_kwargs(
+        enabled=enabled,
+    )
 
     response = await client.get_async_httpx_client().request(**kwargs)
 
@@ -113,19 +150,24 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
-) -> Optional[List["Workspace"]]:
+    enabled: Union[None, Unset, bool] = UNSET,
+) -> Optional[Union[HTTPValidationError, List["Workspace"]]]:
     """List Workspaces
+
+    Args:
+        enabled (Union[None, Unset, bool]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['Workspace']
+        Union[HTTPValidationError, List['Workspace']]
     """
 
     return (
         await asyncio_detailed(
             client=client,
+            enabled=enabled,
         )
     ).parsed
