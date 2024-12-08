@@ -24,10 +24,11 @@ class WorkspaceCreate(BaseModel):
 
 
 class WorkspaceUpdate(BaseModel):
-    name: ModelTitle | None
-    description: ModelDescription | None
-    language: Language | None
-    hdbscan_settings: HdbscanSettings | None
+    name: ModelTitle | None = None
+    description: ModelDescription | None = None
+    language: Language | None = None
+    hdbscan_settings: HdbscanSettings | None = None
+    enabled: bool | None = None
 
     class Config:
         extra = "forbid"
@@ -49,12 +50,12 @@ class SearchIngestionConfigCreate(BaseModel):
 
 
 class SearchIngestionConfigUpdate(BaseModel):
-    title: ModelTitle | None
-    region: Region | None
-    queries: list[str] | None
+    title: ModelTitle | None = None
+    region: Region | None = None
+    queries: list[str] | None = None
 
     max_results: int | None = Field(None, ge=1, le=100)
-    time_limit: TimeLimit | None
+    time_limit: TimeLimit | None = None
 
     class Config:
         extra = "forbid"
@@ -69,8 +70,8 @@ class RssIngestionConfigCreate(BaseModel):
 
 
 class RssIngestionConfigUpdate(BaseModel):
-    title: ModelTitle | None
-    rss_feed_url: HttpUrl | None
+    title: ModelTitle | None = None
+    rss_feed_url: HttpUrl | None = None
 
     class Config:
         extra = "forbid"

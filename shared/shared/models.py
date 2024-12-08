@@ -79,6 +79,10 @@ class Workspace(Document):
         default_factory=HdbscanSettings,
         description="HDBSCAN algorithm settings for clustering",
     )
+    enabled:bool = Field(
+        default=True,
+        description="When disabled, nor the ingester nor the analyzer will run for this workspace"
+    )
 
     class Settings:
         name: str = db_settings.mongodb_workspaces_collection
@@ -105,6 +109,16 @@ class Workspace(Document):
             )
             .first_or_none()
         )
+
+    
+    @classmethod
+    def get_active_workspaces(cls) -> FindMany["Workspace"]:
+        return Workspace.find(Workspace.enabled == True)  # noqa: E712
+        
+        
+        
+    
+
 
 
 class IngestionConfigType(str, Enum):

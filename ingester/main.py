@@ -317,7 +317,7 @@ def create_ingestion_tasks(
                 return
             workspaces = [workspace]
         else:
-            workspaces = await Workspace.find_all().to_list()
+            workspaces = await Workspace.get_active_workspaces().to_list()
 
         for workspace in workspaces:
             assert workspace.id
@@ -377,7 +377,7 @@ def sync_vector_db(
                 return
             workspaces = [workspace]
         else:
-            workspaces = await Workspace.find_all().to_list()
+            workspaces = await Workspace.get_active_workspaces().to_list()
 
         if exclude_workspace_ids:
             assert all(

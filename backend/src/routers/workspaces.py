@@ -24,14 +24,16 @@ async def create_workspace(workspace: WorkspaceCreate):
     response_model=list[Workspace],
     operation_id="list_workspaces",
 )
-async def list_workspaces():
-    return (
-        await Workspace.find_all()
-        .sort(
-            Workspace.created_at,  # type: ignore
-        )
-        .to_list()
+async def list_workspaces(
+    enabled: bool | None = None,
+):
+    workspaces = (
+        Workspace.find(Workspace.enabled == enabled)
+        if enabled is not None
+        else Workspace.find_all()
     )
+
+    return await workspaces.sort(Workspace.created_at).to_list()
 
 
 @router.get(

@@ -87,7 +87,7 @@ def create_analysis_tasks(
         mongo_client, analyzer = await setup()
 
         if workspace_ids is None:
-            workspaces = await Workspace.find_all().to_list()
+            workspaces = await Workspace.get_active_workspaces().to_list()
         else:
             workspaces = []
             for workspace_id in workspace_ids:
@@ -203,7 +203,7 @@ def generate_starters(
         mongo_client, analyzer = await setup()
 
         if workspace_ids is None:
-            workspaces = await Workspace.find_all().to_list()
+            workspaces = await Workspace.get_active_workspaces().to_list()
         else:
             workspaces = []
             for workspace_id in workspace_ids:
