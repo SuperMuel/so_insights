@@ -54,7 +54,7 @@ def _select_workspace(client, on_change) -> None:
     selected = st.selectbox(
         "Select Workspace",
         options=workspaces,
-        format_func=lambda w: w.name,
+        format_func=lambda w: w.name if w.enabled else f"{w.name} (Disabled)",
         index=index,
         key="workspace",
         on_change=on_change,
