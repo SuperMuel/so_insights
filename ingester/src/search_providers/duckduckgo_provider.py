@@ -1,11 +1,8 @@
-from datetime import datetime
-from duckduckgo_search import AsyncDDGS
-from shared.models import Region, TimeLimit
-from src.ingester_settings import ingester_settings
-from src.search_providers.base import BaseArticle, BaseSearchProvider, SearchException
-
+import asyncio
 import logging
+from datetime import datetime
 
+from duckduckgo_search import AsyncDDGS
 from tenacity import (
     after_log,
     before_sleep_log,
@@ -13,6 +10,11 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+from tqdm.asyncio import tqdm
+
+from shared.models import Region, TimeLimit
+from src.ingester_settings import ingester_settings
+from src.search_providers.base import BaseArticle, BaseSearchProvider, SearchException
 
 logger = logging.getLogger(__name__)
 
@@ -130,50 +132,25 @@ class DuckDuckGoProvider(BaseSearchProvider):
         max_results: int,
         time_limit: TimeLimit,
     ) -> list[BaseArticle]:
-        raise NotImplementedError()
+        """
+        Performs multiple searches based on a list of queries with progress tracking.
+        Includes sleep between queries to avoid overwhelming the API.
+        """
+        all_articles = []
 
+        for query in (bar := tqdm(queries)):
+            bar.set_description(f"Searching for '{query}'")
 
-# async def perform_search(
-#     *,
-#     search_provider: BaseSearchProvider,
-#     queries: list[str],
-#     region: Region,
-#     max_results: int,
-#     time_limit: TimeLimit,
-# ) -> _SearchResult:
-#     """
-#     Performs multiple searches based on a list of queries.
+            results = await self.search(
+                query=query,
+                region=region,
+                max_results=max_results,
+                time_limit=time_limit,
+            )
+            all_articles.extend(results)
 
-#     Args:
-#         search_provider (BaseSearchProvider): The search provider to use.
-#         queries (list[str]): A list of search queries to perform.
-#         region (Region): The region to focus the searches on.
-#         max_results (int): The maximum number of results to return per query.
-#         time_limit (TimeLimit): The time limit for each search.
-#         stop_after_consecutive_failures (int, optional): Number of consecutive failures before stopping. Defaults to 5.
-#         verbose (bool, optional): If True, logs detailed information about each query. Defaults to False.
+            # Sleep between queries to respect rate limits
+            if queries.index(query) < len(queries) - 1:  # Don't sleep after last query
+                await asyncio.sleep(ingester_settings.SLEEP_BETWEEN_QUERIES_S)
 
-#     Returns:
-#         _SearchResult: An instance containing the list of articles and the number of successful queries.
-
-#     Note:
-#         This function implements error handling and will stop after a specified number of consecutive failures.
-#         It also includes a sleep time between queries to avoid overwhelming the search API.
-#     """
-#     all_articles = []
-
-#     for query in (bar := tqdm(queries)):
-#         bar.set_description(f"Searching for '{query}'")
-#         results = search_provider.search(
-#             query=query,
-#             region=region,
-#             max_results=max_results,
-#             time_limit=time_limit,
-#         )
-
-#         articles = map(BaseArticle.try_parse, results)
-#         all_articles.extend(filter(None, articles))
-
-#         await asyncio.sleep(ingester_settings.SLEEP_BETWEEN_QUERIES_S)
-
-#     return all_articles
+        return all_articles
