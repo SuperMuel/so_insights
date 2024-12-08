@@ -832,6 +832,61 @@ def _history_section(workspace: Workspace):
         st.write(f"+{len(runs) - MAX_RUNS_TO_DISPLAY} more")
 
 
+
+
+def _workspace_dialog_action(workspace: Workspace, *, action: str, enabled_value: bool):
+    text = "Enabling the workspace will resume monitoring news articles." if enabled_value else "Disabling the workspace will stop monitoring news articles."
+
+    st.warning(text, icon="⚠️")
+
+    if st.button(f"Confirm {action}", use_container_width=True):
+        updated_workspace = WorkspaceUpdate(enabled=enabled_value)
+        response = update_workspace.sync(
+            client=client,
+            workspace_id=str(workspace.field_id),
+            body=updated_workspace,
+        )
+        if isinstance(response, Workspace):
+            st.session_state.workspace = response
+            create_toast(f"Workspace {action.lower()}d successfully!", "✅")
+            st.rerun()
+        else:
+            st.error(f"Failed to {action.lower()} workspace. Error: {response}")
+
+@st.dialog("Disable Workspace")
+def _disable_workspace_dialog(workspace: Workspace):
+    _workspace_dialog_action(workspace, action="Disable", enabled_value=False)
+
+@st.dialog("Enable Workspace")
+def _enable_workspace_dialog(workspace: Workspace):
+    _workspace_dialog_action(workspace, action="Enable", enabled_value=True)
+
+def toggle_workspace_enabled_button(workspace: Workspace):
+    """
+    A button that toggles the enabled state of a workspace.
+
+    Args:
+        workspace (Workspace): The workspace object to be toggled.
+
+    Updates the workspace in the backend if changes are confirmed.
+    """
+
+    if workspace.enabled:
+        action = "Disable Workspace"
+        icon = "⏸️"
+        dialog_function = _disable_workspace_dialog
+    else:
+        action = "Enable Workspace"
+        icon = "▶️"
+        dialog_function = _enable_workspace_dialog
+
+    if st.button(
+        f"{icon} {action}",
+        use_container_width=True,
+    ):
+        dialog_function(workspace)
+        
+
 if st.sidebar.button("➕Create New Workspace", use_container_width=True):
     _create_new_workspace_dialog()
 
@@ -840,6 +895,7 @@ if workspace := st.session_state.get("workspace"):
         st.divider()
         st.subheader("My Workspace")
         _edit_workspace_form(workspace)
+        toggle_workspace_enabled_button(workspace)
 
     st.info(
         """
