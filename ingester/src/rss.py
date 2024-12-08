@@ -95,6 +95,7 @@ def _convert_to_article(
         date=published_date,
         source=entry.get("author", "") or entry.get("source", {}).get("title", ""),
         content=str(entry["content"]) if "content" in entry else None,
+        provider="rss",
     )
 
 

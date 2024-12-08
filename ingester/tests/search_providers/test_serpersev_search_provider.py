@@ -3,8 +3,10 @@ from datetime import datetime
 from pydantic_core import Url
 import pytest
 from dateutil.relativedelta import relativedelta
+from shared.region import Region
 from src.search_providers.base import BaseArticle
 from src.search_providers.serperdev_provider import (
+    region_to_gl_hl,
     serper_date_to_datetime,
     serper_result_to_base_article,
     time_limit_to_serper,
@@ -153,3 +155,19 @@ def test_source_optional():
     result = serper_result_to_base_article(article_dict)
 
     assert result.source is None
+
+
+@pytest.mark.parametrize(
+    "region,expected_gl_hl",
+    [
+        (Region.FRANCE, {"gl": "fr", "hl": "fr"}),
+        (Region.UNITED_STATES, {"gl": "us", "hl": "en"}),
+        (Region.GERMANY, {"gl": "de", "hl": "de"}),
+        (Region.UNITED_KINGDOM, {"gl": "uk", "hl": "en"}),
+        (Region.SWITZERLAND_IT, {"gl": "ch", "hl": "it"}),
+        (Region.NO_REGION, {}),
+    ],
+)
+def test_region_to_gl_hl(region, expected_gl_hl):
+    hl_gl = region_to_gl_hl(region)
+    assert hl_gl == expected_gl_hl

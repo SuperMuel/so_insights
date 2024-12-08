@@ -35,12 +35,14 @@ def create_article(
 
     return Article(
         workspace_id=PydanticObjectId("60f1d1b3d4f3b3b3b3b3b3b3"),
+        ingestion_run_id=PydanticObjectId("60f1d1b3d4f3b3b3b3b3b3b3"),
         id=id if id else None,
         title=title,
         body=body,
         date=date,
         url=Url(url),
         found_at=datetime.now(),
+        provider="duckduckgo",
     )
 
 

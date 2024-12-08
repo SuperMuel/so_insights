@@ -132,3 +132,17 @@ def test_deduplicate_articles_with_duplicates():
     assert len(result) == 2
     assert article1 in result or duplicate_article in result
     assert article2 in result
+
+
+def test_validate_url():
+    url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSD-wBzJw1CIc-T4VRtJ5JRV1a602WQXENAdRlFJ17dfdg-9Jys0Zr60CTgqQ&s"
+
+    article = BaseArticle(
+        title="Test",
+        url=Url("https://www.example.com"),
+        date=datetime.now(),
+        provider="serperdev",
+        image=Url(url),
+    )
+
+    assert str(article.image) == url

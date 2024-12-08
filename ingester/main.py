@@ -201,7 +201,7 @@ async def handle_ingestion_run(
         match config.type:
             case IngestionConfigType.search:
                 assert isinstance(config, SearchIngestionConfig)
-                articles: list[Article] = await handle_search_ingestion_run(
+                articles = await handle_search_ingestion_run(
                     run, search_provider=search_provider, config=config
                 )
             case IngestionConfigType.rss:

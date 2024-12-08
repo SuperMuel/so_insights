@@ -25,7 +25,7 @@ def utc_datetime_factory():
     return datetime.now(UTC)
 
 
-type SearchProvider = Literal["duckduckgo", "serperdev"]
+type SearchProvider = Literal["duckduckgo", "serperdev", "rss"]
 
 ModelTitle = Annotated[
     str, StringConstraints(min_length=3, max_length=30, strip_whitespace=True)
@@ -341,8 +341,8 @@ class Article(Document):
         description="Whether this article has been indexed in the vector database",
     )
 
-    provider: SearchProvider | None = Field(
-        default=None, description="The search provider that found the article"
+    provider: SearchProvider = Field(
+        ..., description="The provider that found the article"
     )
 
     @field_validator("title", mode="before")

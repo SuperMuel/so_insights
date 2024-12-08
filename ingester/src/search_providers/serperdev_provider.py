@@ -58,6 +58,7 @@ def serper_result_to_base_article(article: dict[str, str]) -> BaseArticle:
         'position': 10
     }
     """
+
     return BaseArticle(
         title=article["title"],
         body=article["snippet"] if "snippet" in article else "",
@@ -67,6 +68,24 @@ def serper_result_to_base_article(article: dict[str, str]) -> BaseArticle:
         image=Url(article["imageUrl"]) if "imageUrl" in article else None,
         provider="serperdev",
     )
+
+
+def region_to_gl_hl(region: Region) -> dict[str, str]:
+    """
+    Map Region to Serper's `gl` (country) and `hl` (language) parameters.
+
+    Args:
+        region (Region): The region enum value.
+
+    Returns:
+        dict[str, str]: A tuple containing the country (gl) and language (hl) parameters.
+        Empty dict if the region is NO_REGION.
+    """
+    if region == Region.NO_REGION:
+        return {}
+
+    country, laguage = region.value.split("-")
+    return {"gl": country, "hl": laguage}
 
 
 class SerperdevProvider(BaseSearchProvider):
@@ -96,6 +115,7 @@ class SerperdevProvider(BaseSearchProvider):
             "num": max_results,
             "autocorrect": False,
             **time_limit_to_serper(time_limit),
+            **region_to_gl_hl(region),
         }
 
         response = requests.get(self.url, headers=headers, params=params)
