@@ -134,12 +134,51 @@ class SerperdevProvider(BaseSearchProvider):
 
         return [serper_result_to_base_article(article) for article in articles]
 
-    # async def batch_search(
-    #     self,
-    #     queries: list[str],
-    #     *,
-    #     region: Region,
-    #     max_results: int,
-    #     time_limit: TimeLimit,
-    # ) -> list[BaseArticle]:
-    #     raise NotImplementedError
+    async def batch_search(
+        self,
+        queries: list[str],
+        *,
+        region: Region,
+        max_results: int,
+        time_limit: TimeLimit,
+    ) -> list[BaseArticle]:
+        assert queries
+        assert (
+            len(queries) <= 100
+        ), (
+            "Maximum of 100 queries per batch search"
+        )  # TODO: implement multiple batch searches
+
+        logger.info(f"Performing batch search for {len(queries)} queries")
+
+        headers = {
+            "X-API-KEY": self.api_key.get_secret_value(),
+            "Content-Type": "application/json",
+        }
+
+        payload = [
+            {
+                "q": query,
+                "num": max_results,
+                "autocorrect": False,
+                **time_limit_to_serper(time_limit),
+                **region_to_gl_hl(region),
+            }
+            for query in queries
+        ]
+
+        response = requests.post(self.url, headers=headers, json=payload)
+
+        response.raise_for_status()
+
+        batch_results = response.json()
+        articles = []
+
+        for result in batch_results:
+            print(result.get("searchParameters"))
+            articles.extend(
+                serper_result_to_base_article(article) for article in result["news"]
+            )
+
+        logger.info(f"Batch search completed with {len(articles)} articles")
+        return articles
