@@ -1,18 +1,24 @@
 from datetime import UTC, datetime
 from enum import Enum
-from beanie.odm.queries.find import FindMany
 from typing import Annotated, Any, Dict, Literal, Self
 
 from beanie import Document, Indexed, PydanticObjectId
+from beanie.odm.queries.find import FindMany
 from beanie.operators import Exists
-from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    HttpUrl,
+    PastDatetime,
+    StringConstraints,
+    field_validator,
+)
 from pymongo import IndexModel
+from src.search_providers.base import SearchProvider
 
+from shared.db_settings import db_settings
 from shared.language import Language
 from shared.region import Region
-from shared.db_settings import db_settings
-
-from pydantic import StringConstraints
 
 
 # TODO auto change update_at like in https://github.com/naoTimesdev/showtimes/blob/79ed15aa647c6fb8ee9a1f694b54d90a5ed7dda0/showtimes/models/database.py#L24
@@ -79,9 +85,9 @@ class Workspace(Document):
         default_factory=HdbscanSettings,
         description="HDBSCAN algorithm settings for clustering",
     )
-    enabled:bool = Field(
+    enabled: bool = Field(
         default=True,
-        description="When disabled, nor the ingester nor the analyzer will run for this workspace"
+        description="When disabled, nor the ingester nor the analyzer will run for this workspace",
     )
 
     class Settings:
@@ -110,15 +116,9 @@ class Workspace(Document):
             .first_or_none()
         )
 
-    
     @classmethod
     def get_active_workspaces(cls) -> FindMany["Workspace"]:
         return Workspace.find(Workspace.enabled == True)  # noqa: E712
-        
-        
-        
-    
-
 
 
 class IngestionConfigType(str, Enum):
@@ -338,6 +338,10 @@ class Article(Document):
     vector_indexed: bool = Field(
         default=False,
         description="Whether this article has been indexed in the vector database",
+    )
+
+    provider: SearchProvider | None = Field(
+        default=None, description="The search provider that found the article"
     )
 
     @field_validator("title", mode="before")

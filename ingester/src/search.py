@@ -1,6 +1,7 @@
 import asyncio
 from duckduckgo_search import AsyncDDGS
 from tqdm.asyncio import tqdm
+from src.search_providers.base import BaseSearchProvider, SearchProvider
 
 from typing import Annotated, Self
 
@@ -47,6 +48,8 @@ class BaseArticle(BaseModel):
     source: (
         Annotated[str, StringConstraints(max_length=100, strip_whitespace=True)] | None
     ) = None
+
+    provider: SearchProvider
 
     @field_validator("title", mode="before")
     @classmethod
@@ -150,7 +153,8 @@ class _SearchResult:
 
 
 async def perform_search(
-    ddgs: AsyncDDGS,
+    *,
+    search_provider: BaseSearchProvider,
     queries: list[str],
     region: Region,
     max_results: int,
@@ -160,7 +164,7 @@ async def perform_search(
     Performs multiple searches based on a list of queries.
 
     Args:
-        ddgs (AsyncDDGS): An instance of the AsyncDDGS client.
+        search_provider (BaseSearchProvider): The search provider to use.
         queries (list[str]): A list of search queries to perform.
         region (Region): The region to focus the searches on.
         max_results (int): The maximum number of results to return per query.
@@ -179,8 +183,7 @@ async def perform_search(
 
     for query in (bar := tqdm(queries)):
         bar.set_description(f"Searching for '{query}'")
-        results = await search(
-            ddgs=ddgs,
+        results = search_provider.search(
             query=query,
             region=region,
             max_results=max_results,
@@ -197,25 +200,3 @@ async def perform_search(
 
 def deduplicate_articles(articles: list[BaseArticle]) -> list[BaseArticle]:
     return list({article.url: article for article in articles}.values())
-
-
-async def perform_search_and_deduplicate_results(
-    ddgs: AsyncDDGS,
-    queries: list[str],
-    region: Region,
-    max_results: int,
-    time_limit: TimeLimit,
-) -> list[BaseArticle]:
-    """Performs the search for all queries of the SearchConfig, deduplicates the results and returns the number of successful queries and the deduplicated articles"""
-
-    result = await perform_search(
-        ddgs,
-        queries=queries,
-        region=region,
-        max_results=max_results,
-        time_limit=time_limit,
-    )
-    logger.info(f"Found {len(result.articles)} (undeduplicated) articles")
-    articles = deduplicate_articles(result.articles)
-    logger.info(f"Deduplicated to {len(articles)} articles")
-    return articles

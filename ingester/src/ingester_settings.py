@@ -3,6 +3,8 @@ from typing import Literal
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.search_providers.base import SearchProvider
+
 
 class IngesterSettings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -13,6 +15,7 @@ class IngesterSettings(BaseSettings):
     )
 
     # Search settings
+    SEARCH_PROVIDER: SearchProvider
     MAX_RETRIES_PER_QUERY: int = 2
     MIN_RETRY_SLEEP_TIME_S: int = 3
     MAX_RETRY_SLEEP_TIME_S: int = 10
