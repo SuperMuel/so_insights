@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 import dateparser
-import requests
+import httpx
 from pydantic import SecretStr
 from pydantic_core import Url
 
@@ -83,9 +83,8 @@ def region_to_gl_hl(region: Region) -> dict[str, str]:
     """
     if region == Region.NO_REGION:
         return {}
-
-    country, laguage = region.value.split("-")
-    return {"gl": country, "hl": laguage}
+    country, language = region.value.split("-")
+    return {"gl": country, "hl": language}
 
 
 class SerperdevProvider(BaseSearchProvider):
@@ -118,7 +117,8 @@ class SerperdevProvider(BaseSearchProvider):
             **region_to_gl_hl(region),
         }
 
-        response = requests.get(self.url, headers=headers, params=params)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.url, headers=headers, params=params)
 
         response.raise_for_status()
 
@@ -152,36 +152,39 @@ class SerperdevProvider(BaseSearchProvider):
         max_batch_size = 100  # Serper.dev maximum batch size
         total_articles = []
 
-        # Split queries into chunks of max_batch_size
-        for i in range(0, len(queries), max_batch_size):
-            batch_queries = queries[i : i + max_batch_size]
-            logger.info(f"Performing batch search for {len(batch_queries)} queries")
+        async with httpx.AsyncClient() as client:
+            for i in range(0, len(queries), max_batch_size):
+                batch_queries = queries[i : i + max_batch_size]
+                logger.info(f"Performing batch search for {len(batch_queries)} queries")
 
-            payload = [
-                {
-                    "q": query,
-                    "num": max_results,
-                    "autocorrect": False,
-                    **time_limit_to_serper(time_limit),
-                    **region_to_gl_hl(region),
-                }
-                for query in batch_queries
-            ]
+                payload = [
+                    {
+                        "q": query,
+                        "num": max_results,
+                        "autocorrect": False,
+                        **time_limit_to_serper(time_limit),
+                        **region_to_gl_hl(region),
+                    }
+                    for query in batch_queries
+                ]
 
-            response = requests.post(self.url, headers=headers, json=payload)
-            response.raise_for_status()
+                response = await client.post(self.url, headers=headers, json=payload)
+                response.raise_for_status()
 
-            batch_results = response.json()
-            batch_articles = []
+                batch_results = response.json()
+                batch_articles = []
 
-            for result in batch_results:
-                logger.info(result.get("searchParameters"))
-                batch_articles.extend(
-                    serper_result_to_base_article(article) for article in result["news"]
+                for result in batch_results:
+                    logger.info(result.get("searchParameters"))
+                    batch_articles.extend(
+                        serper_result_to_base_article(article)
+                        for article in result["news"]
+                    )
+
+                logger.info(
+                    f"Batch search completed with {len(batch_articles)} articles"
                 )
-
-            logger.info(f"Batch search completed with {len(batch_articles)} articles")
-            total_articles.extend(batch_articles)
+                total_articles.extend(batch_articles)
 
         logger.info(f"Total articles fetched: {len(total_articles)}")
         return total_articles
