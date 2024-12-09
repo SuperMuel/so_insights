@@ -68,6 +68,7 @@ def test_convert_to_article():
         workspace_id=WORKSPACE_ID,
         content="content",
         ingestion_run_id=INGESTION_RUN_ID,
+        provider="rss",
     )
 
     workspace_id = PydanticObjectId()

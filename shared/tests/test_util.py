@@ -15,11 +15,8 @@ def test_validate_url_with_invalid_url():
     assert validate_url("https://") is None
 
 
-def test_validate_url_with_non_string_input():
-    assert validate_url(12345) is None
+def test_validate_url_with_none():
     assert validate_url(None) is None
-    assert validate_url([]) is None
-    assert validate_url({}) is None
 
 
 def test_validate_url_with_empty_string():

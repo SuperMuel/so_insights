@@ -1,8 +1,8 @@
-from typing import Any
 from urllib.parse import urlparse
+from pydantic_core import Url
 
 
-def validate_url(url: Any) -> str | None:
+def validate_url(url: str | Url | None) -> str | None:
     """
     Validates the given URL.
 
@@ -14,8 +14,10 @@ def validate_url(url: Any) -> str | None:
     """
     if not url:
         return None
-    if not isinstance(url, str):
-        return None
+
+    if isinstance(url, Url):
+        url = str(url)
+
     parsed_url = urlparse(url)
     if parsed_url.scheme and parsed_url.netloc:
         return url

@@ -3,23 +3,21 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI
-from pydantic import SecretStr
-from src.mongo_db_operations import insert_articles_in_mongodb
-from src.rss import ingest_rss_feed
-from src.vector_indexing import (
-    get_pinecone_index,
-    sync_workspace_with_vector_db,
-)
 import typer
+import uvicorn
 from beanie import UpdateResponse
 from beanie.odm.operators.update.general import Set
 from dotenv import load_dotenv
-from duckduckgo_search import AsyncDDGS
+from fastapi import FastAPI
 from langchain_voyageai import VoyageAIEmbeddings
+from pydantic import SecretStr
 from src.ingester_settings import ingester_settings
-from src.search import (
-    perform_search_and_deduplicate_results,
+from src.mongo_db_operations import insert_articles_in_mongodb
+from src.rss import ingest_rss_feed
+from src.search_providers.base import BaseSearchProvider, deduplicate_articles_by_url
+from src.vector_indexing import (
+    get_pinecone_index,
+    sync_workspace_with_vector_db,
 )
 
 from shared.db import get_client, my_init_beanie
@@ -34,7 +32,6 @@ from shared.models import (
     Workspace,
     utc_datetime_factory,
 )
-import uvicorn
 
 load_dotenv()
 
@@ -83,9 +80,10 @@ embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for paramete
 )
 
 
-async def handle_search_ingestion_config(
-    ddgs: AsyncDDGS,
+async def handle_search_ingestion_run(
     run: IngestionRun,
+    *,
+    search_provider: BaseSearchProvider,
     config: SearchIngestionConfig,
 ) -> list[Article]:
     """
@@ -95,8 +93,8 @@ async def handle_search_ingestion_config(
     and converts them into Article objects.
 
     Args:
-        ddgs (AsyncDDGS): An instance of the AsyncDDGS client for performing searches.
         run (IngestionRun): The current ingestion run object.
+        search_provider (BaseSearchProvider): The search provider to be used for search-based ingestion.
         config (SearchIngestionConfig): The search ingestion configuration.
 
     Returns:
@@ -118,13 +116,16 @@ async def handle_search_ingestion_config(
 
     max_results, time_limit = await config.get_max_results_and_time_limit()
 
-    articles = await perform_search_and_deduplicate_results(
-        ddgs=ddgs,
+    articles = await search_provider.batch_search(
         queries=config.queries,
         region=config.region,
         max_results=max_results,
         time_limit=time_limit,
     )
+
+    logger.info(f"Found {len(articles)} (undeduplicated) articles")
+    articles = deduplicate_articles_by_url(articles)
+    logger.info(f"Deduplicated to {len(articles)} articles")
 
     return [
         Article(
@@ -137,9 +138,10 @@ async def handle_search_ingestion_config(
     ]
 
 
-async def handle_rss_ingestion_config(
-    config: RssIngestionConfig,
+async def handle_rss_ingestion_run(
     run: IngestionRun,
+    *,
+    config: RssIngestionConfig,
 ) -> list[Article]:
     """
     Handles the ingestion process for an RSS-based ingestion configuration.
@@ -147,8 +149,8 @@ async def handle_rss_ingestion_config(
     This function fetches and processes articles from the specified RSS feed.
 
     Args:
-        config (RssIngestionConfig): The RSS ingestion configuration.
         run (IngestionRun): The current ingestion run object.
+        config (RssIngestionConfig): The RSS ingestion configuration.
 
     Returns:
         list[Article]: A list of Article objects created from the RSS feed entries.
@@ -165,7 +167,9 @@ async def handle_rss_ingestion_config(
     return await ingest_rss_feed(config, ingestion_run_id=run.id)
 
 
-async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
+async def handle_ingestion_run(
+    run: IngestionRun, *, search_provider: BaseSearchProvider
+):
     """
     Manages the entire process of an ingestion run.
 
@@ -174,7 +178,7 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
 
     Args:
         run (IngestionRun): The ingestion run to be processed.
-        ddgs (AsyncDDGS): An instance of the AsyncDDGS client for performing searches.
+        search_provider (BaseSearchProvider): The search provider to be used for search-based ingestion.
     """
     assert run.status in [Status.pending, Status.running]
 
@@ -197,18 +201,23 @@ async def handle_ingestion_run(run: IngestionRun, ddgs: AsyncDDGS):
         match config.type:
             case IngestionConfigType.search:
                 assert isinstance(config, SearchIngestionConfig)
-                articles: list[Article] = await handle_search_ingestion_config(
-                    ddgs=ddgs, run=run, config=config
+                articles = await handle_search_ingestion_run(
+                    run, search_provider=search_provider, config=config
                 )
             case IngestionConfigType.rss:
                 assert isinstance(config, RssIngestionConfig)
-                articles = await handle_rss_ingestion_config(config, run)
+                articles = await handle_rss_ingestion_run(run, config=config)
 
     except Exception as e:
         logger.error(f"Error while processing ingestion run: {e}")
         return await run.mark_as_finished(Status.failed, error=str(e))
 
-    assert all([article.ingestion_run_id for article in articles])
+    assert all(
+        [article.ingestion_run_id for article in articles]
+    ), "Some articles have no ingestion run id"
+    assert all(
+        [article.provider for article in articles]
+    ), "Some articles have no provider"
     run.n_inserted = await insert_articles_in_mongodb(articles)
 
     workspace = await Workspace.get(run.workspace_id)
@@ -240,22 +249,43 @@ async def setup():
     mongo_client = get_client(ingester_settings.MONGODB_URI)
     await my_init_beanie(mongo_client)
 
-    logger.info("Setting up DDGS client...")
-    if proxy := (
-        ingester_settings.PROXY.get_secret_value()
-        if isinstance(ingester_settings.PROXY, SecretStr)
-        else str(ingester_settings.PROXY)
-        if ingester_settings.PROXY
-        else None
-    ):
-        logger.info(f"Using proxy: {proxy}")
+    match ingester_settings.SEARCH_PROVIDER:
+        case "duckduckgo":
+            from duckduckgo_search import AsyncDDGS
+            from src.search_providers.duckduckgo_provider import DuckDuckGoProvider
 
-    ddgs = AsyncDDGS(
-        timeout=ingester_settings.QUERY_TIMEOUT,
-        proxy=proxy,
-    )
+            logger.info("Setting up DDGS client...")
+            if proxy := (
+                ingester_settings.PROXY.get_secret_value()
+                if isinstance(ingester_settings.PROXY, SecretStr)
+                else str(ingester_settings.PROXY)
+                if ingester_settings.PROXY
+                else None
+            ):
+                logger.info(f"Using proxy: {proxy}")
 
-    return mongo_client, ddgs
+            search_provider = DuckDuckGoProvider(
+                AsyncDDGS(
+                    timeout=ingester_settings.QUERY_TIMEOUT,
+                    proxy=proxy,
+                )
+            )
+        case "serperdev":
+            from src.search_providers.serperdev_provider import SerperdevProvider
+
+            api_key = ingester_settings.SERPERDEV_API_KEY
+
+            assert (
+                api_key is not None and len(api_key.get_secret_value()) > 0
+            ), "SerperDev API key is required"
+
+            search_provider = SerperdevProvider(api_key=api_key)
+        case _:
+            raise ValueError(
+                f"Unknown search provider: {ingester_settings.SEARCH_PROVIDER}"
+            )
+
+    return mongo_client, search_provider
 
 
 @app.command()
@@ -423,11 +453,12 @@ def watch(
     """Watch for pending ingestion runs and execute them."""
 
     async def _watch():
-        mongo_client, ddgs = await setup()
+        mongo_client, search_provider = await setup()
 
         server_task = asyncio.create_task(run_server())
 
         logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
+        logger.info(ingester_settings.model_dump())
         start_time = datetime.now()
 
         try:
@@ -450,7 +481,7 @@ def watch(
                     f"Processing ingestion run {pending_run.id} for workspace {pending_run.workspace_id}"
                 )
 
-                await handle_ingestion_run(pending_run, ddgs)
+                await handle_ingestion_run(pending_run, search_provider=search_provider)
 
                 if (datetime.now() - start_time).total_seconds() >= max_runtime:
                     logger.info("Reached maximum runtime. Exiting.")
