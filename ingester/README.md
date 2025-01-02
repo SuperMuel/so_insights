@@ -2,11 +2,11 @@
 
 ## Introduction
 
-The SO Insights Ingester is a crucial component of the SO Insights project, designed to collect, process, and store articles from various online sources. It performs web searches and RSS feed ingestion based on predefined queries and configurations, storing the results in both MongoDB and Pinecone vector database for efficient retrieval and analysis.
+The SO Insights Ingester collects, processes, and stores articles from various online sources. It performs web searches using either DuckDuckGo or Serper.dev and handles RSS feed ingestion, storing the results in MongoDB and Pinecone for efficient retrieval and analysis.
 
 ## Features
 
-- Asynchronous web searching using DuckDuckGo
+- Asynchronous web searching using DuckDuckGo or Serper.dev
 - RSS feed ingestion
 - Storage in MongoDB for structured data
 - Indexing in Pinecone for vector search capabilities
@@ -19,6 +19,7 @@ The SO Insights Ingester is a crucial component of the SO Insights project, desi
 - MongoDB
 - Pinecone account
 - VoyageAI API access
+- Serper.dev API key (if using Serper.dev as the search provider)
 
 ## Installation
 
@@ -64,24 +65,8 @@ The Ingester provides several command-line interfaces:
    poetry run python main.py watch [--interval <seconds>] [--max-runtime <seconds>]
    ```
 
-## Project Structure
 
-```
-ingester
-├── main.py               # Main entry point and CLI commands
-├── pyproject.toml        # Project configuration and dependencies
-├── README.md             # Project documentation
-├── src
-│   ├── ingester_settings.py     # Configuration settings
-│   ├── mongo_db_operations.py   # MongoDB operations
-│   ├── rss.py                   # RSS feed ingestion
-│   ├── search.py                # Web search functionality
-│   ├── vector_indexing.py       # Vector database operations
-│   └── __init__.py
-└── tests
-    ├── test_rss.py              # Tests for RSS functionality
-    └── __init__.py
-```
+The choice of search provider can be configured using the `SEARCH_PROVIDER` environment variable. 
 
 ## Core Functionalities
 
