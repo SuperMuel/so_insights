@@ -11,6 +11,7 @@ from shared.models import (
     ClusteringSession,
     IngestionConfig,
     IngestionRun,
+    Organization,
     RssIngestionConfig,
     SearchIngestionConfig,
     Starters,
@@ -35,6 +36,7 @@ async def my_init_beanie(client):
     await init_beanie(
         database=client[db_settings.mongodb_database],
         document_models=[
+            Organization,
             Workspace,
             IngestionConfig,
             SearchIngestionConfig,

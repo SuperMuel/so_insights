@@ -8,10 +8,22 @@ from shared.models import (
     ClusteringSession,
     IngestionConfig,
     IngestionRun,
+    Organization,
     RssIngestionConfig,
     SearchIngestionConfig,
     Workspace,
 )
+
+
+async def get_organization(organization_id: str | PydanticObjectId) -> Organization:
+    organization = await Organization.get(organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    assert organization.id
+    return organization
+
+
+ExistingOrganization = Annotated[Organization, Depends(get_organization)]
 
 
 async def get_workspace(workspace_id: str | PydanticObjectId) -> Workspace:

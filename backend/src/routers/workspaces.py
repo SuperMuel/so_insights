@@ -33,7 +33,9 @@ async def list_workspaces(
         else Workspace.find_all()
     )
 
-    return await workspaces.sort(Workspace.created_at).to_list()
+    return await workspaces.sort(
+        Workspace.created_at,  # type: ignore
+    ).to_list()
 
 
 @router.get(

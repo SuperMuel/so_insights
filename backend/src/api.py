@@ -12,6 +12,7 @@ from src.routers import (
     clustering,
     ingestion_configs,
     ingestion_runs,
+    organizations,
     starters,
     workspaces,
 )
@@ -59,6 +60,7 @@ async def root():
     return {"message": "Welcome to so_insights API"}
 
 
+app.include_router(organizations.router, prefix="/organizations")
 app.include_router(workspaces.router, prefix="/workspaces")
 app.include_router(
     ingestion_configs.router,
@@ -78,6 +80,7 @@ app.include_router(
     starters.router,
     prefix="/workspaces/{workspace_id}/starters",
 )
+
 
 if __name__ == "__main__":
     import uvicorn

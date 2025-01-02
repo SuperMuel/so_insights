@@ -10,6 +10,7 @@ from pydantic import (
     Field,
     HttpUrl,
     PastDatetime,
+    SecretStr,
     StringConstraints,
     field_validator,
 )
@@ -59,13 +60,55 @@ class HdbscanSettings(BaseModel):
     )
 
 
+class Organization(Document):
+    """
+    Represents an organization within the SO Insights system.
+
+    Organizations group related workspaces and restrict access to them using a shared
+    secret code. Users must provide the correct secret code to access the workspaces
+    associated with an organization.
+
+    They are created by admins.
+
+    Warning:
+    This authentication mechanism is not designed for secure environments.
+    The secret code approach provides minimal security and should not be
+    relied upon for sensitive or confidential data. Consider using
+    more robust authentication methods for enhanced security.
+    """
+
+    name: ModelTitle = Field(..., description="Unique name of the organization")
+
+    secret_code: SecretStr = Field(
+        ...,
+        description="Shared secret passphrase for access. Could be easy to guess, not secure.",
+        min_length=8,
+        max_length=64,
+    )
+    created_at: datetime = Field(default_factory=utc_datetime_factory)
+    updated_at: datetime = Field(default_factory=utc_datetime_factory)
+
+    class Settings:
+        name = db_settings.mongodb_organizations_collection
+        indexes = [
+            IndexModel("name", unique=True),
+            IndexModel("secret_code", unique=True),
+        ]
+
+
 class Workspace(Document):
     """
     Represents a project workspace for organizing and managing content.
 
     A Workspace is like a container for a specific research topic or project. It holds
     settings and metadata that apply to all the content within it.
+
+    Each workspace belongs to an organization.
     """
+
+    organization_id: PydanticObjectId = Field(
+        ..., description="Reference to the organization that owns this workspace"
+    )
 
     name: ModelTitle = Field(..., description="The name of the workspace")
     description: ModelDescription = Field(

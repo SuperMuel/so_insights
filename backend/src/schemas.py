@@ -1,6 +1,14 @@
 from datetime import datetime
+from typing import Annotated
 from beanie import PydanticObjectId
-from pydantic import BaseModel, Field, HttpUrl, PastDatetime
+from pydantic import (
+    BaseModel,
+    Field,
+    HttpUrl,
+    PastDatetime,
+    SecretStr,
+    StringConstraints,
+)
 
 from shared.models import (
     Cluster,
@@ -14,7 +22,27 @@ from shared.models import (
 from shared.region import Region
 
 
+class OrganizationCreate(BaseModel):
+    name: ModelTitle = Field(..., description="Unique name of the organization")
+
+    secret_code: Annotated[
+        str,
+        StringConstraints(
+            min_length=8,
+            max_length=64,
+            strip_whitespace=True,
+        ),
+    ] = Field(
+        ...,
+        description="Secret code for organization access. Will be stored in plain text.",
+    )
+
+    class Config:
+        extra = "forbid"
+
+
 class WorkspaceCreate(BaseModel):
+    organization_id: PydanticObjectId
     name: ModelTitle
     description: ModelDescription = ""
     language: Language
