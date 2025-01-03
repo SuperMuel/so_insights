@@ -2,9 +2,43 @@ from dotenv import load_dotenv
 from sdk.so_insights_client.api.workspaces import list_workspaces
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import app_settings
-from src.shared import get_client
+from src.shared import create_toast, get_client
 import streamlit as st
 from streamlit_theme import st_theme
+
+
+def check_organization_secret():
+    if not st.session_state.get("organization"):
+        with st.form("organization_secret_form"):
+            code = st.text_input(
+                "Secret Code",
+                type="password",
+                help="Enter the secret code you received",
+                key="organization_secret_code",
+            )
+            login_button = st.form_submit_button("Login")
+
+        if not login_button:
+            st.stop()
+
+        if not code.strip():
+            st.error("Please enter a valid secret code")
+            st.stop()
+
+        if code != "test":
+            st.error("Invalid secret code")
+            st.stop()
+
+        st.session_state.organization = {
+            "name": "default",
+            "id": "67771ad64343ae2b3000d53b",
+        }
+
+        create_toast(
+            f"Successfully logged in `{st.session_state.organization['name']}` organization",
+        )
+
+        st.rerun()
 
 
 def _select_workspace(client, on_change) -> None:
@@ -80,6 +114,8 @@ if __name__ == "__main__":
             st.logo(app_settings.LOGO_LIGHT_URL)
         elif base == "dark" and app_settings.LOGO_DARK_URL:
             st.logo(app_settings.LOGO_DARK_URL)
+
+    check_organization_secret()
 
     pg = st.navigation(
         [
