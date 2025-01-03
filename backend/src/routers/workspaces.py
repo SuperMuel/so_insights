@@ -32,12 +32,12 @@ async def create_workspace(
     operation_id="list_workspaces",
 )
 async def list_workspaces(
+    organization: ExistingOrganization,
     enabled: bool | None = None,
 ):
-    workspaces = (
-        Workspace.find(Workspace.enabled == enabled)
-        if enabled is not None
-        else Workspace.find_all()
+    workspaces = Workspace.find(
+        Workspace.organization_id == organization.id,
+        *[Workspace.enabled == enabled] if enabled is not None else [],
     )
 
     return await workspaces.sort(
