@@ -17,16 +17,16 @@ from sdk.so_insights_client.models.workspace import Workspace
 from src.content_generation import create_social_media_content
 import streamlit as st
 from src.shared import (
+    get_authenticated_client,
     get_workspace_or_stop,
     language_to_str,
     select_session_or_stop,
-    get_client,
 )
 from langchain.chat_models import init_chat_model
 
 
-client = get_client()
 workspace = get_workspace_or_stop()
+client = get_authenticated_client(workspace.organization_id)
 
 
 def create_getimg_client():

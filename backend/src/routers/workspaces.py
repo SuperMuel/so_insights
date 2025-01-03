@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status
-from src.dependencies import ExistingWorkspace
+from src.dependencies import ExistingWorkspace, ExistingOrganization
 from shared.models import Workspace, utc_datetime_factory
 from src.schemas import WorkspaceUpdate, WorkspaceCreate
 from logging import getLogger
@@ -15,8 +15,15 @@ router = APIRouter(tags=["workspaces"])
     status_code=status.HTTP_201_CREATED,
     operation_id="create_workspace",
 )
-async def create_workspace(workspace: WorkspaceCreate):
-    return await Workspace(**workspace.model_dump()).insert()
+async def create_workspace(
+    organization: ExistingOrganization, workspace: WorkspaceCreate
+):
+    assert organization.id
+
+    return await Workspace(
+        organization_id=organization.id,
+        **workspace.model_dump(),
+    ).insert()
 
 
 @router.get(
@@ -25,15 +32,17 @@ async def create_workspace(workspace: WorkspaceCreate):
     operation_id="list_workspaces",
 )
 async def list_workspaces(
+    organization: ExistingOrganization,
     enabled: bool | None = None,
 ):
-    workspaces = (
-        Workspace.find(Workspace.enabled == enabled)
-        if enabled is not None
-        else Workspace.find_all()
+    workspaces = Workspace.find(
+        Workspace.organization_id == organization.id,
+        *[Workspace.enabled == enabled] if enabled is not None else [],
     )
 
-    return await workspaces.sort(Workspace.created_at).to_list()
+    return await workspaces.sort(
+        Workspace.created_at,  # type: ignore
+    ).to_list()
 
 
 @router.get(

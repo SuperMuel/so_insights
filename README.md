@@ -51,12 +51,13 @@ The Analyzer component handles:
 ### Backend
 
 The Backend provides:
-- RESTful API endpoints for data access and management on the frontend
+- RESTful API endpoints for authentication and data access and management on the frontend
 
 ### Frontend
 
 The Frontend offers a Streamlit interface for:
 
+- Logging in an organization
 - Managing workspaces and search queries
 - Configuring data sources (web search and RSS feeds)
 - Manually triggering ingestion and analysis tasks

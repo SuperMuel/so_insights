@@ -9,7 +9,7 @@ from langchain_community.chat_message_histories import StreamlitChatMessageHisto
 from sdk.so_insights_client.api.starters import get_latest_starters
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.app_settings import app_settings
-from src.shared import get_client, get_workspace_or_stop
+from src.shared import get_authenticated_client, get_workspace_or_stop
 import streamlit as st
 from langchain.chat_models import init_chat_model
 from langchain import hub
@@ -60,7 +60,7 @@ embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameter
 )
 
 
-client = get_client()
+client = get_authenticated_client(workspace.organization_id)
 
 if not st.session_state.get("session_id"):
     st.session_state["session_id"] = uuid4().hex

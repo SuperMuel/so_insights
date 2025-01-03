@@ -55,3 +55,19 @@ For development purposes, you might want to run the application outside of Docke
 4. Install dependencies: `poetry install`
 5. Set up your environment variables in a `.env` file in the `backend` directory.
 6. Run the application: `poetry run uvicorn src.api:app --reload`
+
+# Authentication
+
+The SO Insights backend requires organization-level authentication for accessing most of its resources. This is done using the X-Organization-ID header in the request.
+
+### Authentication Flow
+SoInsights Administrators create Organizations and their access codes for the clients.
+Users receive the code and use it to login on the platform. 
+Internally, the code is exchanged against the organization ID, which is subsequently sent in each request as `X-Organization-ID` header.
+We wrongly assume that the org ID can't be guessed, and dangerously use it for authentication.
+
+### Important Notes
+
+This authentication mechanism is not highly secure and is designed for demonstration purposes. Ensure that access codes are kept private.
+
+Future updates may introduce more robust authentication mechanisms

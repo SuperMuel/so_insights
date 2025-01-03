@@ -1,10 +1,74 @@
 from dotenv import load_dotenv
+from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.organization import Organization
 from sdk.so_insights_client.api.workspaces import list_workspaces
+from sdk.so_insights_client.api.organizations import get_organization_by_secret_code
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import app_settings
-from src.shared import get_client
+from src.shared import create_toast, get_authenticated_client, get_client
 import streamlit as st
 from streamlit_theme import st_theme
+
+
+def check_organization_secret():
+    """
+    Validates and logs the user into an organization using a secret code.
+
+    If the secret code corresponds to a valid organization, we keep the organization_id
+    in session state that will allow us to create an authenticated client.
+
+    Note that nothing of this is secure. This is only for demo purposes.
+    """
+    if "organization" in st.session_state:
+        # Already logged in
+        return
+
+    st.header("Welcome to SoInsights")
+
+    # Display login form
+    with st.form("organization_secret_form"):
+        # Display an information box with guidance
+        st.info(
+            "Enter the access code provided to you. "
+            "If you don’t have one, please contact your administrator for assistance.",
+            icon="ℹ️",
+        )
+
+        code = st.text_input(
+            "🔒 Access Code",
+            type="password",
+            key="organization_secret_code",
+        )
+        login_button = st.form_submit_button(
+            "Login", use_container_width=True, type="primary"
+        )
+
+    if not login_button:
+        st.stop()
+
+    if not code.strip():
+        st.error("Please enter a valid secret code")
+        st.stop()
+
+    org = get_organization_by_secret_code.sync(
+        client=get_client(),
+        code=code,
+    )
+
+    if not org or isinstance(org, HTTPValidationError):
+        st.error("Could not log in. Please check the secret code and try again.")
+        st.stop()
+
+    assert isinstance(org, Organization)
+
+    create_toast(
+        f"Successfully logged in `{org.name}` organization",
+    )
+
+    st.session_state.organization = org
+    st.session_state.organization_id = org.field_id
+
+    st.rerun()
 
 
 def _select_workspace(client, on_change) -> None:
@@ -72,6 +136,8 @@ def _select_workspace(client, on_change) -> None:
 if __name__ == "__main__":
     load_dotenv()
 
+    check_organization_secret()
+
     st.set_page_config(layout="wide")
 
     theme = st_theme()
@@ -80,6 +146,8 @@ if __name__ == "__main__":
             st.logo(app_settings.LOGO_LIGHT_URL)
         elif base == "dark" and app_settings.LOGO_DARK_URL:
             st.logo(app_settings.LOGO_DARK_URL)
+
+    client = get_authenticated_client(st.session_state.organization_id)
 
     pg = st.navigation(
         [
@@ -105,7 +173,7 @@ if __name__ == "__main__":
 
     with st.sidebar:
         _select_workspace(
-            get_client(),
+            client,
             _on_workspace_change,
         )
 
