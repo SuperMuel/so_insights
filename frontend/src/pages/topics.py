@@ -25,15 +25,15 @@ from sdk.so_insights_client.models.http_validation_error import HTTPValidationEr
 from src.shared import (
     create_toast,
     dates_to_session_label,
-    get_client,
+    get_authenticated_client,
     get_workspace_or_stop,
     select_session_or_stop,
     task_status_to_st_status,
 )
 from streamlit.elements.lib.mutable_status_container import StatusContainer
 
-client = get_client()
 workspace = get_workspace_or_stop()
+client = get_authenticated_client(workspace.organization_id)
 
 
 with st.sidebar:

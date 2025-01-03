@@ -50,13 +50,13 @@ from shared.util import validate_url
 from src.app_settings import app_settings
 from src.shared import (
     create_toast,
-    get_client,
+    get_authenticated_client,
     language_to_str,
     task_status_to_st_status,
 )
 
 
-client = get_client()
+client = get_authenticated_client(st.session_state.organization_id)
 
 st.title("My Workspace")
 
@@ -69,6 +69,7 @@ def _get_language_index(language: Language) -> int:
 def region_to_full_name(region: Region) -> str:
     return shared.region.Region(region).get_full_name()
 
+
 def format_time_limit(time_limit: TimeLimit) -> str:
     return {
         TimeLimit.D: "1 Day",
@@ -76,6 +77,7 @@ def format_time_limit(time_limit: TimeLimit) -> str:
         TimeLimit.M: "1 Month",
         TimeLimit.Y: "1 Year",
     }[time_limit]
+
 
 @st.dialog("Create a new workspace")
 def _create_new_workspace_dialog():
@@ -832,10 +834,12 @@ def _history_section(workspace: Workspace):
         st.write(f"+{len(runs) - MAX_RUNS_TO_DISPLAY} more")
 
 
-
-
 def _workspace_dialog_action(workspace: Workspace, *, action: str, enabled_value: bool):
-    text = "Enabling the workspace will resume monitoring news articles." if enabled_value else "Disabling the workspace will stop monitoring news articles."
+    text = (
+        "Enabling the workspace will resume monitoring news articles."
+        if enabled_value
+        else "Disabling the workspace will stop monitoring news articles."
+    )
 
     st.warning(text, icon="⚠️")
 
@@ -853,13 +857,16 @@ def _workspace_dialog_action(workspace: Workspace, *, action: str, enabled_value
         else:
             st.error(f"Failed to {action.lower()} workspace. Error: {response}")
 
+
 @st.dialog("Disable Workspace")
 def _disable_workspace_dialog(workspace: Workspace):
     _workspace_dialog_action(workspace, action="Disable", enabled_value=False)
 
+
 @st.dialog("Enable Workspace")
 def _enable_workspace_dialog(workspace: Workspace):
     _workspace_dialog_action(workspace, action="Enable", enabled_value=True)
+
 
 def toggle_workspace_enabled_button(workspace: Workspace):
     """
@@ -885,7 +892,7 @@ def toggle_workspace_enabled_button(workspace: Workspace):
         use_container_width=True,
     ):
         dialog_function(workspace)
-        
+
 
 if st.sidebar.button("➕Create New Workspace", use_container_width=True):
     _create_new_workspace_dialog()

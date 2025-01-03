@@ -42,7 +42,6 @@ class OrganizationCreate(BaseModel):
 
 
 class WorkspaceCreate(BaseModel):
-    organization_id: PydanticObjectId
     name: ModelTitle
     description: ModelDescription = ""
     language: Language

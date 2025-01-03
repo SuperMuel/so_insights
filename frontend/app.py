@@ -5,12 +5,12 @@ from sdk.so_insights_client.api.workspaces import list_workspaces
 from sdk.so_insights_client.api.organizations import get_organization_by_secret_code
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import app_settings
-from src.shared import create_toast, get_client
+from src.shared import create_toast, get_authenticated_client, get_client
 import streamlit as st
 from streamlit_theme import st_theme
 
 
-def check_organization_secret(client):
+def check_organization_secret():
     if not st.session_state.get("organization"):
         with st.form("organization_secret_form"):
             code = st.text_input(
@@ -39,13 +39,11 @@ def check_organization_secret(client):
 
         assert isinstance(org, Organization)
 
-        st.session_state.organization = {
-            "name": org.name,
-            "id": org.field_id,
-        }
+        st.session_state.organization = org
+        st.session_state.organization_id = org.field_id
 
         create_toast(
-            f"Successfully logged in `{st.session_state.organization['name']}` organization",
+            f"Successfully logged in `{org.name}` organization",
         )
 
         st.rerun()
@@ -125,9 +123,9 @@ if __name__ == "__main__":
         elif base == "dark" and app_settings.LOGO_DARK_URL:
             st.logo(app_settings.LOGO_DARK_URL)
 
-    client = get_client()
+    check_organization_secret()
 
-    check_organization_secret(client=client)
+    client = get_authenticated_client(st.session_state.organization_id)
 
     pg = st.navigation(
         [

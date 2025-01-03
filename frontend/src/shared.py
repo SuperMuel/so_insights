@@ -15,8 +15,23 @@ from sdk.so_insights_client.models.status import Status
 
 
 @st.cache_resource
-def get_client():
+def get_client() -> Client:
     return Client(base_url=app_settings.SO_INSIGHTS_API_URL)
+
+
+@st.cache_resource
+def get_authenticated_client(organization_id: str) -> Client:
+    """This function returns a client with the organization ID set in the headers.
+    The organization_id serves as a way to authenticate the client with the API,
+    in a very insecure way.
+
+    The organization_id can be obtained by exchanging with a secret code.
+    """
+
+    return Client(
+        base_url=app_settings.SO_INSIGHTS_API_URL,
+        headers={"X-Organization-ID": organization_id},
+    )
 
 
 def get_workspace_or_stop() -> Workspace:

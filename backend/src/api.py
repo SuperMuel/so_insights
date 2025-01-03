@@ -3,11 +3,12 @@ import sys
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from shared.db import get_client, my_init_beanie
 
 from src.api_settings import api_settings
+from src.dependencies import get_organization
 from src.routers import (
     clustering,
     ingestion_configs,
@@ -61,24 +62,32 @@ async def root():
 
 
 app.include_router(organizations.router, prefix="/organizations")
-app.include_router(workspaces.router, prefix="/workspaces")
+app.include_router(
+    workspaces.router,
+    prefix="/workspaces",
+    dependencies=[Depends(get_organization)],
+)
 app.include_router(
     ingestion_configs.router,
     prefix="/workspaces/{workspace_id}/ingestion-configs",
+    dependencies=[Depends(get_organization)],
 )
 app.include_router(
     ingestion_runs.router,
     prefix="/workspaces/{workspace_id}/ingestion-runs",
+    dependencies=[Depends(get_organization)],
 )
 
 app.include_router(
     clustering.router,
     prefix="/workspaces/{workspace_id}/clustering",
+    dependencies=[Depends(get_organization)],
 )
 
 app.include_router(
     starters.router,
     prefix="/workspaces/{workspace_id}/starters",
+    dependencies=[Depends(get_organization)],
 )
 
 
