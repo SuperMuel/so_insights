@@ -105,3 +105,21 @@ To run the docker image, run :
 docker run -p 8501:8501  -e STREAMLIT_SERVER_PORT=8501 -e STREAMLIT_SERVER_ADDRESS=localhost  -e SO_INSIGHTS_API_URL="<api_url>" --env-file .\frontend\.env     -t so-insights-frontend
 ```
 
+
+# Authentication
+
+The frontend application requires authentication to interact with the backend API. This is achieved using the organization's `X-Organization-ID` header.
+
+### Login Flow
+
+1. **Access Code Input:**
+   - When accessing the application for the first time, users are prompted to enter a secret access code provided by the administrator.
+
+2. **Exchange for Organization ID:**
+   - The access code is sent to the backend API endpoint `/organizations/by-secret-code` to retrieve the corresponding `organization_id`.
+
+3. **Session Persistence:**
+   - The `organization_id` is stored in the user's session and used to authenticate subsequent API calls.
+
+4. **Headers in API Requests:**
+   - All API requests made by the frontend include the `X-Organization-ID` header to authenticate the user.
