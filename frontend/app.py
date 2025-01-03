@@ -1,5 +1,8 @@
 from dotenv import load_dotenv
+from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.organization import Organization
 from sdk.so_insights_client.api.workspaces import list_workspaces
+from sdk.so_insights_client.api.organizations import get_organization_by_secret_code
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import app_settings
 from src.shared import create_toast, get_client
@@ -7,7 +10,7 @@ import streamlit as st
 from streamlit_theme import st_theme
 
 
-def check_organization_secret():
+def check_organization_secret(client):
     if not st.session_state.get("organization"):
         with st.form("organization_secret_form"):
             code = st.text_input(
@@ -25,13 +28,20 @@ def check_organization_secret():
             st.error("Please enter a valid secret code")
             st.stop()
 
-        if code != "test":
+        org = get_organization_by_secret_code.sync(
+            client=get_client(),
+            code=code,
+        )
+
+        if not org or isinstance(org, HTTPValidationError):
             st.error("Invalid secret code")
             st.stop()
 
+        assert isinstance(org, Organization)
+
         st.session_state.organization = {
-            "name": "default",
-            "id": "67771ad64343ae2b3000d53b",
+            "name": org.name,
+            "id": org.field_id,
         }
 
         create_toast(
@@ -115,7 +125,9 @@ if __name__ == "__main__":
         elif base == "dark" and app_settings.LOGO_DARK_URL:
             st.logo(app_settings.LOGO_DARK_URL)
 
-    check_organization_secret()
+    client = get_client()
+
+    check_organization_secret(client=client)
 
     pg = st.navigation(
         [
@@ -141,7 +153,7 @@ if __name__ == "__main__":
 
     with st.sidebar:
         _select_workspace(
-            get_client(),
+            client,
             _on_workspace_change,
         )
 
