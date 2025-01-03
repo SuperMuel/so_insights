@@ -16,6 +16,7 @@ from .ingestion_config_type import IngestionConfigType
 from .ingestion_run import IngestionRun
 from .language import Language
 from .list_clusters_for_session_relevance_levels_type_0_item import ListClustersForSessionRelevanceLevelsType0Item
+from .organization import Organization
 from .region import Region
 from .relevancy_filter import RelevancyFilter
 from .rss_ingestion_config import RssIngestionConfig
@@ -48,6 +49,7 @@ __all__ = (
     "IngestionRun",
     "Language",
     "ListClustersForSessionRelevanceLevelsType0Item",
+    "Organization",
     "Region",
     "RelevancyFilter",
     "RssIngestionConfig",

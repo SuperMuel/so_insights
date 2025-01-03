@@ -22,7 +22,10 @@ class Workspace:
     A Workspace is like a container for a specific research topic or project. It holds
     settings and metadata that apply to all the content within it.
 
+    Each workspace belongs to an organization.
+
         Attributes:
+            organization_id (str): Reference to the organization that owns this workspace Example: 5eb7cf5a86d9755df3a6c593.
             name (str): The name of the workspace
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
             description (Union[Unset, str]): A detailed description of the workspace's purpose Default: ''.
@@ -34,6 +37,7 @@ class Workspace:
                 Default: True.
     """
 
+    organization_id: str
     name: str
     field_id: Union[None, Unset, str] = UNSET
     description: Union[Unset, str] = ""
@@ -45,6 +49,8 @@ class Workspace:
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        organization_id = self.organization_id
+
         name = self.name
 
         field_id: Union[None, Unset, str]
@@ -77,6 +83,7 @@ class Workspace:
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
+                "organization_id": organization_id,
                 "name": name,
             }
         )
@@ -102,6 +109,8 @@ class Workspace:
         from ..models.hdbscan_settings import HdbscanSettings
 
         d = src_dict.copy()
+        organization_id = d.pop("organization_id")
+
         name = d.pop("name")
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
@@ -146,6 +155,7 @@ class Workspace:
         enabled = d.pop("enabled", UNSET)
 
         workspace = cls(
+            organization_id=organization_id,
             name=name,
             field_id=field_id,
             description=description,
