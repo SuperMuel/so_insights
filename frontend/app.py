@@ -151,8 +151,8 @@ if __name__ == "__main__":
 
     pg = st.navigation(
         [
-            st.Page("src/pages/workspace.py", title="Workspace", icon="📂"),
-            st.Page("src/pages/topics.py", title="Topics", icon="🔎"),
+            st.Page("src/pages/settings.py", title="Settings", icon="⚙️"),
+            st.Page("src/pages/topics.py", title="Topics", icon="🔎", default=True),
             st.Page("src/pages/content_studio.py", title="Content Studio", icon="✍️"),
             st.Page("src/pages/chatbot.py", title="Chatbot", icon="💬"),
         ]
