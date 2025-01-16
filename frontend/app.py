@@ -2,24 +2,56 @@ from dotenv import load_dotenv
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.organization import Organization
 from sdk.so_insights_client.api.workspaces import list_workspaces
-from sdk.so_insights_client.api.organizations import get_organization_by_secret_code
+from sdk.so_insights_client.api.organizations import (
+    get_organization_by_secret_code,
+    get_organization,
+)
 from sdk.so_insights_client.models.workspace import Workspace
 from src.app_settings import app_settings
 from src.shared import create_toast, get_authenticated_client, get_client
 import streamlit as st
 from streamlit_theme import st_theme
+import extra_streamlit_components as stx
 
 
-def check_organization_secret():
+@st.cache_resource
+def get_manager():
+    return stx.CookieManager()
+
+
+cookie_manager = get_manager()
+
+
+def read_organization_cookie_from_cookie() -> None:
+    if org_id := cookie_manager.get("organization_id"):
+        client = get_client()
+        org = get_organization.sync(client=client, organization_id=org_id)
+        if isinstance(org, Organization):
+            st.session_state.organization = org
+            st.session_state.organization_id = org_id
+            create_toast(
+                f"Logged in `{org.name}` organization",
+            )
+        else:
+            print(f"Invalid organization_id in cookie. Deleting it. {org=}")
+            cookie_manager.delete("organization_id")
+
+
+def check_organization_secret_or_stop():
     """
     Validates and logs the user into an organization using a secret code.
+
+    1. If the user is already logged in, we skip this step.
+    2. If the user is not logged in, we display a login form.
+    3. We then exchange the secret code for an organization object and store it in session state.
 
     If the secret code corresponds to a valid organization, we keep the organization_id
     in session state that will allow us to create an authenticated client.
 
     Note that nothing of this is secure. This is only for demo purposes.
     """
-    if "organization" in st.session_state:
+    if "organization_id" in st.session_state:
+        print("Already logged in")
         # Already logged in
         return
 
@@ -65,8 +97,12 @@ def check_organization_secret():
         f"Successfully logged in `{org.name}` organization",
     )
 
+    assert org.field_id
+
     st.session_state.organization = org
     st.session_state.organization_id = org.field_id
+    cookie_manager.set("organization_id", org.field_id)
+    print(f"Logged in organization: {org.name}.")
 
     st.rerun()
 
@@ -136,9 +172,12 @@ def _select_workspace(client, on_change) -> None:
 if __name__ == "__main__":
     load_dotenv()
 
-    check_organization_secret()
+    # Try to get the last organization the user was logged in
+    read_organization_cookie_from_cookie()
 
-    st.set_page_config(layout="wide")
+    check_organization_secret_or_stop()
+
+    # st.set_page_config(layout="wide")
 
     theme = st_theme()
     if theme and (base := theme.get("base")):

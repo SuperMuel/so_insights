@@ -1,9 +1,10 @@
+from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import SecretStr
 from pymongo.errors import DuplicateKeyError
 
 from shared.models import Organization
-from src.dependencies import ExistingOrganization
+from src.dependencies import OrganizationInHeader
 from src.schemas import OrganizationCreate
 
 router = APIRouter(tags=["organizations"])
@@ -81,8 +82,11 @@ async def get_organization_by_secret_code(
     response_model=Organization,
     operation_id="get_organization",
 )
-async def get_organization(organization: ExistingOrganization):
+async def get_organization(organization_id: str | PydanticObjectId):
     """
     Retrieve a single organization by ID.
     """
-    return organization
+    org = await Organization.get(organization_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return org

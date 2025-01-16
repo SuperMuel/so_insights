@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status
-from src.dependencies import ExistingWorkspace, ExistingOrganization
+from src.dependencies import ExistingWorkspace, OrganizationInHeader
 from shared.models import Workspace, utc_datetime_factory
 from src.schemas import WorkspaceUpdate, WorkspaceCreate
 from logging import getLogger
@@ -16,7 +16,7 @@ router = APIRouter(tags=["workspaces"])
     operation_id="create_workspace",
 )
 async def create_workspace(
-    organization: ExistingOrganization, workspace: WorkspaceCreate
+    organization: OrganizationInHeader, workspace: WorkspaceCreate
 ):
     assert organization.id
 
@@ -32,7 +32,7 @@ async def create_workspace(
     operation_id="list_workspaces",
 )
 async def list_workspaces(
-    organization: ExistingOrganization,
+    organization: OrganizationInHeader,
     enabled: bool | None = None,
 ):
     workspaces = Workspace.find(

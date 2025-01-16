@@ -15,7 +15,9 @@ from shared.models import (
 )
 
 
-async def get_organization(x_organization_id: Annotated[str, Header()]) -> Organization:
+async def get_organization_from_header(
+    x_organization_id: Annotated[str, Header()],
+) -> Organization:
     organization = await Organization.get(x_organization_id)
     if not organization:
         raise HTTPException(status_code=400, detail="Invalid X-Organization-ID header")
@@ -23,11 +25,11 @@ async def get_organization(x_organization_id: Annotated[str, Header()]) -> Organ
     return organization
 
 
-ExistingOrganization = Annotated[Organization, Depends(get_organization)]
+OrganizationInHeader = Annotated[Organization, Depends(get_organization_from_header)]
 
 
 async def get_workspace(
-    organization: ExistingOrganization, workspace_id: str | PydanticObjectId
+    organization: OrganizationInHeader, workspace_id: str | PydanticObjectId
 ) -> Workspace:
     workspace = await Workspace.get(workspace_id)
     if not workspace or workspace.organization_id != organization.id:

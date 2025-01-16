@@ -28,6 +28,7 @@ langchain-anthropic = "^0.1.23"
 babel = "^2.16.0"
 st-copy-to-clipboard = "^0.1.6"
 st-theme = "^1.2.3"
+extra-streamlit-components = "^0.1.71"
 
 
 [tool.poetry.group.dev.dependencies]
