@@ -88,6 +88,11 @@ class Organization(Document):
     created_at: datetime = Field(default_factory=utc_datetime_factory)
     updated_at: datetime = Field(default_factory=utc_datetime_factory)
 
+    content_analysis_enabled: bool = Field(
+        default=False,
+        description="When enabled, the system will collect and analyze the articles contents, not just title and metadata",
+    )
+
     class Settings:
         name = db_settings.mongodb_organizations_collection
         indexes = [
