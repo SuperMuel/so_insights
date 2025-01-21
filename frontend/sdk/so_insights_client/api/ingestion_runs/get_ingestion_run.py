@@ -7,29 +7,36 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.http_validation_error import HTTPValidationError
 from ...models.ingestion_run import IngestionRun
-from ...types import Response
+from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     workspace_id: str,
     ingestion_run_id: str,
+    *,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Dict[str, Any]:
+    headers: Dict[str, Any] = {}
+    if not isinstance(x_organization_id, Unset):
+        headers["x-organization-id"] = x_organization_id
+
     _kwargs: Dict[str, Any] = {
         "method": "get",
         "url": f"/workspaces/{workspace_id}/ingestion-runs/{ingestion_run_id}",
     }
 
+    _kwargs["headers"] = headers
     return _kwargs
 
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[Union[HTTPValidationError, IngestionRun]]:
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code == 200:
         response_200 = IngestionRun.from_dict(response.json())
 
         return response_200
-    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+    if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
 
         return response_422
@@ -55,12 +62,14 @@ def sync_detailed(
     ingestion_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, IngestionRun]]:
     """Get Ingestion Run
 
     Args:
         workspace_id (str):
         ingestion_run_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -73,6 +82,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         ingestion_run_id=ingestion_run_id,
+        x_organization_id=x_organization_id,
     )
 
     response = client.get_httpx_client().request(
@@ -87,12 +97,14 @@ def sync(
     ingestion_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, IngestionRun]]:
     """Get Ingestion Run
 
     Args:
         workspace_id (str):
         ingestion_run_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -106,6 +118,7 @@ def sync(
         workspace_id=workspace_id,
         ingestion_run_id=ingestion_run_id,
         client=client,
+        x_organization_id=x_organization_id,
     ).parsed
 
 
@@ -114,12 +127,14 @@ async def asyncio_detailed(
     ingestion_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, IngestionRun]]:
     """Get Ingestion Run
 
     Args:
         workspace_id (str):
         ingestion_run_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -132,6 +147,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         ingestion_run_id=ingestion_run_id,
+        x_organization_id=x_organization_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -144,12 +160,14 @@ async def asyncio(
     ingestion_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, IngestionRun]]:
     """Get Ingestion Run
 
     Args:
         workspace_id (str):
         ingestion_run_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -164,5 +182,6 @@ async def asyncio(
             workspace_id=workspace_id,
             ingestion_run_id=ingestion_run_id,
             client=client,
+            x_organization_id=x_organization_id,
         )
     ).parsed

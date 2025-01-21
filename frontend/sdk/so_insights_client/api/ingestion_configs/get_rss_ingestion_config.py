@@ -7,29 +7,36 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.http_validation_error import HTTPValidationError
 from ...models.rss_ingestion_config import RssIngestionConfig
-from ...types import Response
+from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     workspace_id: str,
     rss_ingestion_config_id: str,
+    *,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Dict[str, Any]:
+    headers: Dict[str, Any] = {}
+    if not isinstance(x_organization_id, Unset):
+        headers["x-organization-id"] = x_organization_id
+
     _kwargs: Dict[str, Any] = {
         "method": "get",
         "url": f"/workspaces/{workspace_id}/ingestion-configs/rss/{rss_ingestion_config_id}",
     }
 
+    _kwargs["headers"] = headers
     return _kwargs
 
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[Union[HTTPValidationError, RssIngestionConfig]]:
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code == 200:
         response_200 = RssIngestionConfig.from_dict(response.json())
 
         return response_200
-    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+    if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
 
         return response_422
@@ -55,12 +62,14 @@ def sync_detailed(
     rss_ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, RssIngestionConfig]]:
     """Get Rss Ingestion Config
 
     Args:
         workspace_id (str):
         rss_ingestion_config_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -73,6 +82,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         rss_ingestion_config_id=rss_ingestion_config_id,
+        x_organization_id=x_organization_id,
     )
 
     response = client.get_httpx_client().request(
@@ -87,12 +97,14 @@ def sync(
     rss_ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, RssIngestionConfig]]:
     """Get Rss Ingestion Config
 
     Args:
         workspace_id (str):
         rss_ingestion_config_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -106,6 +118,7 @@ def sync(
         workspace_id=workspace_id,
         rss_ingestion_config_id=rss_ingestion_config_id,
         client=client,
+        x_organization_id=x_organization_id,
     ).parsed
 
 
@@ -114,12 +127,14 @@ async def asyncio_detailed(
     rss_ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, RssIngestionConfig]]:
     """Get Rss Ingestion Config
 
     Args:
         workspace_id (str):
         rss_ingestion_config_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -132,6 +147,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         rss_ingestion_config_id=rss_ingestion_config_id,
+        x_organization_id=x_organization_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -144,12 +160,14 @@ async def asyncio(
     rss_ingestion_config_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, RssIngestionConfig]]:
     """Get Rss Ingestion Config
 
     Args:
         workspace_id (str):
         rss_ingestion_config_id (str):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -164,5 +182,6 @@ async def asyncio(
             workspace_id=workspace_id,
             rss_ingestion_config_id=rss_ingestion_config_id,
             client=client,
+            x_organization_id=x_organization_id,
         )
     ).parsed
