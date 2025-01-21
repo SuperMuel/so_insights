@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 import aiohttp
 import feedparser
@@ -27,7 +27,7 @@ async def _fetch_rss_feed(session: aiohttp.ClientSession, url: str) -> str:
         return await response.text()
 
 
-async def _parse_rss_feed(feed_content: str) -> List[Dict[str, Any]]:
+async def _parse_rss_feed(feed_content: str) -> list[dict[str, Any]]:
     """
     Parses the content of an RSS feed.
 
@@ -62,7 +62,7 @@ def _entry_to_published_date(published_parsed) -> datetime | None:
 
 
 def _convert_to_article(
-    entry: Dict[str, Any],
+    entry: dict[str, Any],
     workspace_id: PydanticObjectId,
     ingestion_run_id: PydanticObjectId,
 ) -> Article:

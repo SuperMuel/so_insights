@@ -1,10 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query, status
-from pydantic import SecretStr
-from pymongo.errors import DuplicateKeyError
+from fastapi import APIRouter, HTTPException, Query
 
 from shared.models import Organization
 from src.dependencies import ExistingOrganization
-from src.schemas import OrganizationCreate
 
 router = APIRouter(tags=["organizations"])
 

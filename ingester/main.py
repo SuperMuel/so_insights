@@ -11,10 +11,13 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from langchain_voyageai import VoyageAIEmbeddings
 from pydantic import SecretStr
+from src.content_cleaner import ArticleContentCleaner
+from src.content_fetcher import ContentFetcher
 from src.ingester_settings import ingester_settings
 from src.mongo_db_operations import insert_articles_in_mongodb
 from src.rss import ingest_rss_feed
 from src.search_providers.base import BaseSearchProvider, deduplicate_articles_by_url
+from src.url_to_markdown_converters import FirecrawlUrlToMarkdown
 from src.vector_indexing import (
     get_pinecone_index,
     sync_workspace_with_vector_db,
@@ -26,6 +29,7 @@ from shared.models import (
     IngestionConfig,
     IngestionConfigType,
     IngestionRun,
+    Organization,
     RssIngestionConfig,
     SearchIngestionConfig,
     Status,
@@ -168,7 +172,10 @@ async def handle_rss_ingestion_run(
 
 
 async def handle_ingestion_run(
-    run: IngestionRun, *, search_provider: BaseSearchProvider
+    run: IngestionRun,
+    *,
+    search_provider: BaseSearchProvider,
+    content_fetcher: ContentFetcher,
 ):
     """
     Manages the entire process of an ingestion run.
@@ -218,10 +225,38 @@ async def handle_ingestion_run(
     assert all(
         [article.provider for article in articles]
     ), "Some articles have no provider"
-    run.n_inserted = await insert_articles_in_mongodb(articles)
 
+    ### Fetching article contents, if enabled
     workspace = await Workspace.get(run.workspace_id)
     assert workspace and workspace.id
+
+    organization = await Organization.get(workspace.organization_id)
+    assert organization and organization.id
+
+    if organization.content_analysis_enabled:
+        try:
+            # Skip articles that already have content, for instance if the content
+            # was included in an RSS feed entry
+            to_fetch = [article for article in articles if not article.content]
+
+            if to_fetch:
+                logger.info(f"Fetching content for {len(to_fetch)} articles...")
+                results = await content_fetcher.abatch_convert_and_clean(
+                    urls=[article.url for article in to_fetch]
+                )
+                assert len(to_fetch) == len(results)
+                for article, result in zip(to_fetch, results):
+                    article.content = result.cleaned_markdown
+                    article.content_fetching_result = result
+
+                logger.info("Content fetching complete.")
+            else:
+                logger.info("No articles to fetch content for.")
+        except Exception as e:
+            logger.error(f"Error while fetching article content: {e}")
+            return await run.mark_as_finished(Status.failed, error=str(e))
+
+    run.n_inserted = await insert_articles_in_mongodb(articles)
 
     await run.mark_as_finished(Status.completed)
 
@@ -285,7 +320,12 @@ async def setup():
                 f"Unknown search provider: {ingester_settings.SEARCH_PROVIDER}"
             )
 
-    return mongo_client, search_provider
+    content_fetcher = ContentFetcher(
+        url_to_markdown_converter=FirecrawlUrlToMarkdown(),
+        cleaner=ArticleContentCleaner(),
+    )
+
+    return mongo_client, search_provider, content_fetcher
 
 
 @app.command()
@@ -297,7 +337,7 @@ def create_ingestion_task(
     """
 
     async def _create_ingestion_task():
-        mongo_client, _ = await setup()
+        mongo_client, _, __ = await setup()
 
         config = await IngestionConfig.get(config_id, with_children=True)
         if not config:
@@ -338,7 +378,7 @@ def create_ingestion_tasks(
     """Create ingestion tasks for all IngestionConfigs of a workspace or all workspaces"""
 
     async def _create_ingestion_tasks():
-        mongo_client, _ = await setup()
+        mongo_client, _, __ = await setup()
 
         if workspace_id:
             workspace = await Workspace.get(workspace_id)
@@ -398,7 +438,7 @@ def sync_vector_db(
     """Sync articles from MongoDB to the vector database for a single workspace or all workspaces"""
 
     async def _sync_vector_db():
-        mongo_client, _ = await setup()
+        mongo_client, _, __ = await setup()
 
         if workspace_id:
             workspace = await Workspace.get(workspace_id)
@@ -453,7 +493,7 @@ def watch(
     """Watch for pending ingestion runs and execute them."""
 
     async def _watch():
-        mongo_client, search_provider = await setup()
+        mongo_client, search_provider, content_fetcher = await setup()
 
         server_task = asyncio.create_task(run_server())
 
@@ -481,7 +521,11 @@ def watch(
                     f"Processing ingestion run {pending_run.id} for workspace {pending_run.workspace_id}"
                 )
 
-                await handle_ingestion_run(pending_run, search_provider=search_provider)
+                await handle_ingestion_run(
+                    pending_run,
+                    search_provider=search_provider,
+                    content_fetcher=content_fetcher,
+                )
 
                 if (datetime.now() - start_time).total_seconds() >= max_runtime:
                     logger.info("Reached maximum runtime. Exiting.")
