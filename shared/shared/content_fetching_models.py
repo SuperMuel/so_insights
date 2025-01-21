@@ -1,5 +1,5 @@
 from typing import Any
-from pydantic import BaseModel, Field, HttpUrl, PastDatetime
+from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from shared.util import utc_datetime_factory
 
 
@@ -21,10 +21,18 @@ class ArticleContentCleanerOutput(BaseModel):
     """Output for the article content cleaner."""
 
     error: str | None = Field(
-        None, description="Error message if the content could not be cleaned."
+        default=None, description="Error message if the content could not be cleaned."
     )
-    title: str | None = Field(..., description="Title of the article")
-    cleaned_markdown: str | None = Field(..., description="Cleaned markdown content")
+    title: str | None = Field(default=None, description="Title of the article")
+    cleaned_article_content: str | None = Field(
+        default=None, description="Cleaned article content in markdown format"
+    )
+
+    @field_validator("error")
+    def empty_string_to_none(cls, v: str | None) -> str | None:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
 class ContentFetchingResult(BaseModel):
@@ -33,6 +41,5 @@ class ContentFetchingResult(BaseModel):
     """
 
     url: HttpUrl = Field(..., description="The URL of the content")
-    cleaned_markdown: str = Field(..., description="The cleaned markdown content")
     url_to_markdown_conversion: UrlToMarkdownConversion
     content_cleaner_output: ArticleContentCleanerOutput

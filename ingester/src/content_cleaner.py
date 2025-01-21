@@ -3,7 +3,6 @@ import logging
 from langchain import hub
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import Runnable
 
 from shared.content_fetching_models import ArticleContentCleanerOutput

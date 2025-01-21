@@ -197,7 +197,7 @@ def convert_docs(docs: Iterable[Document]) -> SetOfUniqueArticles:
 def format_docs(articles: SetOfUniqueArticles) -> str:
     separator = "\n\n---\n\n"
     return separator.join(
-        f"{article.title} - (Published on {article.date.strftime('%Y-%m-%d')})\n{article.url}\n{article.body}"
+        f"{article.title} - (Published on {article.date.strftime('%Y-%m-%d')})\n{article.url}\n{article.content if article.content else article.body}"
         for article in articles
     )
 

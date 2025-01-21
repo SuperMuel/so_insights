@@ -37,7 +37,6 @@ class ContentFetcher:
         return ContentFetchingResult(
             url=url,
             url_to_markdown_conversion=url_to_markdown,
-            cleaned_markdown=cleaned_markdown.cleaned_markdown,
             content_cleaner_output=cleaned_markdown,
         )
 

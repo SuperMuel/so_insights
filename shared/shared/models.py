@@ -378,6 +378,10 @@ class Article(Document):
         Field(default="", description="Source of the article")
     )
     content: str | None = Field(default=None, description="Full content of the article")
+    content_cleaning_error: str | None = Field(
+        default=None, description="Error message if the content could not be cleaned"
+    )
+
     ingestion_run_id: PydanticObjectId | None = Field(
         None, description="ID of the ingestion run that found this article"
     )

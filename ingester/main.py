@@ -246,7 +246,10 @@ async def handle_ingestion_run(
                 )
                 assert len(to_fetch) == len(results)
                 for article, result in zip(to_fetch, results):
-                    article.content = result.cleaned_markdown
+                    article.content = (
+                        result.content_cleaner_output.cleaned_article_content
+                    )
+                    article.content_cleaning_error = result.content_cleaner_output.error
                     article.content_fetching_result = result
 
                 logger.info("Content fetching complete.")

@@ -70,12 +70,26 @@ class ClusterOverviewGenerator:
         self.max_articles = max_articles
         self.chain = self._create_chain()
 
-    def _format_article(self, article: Article) -> str:
-        return f"<title>{article.title}</title>\n<date>{article.date.strftime('%Y-%m-%d')}</date>\n<body>\n{article.body}\n</body>"
+    def _format_article(self, article: Article, include_contents: bool) -> str:
+        text, content_type = (
+            (article.content, "content")
+            if (include_contents and article.content)
+            else (article.body, "body")
+        )
 
-    def _format_articles(self, unique_articles: SetOfUniqueArticles) -> str:
+        return f"<title>{article.title}</title>\n<date>{article.date.strftime('%Y-%m-%d')}</date>\n<{content_type}>\n{text}\n</{content_type}>"
+
+    def _format_articles(
+        self,
+        unique_articles: SetOfUniqueArticles,
+        *,
+        include_contents: bool,
+    ) -> str:
         return "\n\n".join(
-            [self._format_article(article) for article in unique_articles]
+            [
+                self._format_article(article, include_contents=include_contents)
+                for article in unique_articles
+            ]
         )
 
     async def _get_articles(self, cluster: Cluster) -> SetOfUniqueArticles:
@@ -94,9 +108,15 @@ class ClusterOverviewGenerator:
 
         return SetOfUniqueArticles(articles).limit(self.max_articles)
 
-    async def _get_formatted_articles(self, cluster: Cluster) -> str:
+    async def _get_formatted_articles(
+        self,
+        cluster: Cluster,
+    ) -> str:
         unique_articles = await self._get_articles(cluster)
-        return self._format_articles(unique_articles)
+        return self._format_articles(
+            unique_articles,
+            include_contents=analyzer_settings.OVERVIEW_GENERATION_INCLUDE_CONTENTS,
+        )
 
     async def _get_language(self, cluster: Cluster) -> Language:
         workspace = await Workspace.get(cluster.workspace_id)
@@ -172,6 +192,7 @@ class ClusterOverviewGenerator:
     async def generate_overviews_for_session(
         self,
         session: ClusteringSession,
+        *,
         max_concurrency: int = analyzer_settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
         only_missing: bool = False,
     ) -> None:
