@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import Enum
 from typing import Annotated, Any, Dict, Literal, Self
 
@@ -16,14 +16,11 @@ from pydantic import (
 )
 from pymongo import IndexModel
 
+from shared.content_fetching_models import ContentFetchingResult
 from shared.db_settings import db_settings
 from shared.language import Language
 from shared.region import Region
-
-
-# TODO auto change update_at like in https://github.com/naoTimesdev/showtimes/blob/79ed15aa647c6fb8ee9a1f694b54d90a5ed7dda0/showtimes/models/database.py#L24
-def utc_datetime_factory():
-    return datetime.now(UTC)
+from shared.util import utc_datetime_factory
 
 
 type SearchProvider = Literal["duckduckgo", "serperdev", "rss"]
@@ -87,6 +84,11 @@ class Organization(Document):
     )
     created_at: datetime = Field(default_factory=utc_datetime_factory)
     updated_at: datetime = Field(default_factory=utc_datetime_factory)
+
+    content_analysis_enabled: bool = Field(
+        default=False,
+        description="When enabled, the system will collect and analyze the articles contents, not just title and metadata",
+    )
 
     class Settings:
         name = db_settings.mongodb_organizations_collection
@@ -376,6 +378,10 @@ class Article(Document):
         Field(default="", description="Source of the article")
     )
     content: str | None = Field(default=None, description="Full content of the article")
+    content_cleaning_error: str | None = Field(
+        default=None, description="Error message if the content could not be cleaned"
+    )
+
     ingestion_run_id: PydanticObjectId | None = Field(
         None, description="ID of the ingestion run that found this article"
     )
@@ -386,6 +392,11 @@ class Article(Document):
 
     provider: SearchProvider = Field(
         ..., description="The provider that found the article"
+    )
+
+    content_fetching_result: ContentFetchingResult | None = Field(
+        default=None,
+        description="The result of fetching and cleaning the article content",
     )
 
     @field_validator("title", mode="before")

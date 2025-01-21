@@ -44,6 +44,13 @@ class IngesterSettings(BaseSettings):
     MAX_RUNTIME_S: int = 30 * 60  # 30 minutes
     PORT: int = 8081
 
+    # Content Cleaner settings
+    CONTENT_CLEANER_MODEL: str = "gpt-4o-mini"
+    ARTICLE_CONTENT_CLEANER_PROMPT_REF: str = (
+        "clean-article-content"  # Reference to Langsmith Hub
+    )
+    FIRECRAWL_API_KEY: SecretStr = Field(default=...)
+
 
 ingester_settings = IngesterSettings()
 

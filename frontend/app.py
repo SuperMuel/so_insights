@@ -10,6 +10,14 @@ import streamlit as st
 from streamlit_theme import st_theme
 
 
+settings_page = st.Page("src/pages/settings.py", title="Settings", icon="⚙️")
+topics_page = st.Page("src/pages/topics.py", title="Topics", icon="🔎", default=True)
+content_studio_page = st.Page(
+    "src/pages/content_studio.py", title="Content Studio", icon="✍️"
+)
+chatbot_page = st.Page("src/pages/chatbot.py", title="Chatbot", icon="💬")
+
+
 def check_organization_secret():
     """
     Validates and logs the user into an organization using a secret code.
@@ -100,7 +108,15 @@ def _select_workspace(client, on_change) -> None:
     assert all(isinstance(w, Workspace) for w in workspaces)
 
     if not workspaces:
-        st.warning("No workspaces found. Start by creating a new workspace.")
+        # explain to go into settings tab to create a workspace
+        st.warning(
+            "No workspaces found. Start by creating a new workspace in the Settings tab."
+        )
+        if (  # if the current page is not the settings page, show a button to go to settings
+            st.session_state.current_page.title != settings_page.title
+            and st.sidebar.button("⚙️ Go to Settings", use_container_width=True)
+        ):
+            st.switch_page(settings_page)
         return None
 
     index = 0
@@ -151,12 +167,13 @@ if __name__ == "__main__":
 
     pg = st.navigation(
         [
-            st.Page("src/pages/settings.py", title="Settings", icon="⚙️"),
-            st.Page("src/pages/topics.py", title="Topics", icon="🔎", default=True),
-            st.Page("src/pages/content_studio.py", title="Content Studio", icon="✍️"),
-            st.Page("src/pages/chatbot.py", title="Chatbot", icon="💬"),
+            settings_page,
+            topics_page,
+            content_studio_page,
+            chatbot_page,
         ]
     )
+    st.session_state.current_page = pg
 
     def _on_workspace_change():
         if chatbot_callback := st.session_state.get("on_workspace_changed_chatbot"):

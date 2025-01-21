@@ -15,10 +15,24 @@ from shared.models import (
 )
 
 
-async def get_organization(x_organization_id: Annotated[str, Header()]) -> Organization:
+async def get_organization(
+    x_organization_id: Annotated[str | None, Header()] = None,
+) -> Organization:
+    """
+    Get organization by X-Organization-ID header.
+
+    x_organization_id is set to None by default so the generated python sdk won't
+    require it to be passed in every function call, but can be passed once when
+    creating the client.
+    """
+    if not x_organization_id:
+        raise HTTPException(status_code=400, detail="X-Organization-ID header missing")
+
     organization = await Organization.get(x_organization_id)
+
     if not organization:
         raise HTTPException(status_code=400, detail="Invalid X-Organization-ID header")
+
     assert organization.id
     return organization
 

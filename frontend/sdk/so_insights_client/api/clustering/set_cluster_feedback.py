@@ -8,7 +8,7 @@ from ...client import AuthenticatedClient, Client
 from ...models.cluster import Cluster
 from ...models.cluster_feedback import ClusterFeedback
 from ...models.http_validation_error import HTTPValidationError
-from ...types import Response
+from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
@@ -16,8 +16,11 @@ def _get_kwargs(
     cluster_id: str,
     *,
     body: ClusterFeedback,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Dict[str, Any]:
     headers: Dict[str, Any] = {}
+    if not isinstance(x_organization_id, Unset):
+        headers["x-organization-id"] = x_organization_id
 
     _kwargs: Dict[str, Any] = {
         "method": "put",
@@ -36,11 +39,11 @@ def _get_kwargs(
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[Union[Cluster, HTTPValidationError]]:
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code == 200:
         response_200 = Cluster.from_dict(response.json())
 
         return response_200
-    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+    if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
 
         return response_422
@@ -67,6 +70,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     body: ClusterFeedback,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[Cluster, HTTPValidationError]]:
     """Set Cluster Feedback
 
@@ -75,6 +79,7 @@ def sync_detailed(
     Args:
         workspace_id (str):
         cluster_id (str):
+        x_organization_id (Union[None, Unset, str]):
         body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
             cluster.
 
@@ -95,6 +100,7 @@ def sync_detailed(
         workspace_id=workspace_id,
         cluster_id=cluster_id,
         body=body,
+        x_organization_id=x_organization_id,
     )
 
     response = client.get_httpx_client().request(
@@ -110,6 +116,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     body: ClusterFeedback,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[Cluster, HTTPValidationError]]:
     """Set Cluster Feedback
 
@@ -118,6 +125,7 @@ def sync(
     Args:
         workspace_id (str):
         cluster_id (str):
+        x_organization_id (Union[None, Unset, str]):
         body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
             cluster.
 
@@ -139,6 +147,7 @@ def sync(
         cluster_id=cluster_id,
         client=client,
         body=body,
+        x_organization_id=x_organization_id,
     ).parsed
 
 
@@ -148,6 +157,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     body: ClusterFeedback,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[Cluster, HTTPValidationError]]:
     """Set Cluster Feedback
 
@@ -156,6 +166,7 @@ async def asyncio_detailed(
     Args:
         workspace_id (str):
         cluster_id (str):
+        x_organization_id (Union[None, Unset, str]):
         body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
             cluster.
 
@@ -176,6 +187,7 @@ async def asyncio_detailed(
         workspace_id=workspace_id,
         cluster_id=cluster_id,
         body=body,
+        x_organization_id=x_organization_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -189,6 +201,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     body: ClusterFeedback,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[Cluster, HTTPValidationError]]:
     """Set Cluster Feedback
 
@@ -197,6 +210,7 @@ async def asyncio(
     Args:
         workspace_id (str):
         cluster_id (str):
+        x_organization_id (Union[None, Unset, str]):
         body (ClusterFeedback): Captures user feedback on the relevance or usefulness of a
             cluster.
 
@@ -219,5 +233,6 @@ async def asyncio(
             cluster_id=cluster_id,
             client=client,
             body=body,
+            x_organization_id=x_organization_id,
         )
     ).parsed

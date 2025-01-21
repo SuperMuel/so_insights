@@ -34,6 +34,7 @@ SO Insights consists of four main components:
 
 The Ingester component is responsible for:
 - Performing web searches to online news sources based on user predefined queries
+- Fetches full content of articles and cleans it using LLM.
 - Ingesting articles from RSS feeds
 - Coming soon : Ingesting data from Twitter, Linkedin.. 
 - Storing articles in MongoDB and indexing them in Pinecone

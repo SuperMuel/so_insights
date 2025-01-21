@@ -8,6 +8,7 @@ The SO Insights Ingester collects, processes, and stores articles from various o
 
 - Asynchronous web searching using DuckDuckGo or Serper.dev
 - RSS feed ingestion
+- Fetching and cleaning of full article content using configurable providers (e.g. Firecrawl.dev)
 - Storage in MongoDB for structured data
 - Indexing in Pinecone for vector search capabilities
 - Command-line interface for various operations
@@ -20,6 +21,7 @@ The SO Insights Ingester collects, processes, and stores articles from various o
 - Pinecone account
 - VoyageAI API access
 - Serper.dev API key (if using Serper.dev as the search provider)
+- Firecrawl API Key
 
 ## Installation
 
@@ -37,6 +39,7 @@ poetry install
    PINECONE_API_KEY=your_pinecone_api_key
    PINECONE_INDEX=your_pinecone_index_name
    VOYAGEAI_API_KEY=your_voyageai_api_key
+   FIRECRAWL_API_KEY=your_firecrawl_api_key
    ```
 
 2. Adjust the settings in `src/ingester_settings.py` as needed.
@@ -73,6 +76,7 @@ The choice of search provider can be configured using the `SEARCH_PROVIDER` envi
 - Task Creation: Ingestion tasks are created based on configurations.
 - Web Search: Performs searches using DuckDuckGo API based on predefined queries.
 - RSS Feed Ingestion: Fetches and processes articles from RSS feeds.
+- Content Fetching and Cleaning: Fetches full article content from URLs using Firecrawl, and cleans it to remove irrelevant elements using gpt-4o-mini
 - Data Storage: Stores articles in MongoDB and indexes them in Pinecone.
 - Vector Synchronization: Ensures MongoDB and Pinecone are in sync.
 

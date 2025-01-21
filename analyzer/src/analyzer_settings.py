@@ -23,6 +23,7 @@ class AnalyzerSettings(BaseSettings):
 
     OVERVIEW_GENERATION_MAX_ARTICLES: int = 30
     OVERVIEW_GENERATION_MAX_CONCURRENCY: int = 5
+    OVERVIEW_GENERATION_INCLUDE_CONTENTS: bool = True
 
     # when the number of clusters found is less than this value
     # we will also include the clusters summaries (instead of just the titles)

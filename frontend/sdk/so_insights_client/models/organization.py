@@ -32,6 +32,8 @@ class Organization:
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
             created_at (Union[Unset, datetime.datetime]):
             updated_at (Union[Unset, datetime.datetime]):
+            content_analysis_enabled (Union[Unset, bool]): When enabled, the system will collect and analyze the articles
+                contents, not just title and metadata Default: False.
     """
 
     name: str
@@ -39,6 +41,7 @@ class Organization:
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
+    content_analysis_enabled: Union[Unset, bool] = False
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -60,6 +63,8 @@ class Organization:
         if not isinstance(self.updated_at, Unset):
             updated_at = self.updated_at.isoformat()
 
+        content_analysis_enabled = self.content_analysis_enabled
+
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -74,6 +79,8 @@ class Organization:
             field_dict["created_at"] = created_at
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
+        if content_analysis_enabled is not UNSET:
+            field_dict["content_analysis_enabled"] = content_analysis_enabled
 
         return field_dict
 
@@ -107,12 +114,15 @@ class Organization:
         else:
             updated_at = isoparse(_updated_at)
 
+        content_analysis_enabled = d.pop("content_analysis_enabled", UNSET)
+
         organization = cls(
             name=name,
             secret_code=secret_code,
             field_id=field_id,
             created_at=created_at,
             updated_at=updated_at,
+            content_analysis_enabled=content_analysis_enabled,
         )
 
         organization.additional_properties = d

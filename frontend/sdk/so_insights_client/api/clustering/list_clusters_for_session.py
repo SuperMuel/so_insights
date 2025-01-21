@@ -18,7 +18,12 @@ def _get_kwargs(
     session_id: str,
     *,
     relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Dict[str, Any]:
+    headers: Dict[str, Any] = {}
+    if not isinstance(x_organization_id, Unset):
+        headers["x-organization-id"] = x_organization_id
+
     params: Dict[str, Any] = {}
 
     json_relevance_levels: Union[List[str], None, Unset]
@@ -42,13 +47,14 @@ def _get_kwargs(
         "params": params,
     }
 
+    _kwargs["headers"] = headers
     return _kwargs
 
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[Union[HTTPValidationError, List["Cluster"]]]:
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
@@ -57,7 +63,7 @@ def _parse_response(
             response_200.append(response_200_item)
 
         return response_200
-    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+    if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
 
         return response_422
@@ -84,6 +90,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -94,6 +101,7 @@ def sync_detailed(
         session_id (str):
         relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
             Unset]):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -107,6 +115,7 @@ def sync_detailed(
         workspace_id=workspace_id,
         session_id=session_id,
         relevance_levels=relevance_levels,
+        x_organization_id=x_organization_id,
     )
 
     response = client.get_httpx_client().request(
@@ -122,6 +131,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -132,6 +142,7 @@ def sync(
         session_id (str):
         relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
             Unset]):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -146,6 +157,7 @@ def sync(
         session_id=session_id,
         client=client,
         relevance_levels=relevance_levels,
+        x_organization_id=x_organization_id,
     ).parsed
 
 
@@ -155,6 +167,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -165,6 +178,7 @@ async def asyncio_detailed(
         session_id (str):
         relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
             Unset]):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -178,6 +192,7 @@ async def asyncio_detailed(
         workspace_id=workspace_id,
         session_id=session_id,
         relevance_levels=relevance_levels,
+        x_organization_id=x_organization_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -191,6 +206,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     relevance_levels: Union[List[ListClustersForSessionRelevanceLevelsType0Item], None, Unset] = UNSET,
+    x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, List["Cluster"]]]:
     """List Clusters
 
@@ -201,6 +217,7 @@ async def asyncio(
         session_id (str):
         relevance_levels (Union[List[ListClustersForSessionRelevanceLevelsType0Item], None,
             Unset]):
+        x_organization_id (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -216,5 +233,6 @@ async def asyncio(
             session_id=session_id,
             client=client,
             relevance_levels=relevance_levels,
+            x_organization_id=x_organization_id,
         )
     ).parsed

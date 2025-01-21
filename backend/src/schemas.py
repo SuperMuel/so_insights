@@ -6,7 +6,6 @@ from pydantic import (
     Field,
     HttpUrl,
     PastDatetime,
-    SecretStr,
     StringConstraints,
 )
 
