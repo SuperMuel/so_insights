@@ -58,7 +58,10 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to so_insights API"}
+    return {
+        "message": "Welcome to so_insights API",
+        "api_settings": api_settings.model_dump(),
+    }
 
 
 app.include_router(organizations.router, prefix="/organizations")
