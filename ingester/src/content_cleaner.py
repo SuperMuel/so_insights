@@ -24,35 +24,15 @@ class ArticleContentCleaner:
         self.llm = llm or init_chat_model(ingester_settings.CONTENT_CLEANER_MODEL)
         self.chain = self._create_chain()
 
-    @classmethod
-    def _parse_output(cls, output: str) -> ArticleContentCleanerOutput:
-        """
-        Parses the output of the article content cleaner LLM.
-
-        Assuming the LLM output format is:
-
-        ```md
-        # Article title
-
-        <cleaned markdown article content>
-        ```
-        """
-
-        lines = output.split("\n")
-        title = lines[0].strip("# ")
-        cleaned_markdown = "\n".join(lines[1:]).strip()
-
-        return ArticleContentCleanerOutput(
-            title=title, cleaned_markdown=cleaned_markdown
-        )
-
     def _create_chain(self) -> ArticleContentCleanerChain:
         """
         Creates the LangChain chain for article content cleaning.
         """
         prompt = hub.pull(ingester_settings.ARTICLE_CONTENT_CLEANER_PROMPT_REF)
 
-        return (prompt | self.llm | StrOutputParser() | self._parse_output).with_config(
+        structured_llm = self.llm.with_structured_output(ArticleContentCleanerOutput)
+
+        return (prompt | structured_llm).with_config(
             run_name="article_content_cleaner_chain"
         )
 

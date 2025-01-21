@@ -20,8 +20,11 @@ class UrlToMarkdownConversion(BaseModel):
 class ArticleContentCleanerOutput(BaseModel):
     """Output for the article content cleaner."""
 
-    title: str = Field(..., description="Title of the article")
-    cleaned_markdown: str = Field(..., description="Cleaned markdown content")
+    error: str | None = Field(
+        None, description="Error message if the content could not be cleaned."
+    )
+    title: str | None = Field(..., description="Title of the article")
+    cleaned_markdown: str | None = Field(..., description="Cleaned markdown content")
 
 
 class ContentFetchingResult(BaseModel):
