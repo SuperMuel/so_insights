@@ -9,6 +9,20 @@ from src.api import app
 DEFAULT_SCHEMA_OUTPUT_PATH = Path("openapi.json")
 
 
+def print_generator_version() -> None:
+    try:
+        result = subprocess.run(
+            ["openapi-python-client", "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        version = result.stdout.strip()
+        print(f"Using openapi-python-client version: {version}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error occurred while checking openapi-python-client version: {e}")
+
+
 def generate_openapi_schema(schema_output_path: Path):
     openapi_schema = app.openapi()
     with schema_output_path.open("w") as f:
@@ -17,6 +31,8 @@ def generate_openapi_schema(schema_output_path: Path):
 
 
 def generate_sdk(schema_output_path: Path, sdk_output_dir: Path):
+    print_generator_version()
+
     command = [
         "openapi-python-client",
         "generate",

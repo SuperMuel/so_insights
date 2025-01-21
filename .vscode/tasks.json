@@ -124,7 +124,7 @@
             "problemMatcher": []
         },
         {
-            "label": "Tag and Push Frontend Docker Image",
+            "label": "Tag and Push Frontend Docker Image (Scaleway)",
             "type": "shell",
             "dependsOn": "Build Frontend Docker Image",
             "command": "sh",
@@ -145,7 +145,7 @@
             "problemMatcher": []
         },
         {
-            "label": "Tag and Push API Docker Image",
+            "label": "Tag and Push API Docker Image (Scaleway)",
             "type": "shell",
             "dependsOn": "Build API Docker Image",
             "command": "sh",
@@ -166,7 +166,7 @@
             "problemMatcher": []
         },
         {
-            "label": "Tag and Push Analyzer Docker Image",
+            "label": "Tag and Push Analyzer Docker Image (Scaleway)",
             "type": "shell",
             "dependsOn": "Build Analyzer Docker Image",
             "command": "sh",
@@ -187,7 +187,7 @@
             "problemMatcher": []
         },
         {
-            "label": "Tag and Push Ingester Docker Image",
+            "label": "Tag and Push Ingester Docker Image (Scaleway)",
             "type": "shell",
             "dependsOn": "Build Ingester Docker Image",
             "command": "sh",
@@ -206,6 +206,54 @@
                 "panel": "shared"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Docker: Build and Push (Docker Hub)",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "build",
+                "-f",
+                "${input:component}.Dockerfile",
+                "-t",
+                "supermuel/so-insights-${input:component}:latest",
+                ".",
+                "&&",
+                "docker",
+                "push",
+                "supermuel/so-insights-${input:component}:latest"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "dependsOn": [
+                "Docker: Login"
+            ]
+        },
+        {
+            "label": "Docker: Login",
+            "type": "shell",
+            "command": "docker login",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "component",
+            "description": "Select component to build",
+            "type": "pickString",
+            "options": [
+                "ingester",
+                "analyzer",
+                "api",
+                "frontend"
+            ]
         }
     ]
 }
