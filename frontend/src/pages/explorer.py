@@ -224,10 +224,14 @@ def show_article_explorer():
             "date": st.column_config.DateColumn("Published at", format="DD/MM/YYYY"),
             "found_at": st.column_config.DateColumn("Found at", format="DD/MM/YYYY"),
             "source": st.column_config.TextColumn("Source", width="small"),
-            "content": st.column_config.CheckboxColumn(
-                "Full Content Available",
+            "content": st.column_config.TextColumn(
+                "Full Content",
                 width="small",
-                help="Whether the full content of the article has been fetched, or only the meta-description",
+            ),
+            "content_error": st.column_config.TextColumn(
+                "Content Error",
+                width="small",
+                help="Error message if content could not be fetched",
             ),
             "url": st.column_config.LinkColumn("URL", width="small"),
             "provider": st.column_config.TextColumn(
@@ -245,7 +249,8 @@ def show_article_explorer():
                 "date": article.date,
                 "found_at": article.found_at,
                 "source": article.source,
-                "content": bool(article.content),
+                "content": (article.content.strip() if article.content else None),
+                "content_error": article.content_cleaning_error,
                 "url": article.url,
                 "provider": article.provider,
             }

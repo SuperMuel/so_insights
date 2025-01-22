@@ -199,7 +199,7 @@ def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
             if cluster.first_image:
                 st.image(
                     str(cluster.first_image),
-                    use_column_width=True,
+                    use_container_width=True,
                 )
             st.write(f"### {cluster.title or ''}".replace("$", "\\$"))
             st.write((cluster.summary or "").replace("$", "\\$"))

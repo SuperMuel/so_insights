@@ -346,5 +346,5 @@ else:
             with st.spinner("Generating Image..."):
                 url = get_img.generate_image_url(image_prompt.prompt)
 
-            st.image(url, use_column_width=True, caption=image_prompt.prompt)
+            st.image(url, use_container_width=True, caption=image_prompt.prompt)
             download_image_button(url)
