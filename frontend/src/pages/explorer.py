@@ -126,8 +126,8 @@ def show_article_explorer():
     # Add view toggle at top
     view_mode = st.sidebar.segmented_control(
         "View Mode:",
-        options=["List", "Table"],
-        default="List",
+        options=["Table", "List"],
+        default="Table",
         on_change=reset_page_index,
     )
 
