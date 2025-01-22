@@ -9,7 +9,6 @@ from pydantic import (
     PastDatetime,
     StringConstraints,
 )
-from pydantic.generics import GenericModel
 
 from shared.models import (
     Cluster,
@@ -157,7 +156,7 @@ class ClusteringSessionCreate(BaseModel):
 T = TypeVar("T")
 
 
-class PaginatedResponse(GenericModel, Generic[T]):
+class PaginatedResponse(BaseModel, Generic[T]):
     total: int
     page: int
     per_page: int
