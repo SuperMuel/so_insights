@@ -1,25 +1,23 @@
 import re
-import streamlit as st
-from pydantic import HttpUrl
-from datetime import date, datetime
+from datetime import date
 
+import streamlit as st
 from sdk.so_insights_client.api.workspaces import (
     list_articles,
-    get_workspace,
-    list_workspaces,
 )
 from sdk.so_insights_client.models.article import Article
-from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
-from sdk.so_insights_client.models.workspace import Workspace
-from src.app_settings import app_settings
+
 from src.shared import get_authenticated_client, get_workspace_or_stop
 
 workspace = get_workspace_or_stop()
 client = get_authenticated_client(workspace.organization_id)
 
+if "page_index" not in st.session_state:
+    st.session_state.page_index = 0
+
 # Main content
 st.title("📰 Articles Explorer")
-st.caption("Browse and analyze articles from your workspace")
+st.caption("ℹ️ Browse and analyze articles from your workspace")
 
 
 @st.dialog(title="Article Content", width="large")
@@ -118,14 +116,14 @@ def show_article_explorer():
     """
 
     # Filters
-    with st.sidebar.expander("Filter Articles"):
+    with st.sidebar.expander("Filter Articles", expanded=True):
         start_date = st.date_input(
             "Start Date", value=None, help="Show articles published after this date"
         )
         end_date = st.date_input(
             "End Date",
-            value=None,
-            max_value=datetime.now(),
+            value="today",
+            max_value="today",
             help="Show articles published before this date",
         )
         if not isinstance(start_date, date | None) or not isinstance(
@@ -162,16 +160,16 @@ def show_article_explorer():
         start_date=start_date,
         end_date=end_date,
         content_fetched=bool(content_fetched) if content_fetched != "All" else None,
+        page=st.session_state.page_index + 1,
     )
 
     if not isinstance(response, list_articles.PaginatedResponseArticle):
         st.error("Failed to fetch articles")
         return
 
-    articles = response.items
+    st.sidebar.metric("Total Articles", response.total)
 
-    # Display articles
-    st.sidebar.write(f"Showing {len(articles)} articles")
+    articles = response.items
 
     for article in articles:
         with st.container(border=True):
@@ -188,6 +186,21 @@ def show_article_explorer():
                     f'<p style="font-size: smaller; color: gray;">{article.date.strftime("%Y-%m-%d")}</p>',
                     unsafe_allow_html=True,
                 )
+
+    articles_per_page = response.per_page
+    total_articles = response.total
+    total_pages = total_articles // articles_per_page + 1
+
+    # Bottom page Pagination
+
+    st.radio(
+        "Page:",
+        options=[i for i in range(0, total_pages)],
+        index=response.page - 1,
+        format_func=lambda x: x + 1,
+        key="page_index",
+        horizontal=True,
+    )
 
 
 show_article_explorer()
