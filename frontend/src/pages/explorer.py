@@ -12,8 +12,18 @@ from src.shared import get_authenticated_client, get_workspace_or_stop
 workspace = get_workspace_or_stop()
 client = get_authenticated_client(workspace.organization_id)
 
-if "page_index" not in st.session_state:
+
+def reset_page_index():
     st.session_state.page_index = 0
+
+
+if "page_index" not in st.session_state:
+    reset_page_index()
+
+
+print(f"{st.session_state.page_index=}")
+
+st.session_state["on_workspace_changed_explorer"] = reset_page_index
 
 # Main content
 st.title("📰 Articles Explorer")
@@ -118,12 +128,17 @@ def show_article_explorer():
     # Filters
     with st.sidebar.expander("Filter Articles", expanded=True):
         start_date = st.date_input(
-            "Start Date", value=None, help="Show articles published after this date"
+            "Start Date",
+            value=None,
+            max_value="today",
+            on_change=reset_page_index,
+            help="Show articles published after this date",
         )
         end_date = st.date_input(
             "End Date",
             value="today",
             max_value="today",
+            on_change=reset_page_index,
             help="Show articles published before this date",
         )
         if not isinstance(start_date, date | None) or not isinstance(
@@ -134,20 +149,14 @@ def show_article_explorer():
 
         content_fetched = st.radio(
             "Article Content",
-            # selection_mode="single",
             options=[True, False, "All"],
-            # options={
-            #     "All": "Show All",
-            #     True: "Full Content Available",
-            #     False: "Summary Only",
-            # },
             format_func=lambda x: {
                 True: "Full Content Available",
                 False: "Meta-description Only",
                 "All": "All",
             }[x],
             index=2,
-            # default="All",
+            on_change=reset_page_index,
             help="Filter articles based on whether their full content has been retrieved",
         )
         # search_query = st.text_input("Search", placeholder="Keywords")
@@ -171,6 +180,10 @@ def show_article_explorer():
 
     articles = response.items
 
+    if not articles:
+        st.warning("No articles found in this workspace for these filters.", icon="❌")
+        return
+
     for article in articles:
         with st.container(border=True):
             if article.content:
@@ -192,15 +205,15 @@ def show_article_explorer():
     total_pages = total_articles // articles_per_page + 1
 
     # Bottom page Pagination
-
-    st.radio(
-        "Page:",
-        options=[i for i in range(0, total_pages)],
-        index=response.page - 1,
-        format_func=lambda x: x + 1,
-        key="page_index",
-        horizontal=True,
-    )
+    if total_pages > 1:
+        st.radio(
+            "Page:",
+            options=[i for i in range(0, total_pages)],
+            index=response.page - 1,
+            format_func=lambda x: x + 1,
+            key="page_index",
+            horizontal=True,
+        )
 
 
 show_article_explorer()
