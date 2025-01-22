@@ -21,8 +21,7 @@ if "page_index" not in st.session_state:
     reset_page_index()
 
 
-print(f"{st.session_state.page_index=}")
-
+# Reset page index when workspace changes
 st.session_state["on_workspace_changed_explorer"] = reset_page_index
 
 # Main content
@@ -124,6 +123,13 @@ def show_article_explorer():
 
     Includes filtering, sorting, pagination, and detailed article view.
     """
+    # Add view toggle at top
+    view_mode = st.sidebar.segmented_control(
+        "View Mode:",
+        options=["List", "Table"],
+        default="List",
+        on_change=reset_page_index,
+    )
 
     # Filters
     with st.sidebar.expander("Filter Articles", expanded=True):
@@ -163,6 +169,8 @@ def show_article_explorer():
 
     assert isinstance(workspace.field_id, str)
 
+    per_page = 30 if view_mode == "List" else 100
+
     response = list_articles.sync(
         workspace_id=workspace.field_id,
         client=client,
@@ -170,6 +178,7 @@ def show_article_explorer():
         end_date=end_date,
         content_fetched=bool(content_fetched) if content_fetched != "All" else None,
         page=st.session_state.page_index + 1,
+        per_page=per_page,
     )
 
     if not isinstance(response, list_articles.PaginatedResponseArticle):
@@ -184,21 +193,72 @@ def show_article_explorer():
         st.warning("No articles found in this workspace for these filters.", icon="❌")
         return
 
-    for article in articles:
-        with st.container(border=True):
-            if article.content:
-                display_article_on_two_columns(article)
-            else:
-                st.markdown(f"### [{article.title}]({article.url})")
-                st.markdown(article.body)
-                st.markdown(
-                    f'<p style="font-size: smaller; color: gray;">Source: {article.source}</p>',
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    f'<p style="font-size: smaller; color: gray;">{article.date.strftime("%Y-%m-%d")}</p>',
-                    unsafe_allow_html=True,
-                )
+    if view_mode == "List":
+        for article in articles:
+            with st.container(border=True):
+                if article.content:
+                    display_article_on_two_columns(article)
+                else:
+                    st.markdown(f"### [{article.title}]({article.url})")
+                    st.markdown(article.body)
+                    st.markdown(
+                        f'<p style="font-size: smaller; color: gray;">Source: {article.source}</p>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f'<p style="font-size: smaller; color: gray;">{article.date.strftime("%Y-%m-%d")}</p>',
+                        unsafe_allow_html=True,
+                    )
+
+    if view_mode == "Table":
+        # Configure columns for DataFrame
+        column_config = {
+            "image": st.column_config.ImageColumn(
+                "Image",
+                width="small",
+            ),
+            "title": st.column_config.TextColumn(
+                "Title",
+                width="large",
+            ),
+            "date": st.column_config.DateColumn("Published at", format="DD/MM/YYYY"),
+            "found_at": st.column_config.DateColumn("Found at", format="DD/MM/YYYY"),
+            "source": st.column_config.TextColumn("Source", width="small"),
+            "content": st.column_config.CheckboxColumn(
+                "Full Content Available",
+                width="small",
+                help="Whether the full content of the article has been fetched, or only the meta-description",
+            ),
+            "url": st.column_config.LinkColumn("URL", width="small"),
+            "provider": st.column_config.TextColumn(
+                "Provider",
+                width="small",
+                help="How the article was found, e.g. RSS feed, DuckDuckGO, Serper.dev...",
+            ),
+        }
+
+        # Prepare data for DataFrame
+        df_data = [
+            {
+                "image": article.image,
+                "title": article.title,
+                "date": article.date,
+                "found_at": article.found_at,
+                "source": article.source,
+                "content": bool(article.content),
+                "url": article.url,
+                "provider": article.provider,
+            }
+            for article in articles
+        ]
+
+        st.dataframe(
+            df_data,
+            column_config=column_config,
+            use_container_width=True,
+            hide_index=True,
+            height=900,
+        )
 
     articles_per_page = response.per_page
     total_articles = response.total

@@ -187,7 +187,6 @@ if __name__ == "__main__":
         if explorer_callback := st.session_state.get("on_workspace_changed_explorer"):
             try:
                 explorer_callback()
-                print("Explorer callback executed")
             except Exception:
                 pass
 
