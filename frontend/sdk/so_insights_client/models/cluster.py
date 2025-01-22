@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -30,7 +30,7 @@ class Cluster:
             workspace_id (str): ID of the workspace this cluster belongs to Example: 5eb7cf5a86d9755df3a6c593.
             session_id (str): ID of the clustering session that created this cluster Example: 5eb7cf5a86d9755df3a6c593.
             articles_count (int): Number of articles in the cluster
-            articles_ids (List[str]): IDs of articles in the cluster, sorted by their distance to the cluster center
+            articles_ids (list[str]): IDs of articles in the cluster, sorted by their distance to the cluster center
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
             overview (Union['ClusterOverview', None, Unset]): Generated overview of the cluster's content
             overview_generation_error (Union[None, Unset, str]): Error message if overview generation failed
@@ -42,16 +42,16 @@ class Cluster:
     workspace_id: str
     session_id: str
     articles_count: int
-    articles_ids: List[str]
+    articles_ids: list[str]
     field_id: Union[None, Unset, str] = UNSET
     overview: Union["ClusterOverview", None, Unset] = UNSET
     overview_generation_error: Union[None, Unset, str] = UNSET
     evaluation: Union["ClusterEvaluation", None, Unset] = UNSET
     feedback: Union["ClusterFeedback", None, Unset] = UNSET
     first_image: Union[None, Unset, str] = UNSET
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         from ..models.cluster_evaluation import ClusterEvaluation
         from ..models.cluster_feedback import ClusterFeedback
         from ..models.cluster_overview import ClusterOverview
@@ -70,7 +70,7 @@ class Cluster:
         else:
             field_id = self.field_id
 
-        overview: Union[Dict[str, Any], None, Unset]
+        overview: Union[None, Unset, dict[str, Any]]
         if isinstance(self.overview, Unset):
             overview = UNSET
         elif isinstance(self.overview, ClusterOverview):
@@ -84,7 +84,7 @@ class Cluster:
         else:
             overview_generation_error = self.overview_generation_error
 
-        evaluation: Union[Dict[str, Any], None, Unset]
+        evaluation: Union[None, Unset, dict[str, Any]]
         if isinstance(self.evaluation, Unset):
             evaluation = UNSET
         elif isinstance(self.evaluation, ClusterEvaluation):
@@ -92,7 +92,7 @@ class Cluster:
         else:
             evaluation = self.evaluation
 
-        feedback: Union[Dict[str, Any], None, Unset]
+        feedback: Union[None, Unset, dict[str, Any]]
         if isinstance(self.feedback, Unset):
             feedback = UNSET
         elif isinstance(self.feedback, ClusterFeedback):
@@ -106,7 +106,7 @@ class Cluster:
         else:
             first_image = self.first_image
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
@@ -132,7 +132,7 @@ class Cluster:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.cluster_evaluation import ClusterEvaluation
         from ..models.cluster_feedback import ClusterFeedback
         from ..models.cluster_overview import ClusterOverview
@@ -144,7 +144,7 @@ class Cluster:
 
         articles_count = d.pop("articles_count")
 
-        articles_ids = cast(List[str], d.pop("articles_ids"))
+        articles_ids = cast(list[str], d.pop("articles_ids"))
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -241,7 +241,7 @@ class Cluster:
         return cluster
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

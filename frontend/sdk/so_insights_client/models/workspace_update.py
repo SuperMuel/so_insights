@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 
@@ -29,7 +29,7 @@ class WorkspaceUpdate:
     hdbscan_settings: Union["HdbscanSettings", None, Unset] = UNSET
     enabled: Union[None, Unset, bool] = UNSET
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         from ..models.hdbscan_settings import HdbscanSettings
 
         name: Union[None, Unset, str]
@@ -52,7 +52,7 @@ class WorkspaceUpdate:
         else:
             language = self.language
 
-        hdbscan_settings: Union[Dict[str, Any], None, Unset]
+        hdbscan_settings: Union[None, Unset, dict[str, Any]]
         if isinstance(self.hdbscan_settings, Unset):
             hdbscan_settings = UNSET
         elif isinstance(self.hdbscan_settings, HdbscanSettings):
@@ -66,7 +66,7 @@ class WorkspaceUpdate:
         else:
             enabled = self.enabled
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update({})
         if name is not UNSET:
             field_dict["name"] = name
@@ -82,7 +82,7 @@ class WorkspaceUpdate:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.hdbscan_settings import HdbscanSettings
 
         d = src_dict.copy()

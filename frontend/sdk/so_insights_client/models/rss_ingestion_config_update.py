@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type, TypeVar, Union, cast
+from typing import Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 
@@ -18,7 +18,7 @@ class RssIngestionConfigUpdate:
     title: Union[None, Unset, str] = UNSET
     rss_feed_url: Union[None, Unset, str] = UNSET
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         title: Union[None, Unset, str]
         if isinstance(self.title, Unset):
             title = UNSET
@@ -31,7 +31,7 @@ class RssIngestionConfigUpdate:
         else:
             rss_feed_url = self.rss_feed_url
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update({})
         if title is not UNSET:
             field_dict["title"] = title
@@ -41,7 +41,7 @@ class RssIngestionConfigUpdate:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
 
         def _parse_title(data: object) -> Union[None, Unset, str]:

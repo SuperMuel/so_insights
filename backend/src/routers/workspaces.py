@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from logging import getLogger
 from typing import Literal
 
@@ -85,8 +85,8 @@ async def list_articles(
     per_page: int = Query(default=20, ge=1, le=100),
     sort_by: Literal["date", "found_at"] = Query(default="date"),
     sort_order: Literal["asc", "desc"] = Query(default="desc"),
-    start_date: datetime | None = Query(default=None),  # ISO format date string
-    end_date: datetime | None = Query(default=None),
+    start_date: date | datetime | None = Query(default=None),  # ISO format date string
+    end_date: date | datetime | None = Query(default=None),
     content_fetched: bool | None = Query(default=None),
     # ingestion_run_id: str | None = Query(default=None),
 ):

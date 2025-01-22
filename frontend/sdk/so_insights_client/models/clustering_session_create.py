@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, TypeVar
 
 from attrs import define as _attrs_define
 from dateutil.parser import isoparse
@@ -18,12 +18,12 @@ class ClusteringSessionCreate:
     data_start: datetime.datetime
     data_end: datetime.datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data_start = self.data_start.isoformat()
 
         data_end = self.data_end.isoformat()
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(
             {
                 "data_start": data_start,
@@ -34,7 +34,7 @@ class ClusteringSessionCreate:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
         data_start = isoparse(d.pop("data_start"))
 

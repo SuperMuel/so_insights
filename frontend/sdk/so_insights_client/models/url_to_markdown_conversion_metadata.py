@@ -3,12 +3,12 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="ClusteringSessionMetadata")
+T = TypeVar("T", bound="UrlToMarkdownConversionMetadata")
 
 
 @_attrs_define
-class ClusteringSessionMetadata:
-    """Additional metadata about the clustering session"""
+class UrlToMarkdownConversionMetadata:
+    """Metadata returned by the extraction method"""
 
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -21,10 +21,10 @@ class ClusteringSessionMetadata:
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
-        clustering_session_metadata = cls()
+        url_to_markdown_conversion_metadata = cls()
 
-        clustering_session_metadata.additional_properties = d
-        return clustering_session_metadata
+        url_to_markdown_conversion_metadata.additional_properties = d
+        return url_to_markdown_conversion_metadata
 
     @property
     def additional_keys(self) -> list[str]:

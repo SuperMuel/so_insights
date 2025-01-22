@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -22,16 +22,16 @@ class HdbscanSettings:
     min_cluster_size: Union[Unset, int] = 3
     min_samples: Union[Unset, int] = 1
     cluster_selection_epsilon: Union[Unset, float] = 0.0
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         min_cluster_size = self.min_cluster_size
 
         min_samples = self.min_samples
 
         cluster_selection_epsilon = self.cluster_selection_epsilon
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
         if min_cluster_size is not UNSET:
@@ -44,7 +44,7 @@ class HdbscanSettings:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
         min_cluster_size = d.pop("min_cluster_size", UNSET)
 
@@ -62,7 +62,7 @@ class HdbscanSettings:
         return hdbscan_settings
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

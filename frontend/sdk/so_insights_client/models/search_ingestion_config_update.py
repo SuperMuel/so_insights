@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 
@@ -15,18 +15,18 @@ class SearchIngestionConfigUpdate:
     Attributes:
         title (Union[None, Unset, str]):
         region (Union[None, Region, Unset]):
-        queries (Union[List[str], None, Unset]):
+        queries (Union[None, Unset, list[str]]):
         max_results (Union[None, Unset, int]):
         time_limit (Union[None, TimeLimit, Unset]):
     """
 
     title: Union[None, Unset, str] = UNSET
     region: Union[None, Region, Unset] = UNSET
-    queries: Union[List[str], None, Unset] = UNSET
+    queries: Union[None, Unset, list[str]] = UNSET
     max_results: Union[None, Unset, int] = UNSET
     time_limit: Union[None, TimeLimit, Unset] = UNSET
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         title: Union[None, Unset, str]
         if isinstance(self.title, Unset):
             title = UNSET
@@ -41,7 +41,7 @@ class SearchIngestionConfigUpdate:
         else:
             region = self.region
 
-        queries: Union[List[str], None, Unset]
+        queries: Union[None, Unset, list[str]]
         if isinstance(self.queries, Unset):
             queries = UNSET
         elif isinstance(self.queries, list):
@@ -64,7 +64,7 @@ class SearchIngestionConfigUpdate:
         else:
             time_limit = self.time_limit
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update({})
         if title is not UNSET:
             field_dict["title"] = title
@@ -80,7 +80,7 @@ class SearchIngestionConfigUpdate:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
 
         def _parse_title(data: object) -> Union[None, Unset, str]:
@@ -109,7 +109,7 @@ class SearchIngestionConfigUpdate:
 
         region = _parse_region(d.pop("region", UNSET))
 
-        def _parse_queries(data: object) -> Union[List[str], None, Unset]:
+        def _parse_queries(data: object) -> Union[None, Unset, list[str]]:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -117,12 +117,12 @@ class SearchIngestionConfigUpdate:
             try:
                 if not isinstance(data, list):
                     raise TypeError()
-                queries_type_0 = cast(List[str], data)
+                queries_type_0 = cast(list[str], data)
 
                 return queries_type_0
             except:  # noqa: E722
                 pass
-            return cast(Union[List[str], None, Unset], data)
+            return cast(Union[None, Unset, list[str]], data)
 
         queries = _parse_queries(d.pop("queries", UNSET))
 

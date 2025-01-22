@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import httpx
 
@@ -14,16 +14,16 @@ from ...types import UNSET, Response, Unset
 def _get_kwargs(
     workspace_id: str,
     *,
-    statuses: Union[List[Status], None, Unset] = UNSET,
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Dict[str, Any]:
-    headers: Dict[str, Any] = {}
+) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
     if not isinstance(x_organization_id, Unset):
         headers["x-organization-id"] = x_organization_id
 
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
 
-    json_statuses: Union[List[str], None, Unset]
+    json_statuses: Union[None, Unset, list[str]]
     if isinstance(statuses, Unset):
         json_statuses = UNSET
     elif isinstance(statuses, list):
@@ -38,7 +38,7 @@ def _get_kwargs(
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
-    _kwargs: Dict[str, Any] = {
+    _kwargs: dict[str, Any] = {
         "method": "get",
         "url": f"/workspaces/{workspace_id}/clustering/sessions",
         "params": params,
@@ -50,8 +50,8 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[HTTPValidationError, List["ClusteringSession"]]]:
-    if response.status_code == HTTPStatus.OK:
+) -> Optional[Union[HTTPValidationError, list["ClusteringSession"]]]:
+    if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
@@ -60,7 +60,7 @@ def _parse_response(
             response_200.append(response_200_item)
 
         return response_200
-    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+    if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
 
         return response_422
@@ -72,7 +72,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[HTTPValidationError, List["ClusteringSession"]]]:
+) -> Response[Union[HTTPValidationError, list["ClusteringSession"]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -85,16 +85,16 @@ def sync_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    statuses: Union[List[Status], None, Unset] = UNSET,
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[HTTPValidationError, List["ClusteringSession"]]]:
+) -> Response[Union[HTTPValidationError, list["ClusteringSession"]]]:
     """List Clustering Sessions
 
      List all clustering sessions for a workspace
 
     Args:
         workspace_id (str):
-        statuses (Union[List[Status], None, Unset]):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -102,7 +102,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, List['ClusteringSession']]]
+        Response[Union[HTTPValidationError, list['ClusteringSession']]]
     """
 
     kwargs = _get_kwargs(
@@ -122,16 +122,16 @@ def sync(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    statuses: Union[List[Status], None, Unset] = UNSET,
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[HTTPValidationError, List["ClusteringSession"]]]:
+) -> Optional[Union[HTTPValidationError, list["ClusteringSession"]]]:
     """List Clustering Sessions
 
      List all clustering sessions for a workspace
 
     Args:
         workspace_id (str):
-        statuses (Union[List[Status], None, Unset]):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -139,7 +139,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, List['ClusteringSession']]
+        Union[HTTPValidationError, list['ClusteringSession']]
     """
 
     return sync_detailed(
@@ -154,16 +154,16 @@ async def asyncio_detailed(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    statuses: Union[List[Status], None, Unset] = UNSET,
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[HTTPValidationError, List["ClusteringSession"]]]:
+) -> Response[Union[HTTPValidationError, list["ClusteringSession"]]]:
     """List Clustering Sessions
 
      List all clustering sessions for a workspace
 
     Args:
         workspace_id (str):
-        statuses (Union[List[Status], None, Unset]):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -171,7 +171,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, List['ClusteringSession']]]
+        Response[Union[HTTPValidationError, list['ClusteringSession']]]
     """
 
     kwargs = _get_kwargs(
@@ -189,16 +189,16 @@ async def asyncio(
     workspace_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    statuses: Union[List[Status], None, Unset] = UNSET,
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[HTTPValidationError, List["ClusteringSession"]]]:
+) -> Optional[Union[HTTPValidationError, list["ClusteringSession"]]]:
     """List Clustering Sessions
 
      List all clustering sessions for a workspace
 
     Args:
         workspace_id (str):
-        statuses (Union[List[Status], None, Unset]):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -206,7 +206,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, List['ClusteringSession']]
+        Union[HTTPValidationError, list['ClusteringSession']]
     """
 
     return (
