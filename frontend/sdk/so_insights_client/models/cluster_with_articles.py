@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -21,7 +21,7 @@ class ClusterWithArticles:
         workspace_id (str):
         session_id (str):
         articles_count (int):
-        articles (List['ArticlePreview']):
+        articles (list['ArticlePreview']):
         title (Union[None, Unset, str]):
         summary (Union[None, Unset, str]):
         overview_generation_error (Union[None, Unset, str]):
@@ -33,15 +33,15 @@ class ClusterWithArticles:
     workspace_id: str
     session_id: str
     articles_count: int
-    articles: List["ArticlePreview"]
+    articles: list["ArticlePreview"]
     title: Union[None, Unset, str] = UNSET
     summary: Union[None, Unset, str] = UNSET
     overview_generation_error: Union[None, Unset, str] = UNSET
     evaluation: Union["ClusterEvaluation", None, Unset] = UNSET
     first_image: Union[None, Unset, str] = UNSET
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         from ..models.cluster_evaluation import ClusterEvaluation
 
         id = self.id
@@ -75,7 +75,7 @@ class ClusterWithArticles:
         else:
             overview_generation_error = self.overview_generation_error
 
-        evaluation: Union[Dict[str, Any], None, Unset]
+        evaluation: Union[None, Unset, dict[str, Any]]
         if isinstance(self.evaluation, Unset):
             evaluation = UNSET
         elif isinstance(self.evaluation, ClusterEvaluation):
@@ -89,7 +89,7 @@ class ClusterWithArticles:
         else:
             first_image = self.first_image
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
@@ -114,7 +114,7 @@ class ClusterWithArticles:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.article_preview import ArticlePreview
         from ..models.cluster_evaluation import ClusterEvaluation
 
@@ -204,7 +204,7 @@ class ClusterWithArticles:
         return cluster_with_articles
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

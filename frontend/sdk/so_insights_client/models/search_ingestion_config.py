@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -22,7 +22,7 @@ class SearchIngestionConfig:
         Attributes:
             workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
             title (str):
-            queries (List[str]): List of search queries to use for ingestion
+            queries (list[str]): List of search queries to use for ingestion
             region (Region):
             max_results (int): Maximum number of results to fetch per query
             time_limit (TimeLimit):
@@ -31,13 +31,13 @@ class SearchIngestionConfig:
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
             created_at (Union[Unset, datetime.datetime]):
             updated_at (Union[Unset, datetime.datetime]):
-            type (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.SEARCH.
+            type_ (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.SEARCH.
             last_run_at (Union[None, Unset, datetime.datetime]):
     """
 
     workspace_id: str
     title: str
-    queries: List[str]
+    queries: list[str]
     region: Region
     max_results: int
     time_limit: TimeLimit
@@ -46,11 +46,11 @@ class SearchIngestionConfig:
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
-    type: Union[Unset, IngestionConfigType] = IngestionConfigType.SEARCH
+    type_: Union[Unset, IngestionConfigType] = IngestionConfigType.SEARCH
     last_run_at: Union[None, Unset, datetime.datetime] = UNSET
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         workspace_id = self.workspace_id
 
         title = self.title
@@ -81,9 +81,9 @@ class SearchIngestionConfig:
         if not isinstance(self.updated_at, Unset):
             updated_at = self.updated_at.isoformat()
 
-        type: Union[Unset, str] = UNSET
-        if not isinstance(self.type, Unset):
-            type = self.type.value
+        type_: Union[Unset, str] = UNSET
+        if not isinstance(self.type_, Unset):
+            type_ = self.type_.value
 
         last_run_at: Union[None, Unset, str]
         if isinstance(self.last_run_at, Unset):
@@ -93,7 +93,7 @@ class SearchIngestionConfig:
         else:
             last_run_at = self.last_run_at
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
@@ -113,21 +113,21 @@ class SearchIngestionConfig:
             field_dict["created_at"] = created_at
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
-        if type is not UNSET:
-            field_dict["type"] = type
+        if type_ is not UNSET:
+            field_dict["type"] = type_
         if last_run_at is not UNSET:
             field_dict["last_run_at"] = last_run_at
 
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
 
         title = d.pop("title")
 
-        queries = cast(List[str], d.pop("queries"))
+        queries = cast(list[str], d.pop("queries"))
 
         region = Region(d.pop("region"))
 
@@ -162,12 +162,12 @@ class SearchIngestionConfig:
         else:
             updated_at = isoparse(_updated_at)
 
-        _type = d.pop("type", UNSET)
-        type: Union[Unset, IngestionConfigType]
-        if isinstance(_type, Unset):
-            type = UNSET
+        _type_ = d.pop("type", UNSET)
+        type_: Union[Unset, IngestionConfigType]
+        if isinstance(_type_, Unset):
+            type_ = UNSET
         else:
-            type = IngestionConfigType(_type)
+            type_ = IngestionConfigType(_type_)
 
         def _parse_last_run_at(data: object) -> Union[None, Unset, datetime.datetime]:
             if data is None:
@@ -198,7 +198,7 @@ class SearchIngestionConfig:
             field_id=field_id,
             created_at=created_at,
             updated_at=updated_at,
-            type=type,
+            type_=type_,
             last_run_at=last_run_at,
         )
 
@@ -206,7 +206,7 @@ class SearchIngestionConfig:
         return search_ingestion_config
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

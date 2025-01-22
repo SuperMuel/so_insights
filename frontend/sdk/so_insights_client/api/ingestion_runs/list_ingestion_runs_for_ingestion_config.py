@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import httpx
 
@@ -15,12 +15,12 @@ def _get_kwargs(
     ingestion_config_id: str,
     *,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Dict[str, Any]:
-    headers: Dict[str, Any] = {}
+) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
     if not isinstance(x_organization_id, Unset):
         headers["x-organization-id"] = x_organization_id
 
-    _kwargs: Dict[str, Any] = {
+    _kwargs: dict[str, Any] = {
         "method": "get",
         "url": f"/workspaces/{workspace_id}/ingestion-runs/ingestion_config/{ingestion_config_id}",
     }
@@ -31,8 +31,8 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[HTTPValidationError, List["IngestionRun"]]]:
-    if response.status_code == HTTPStatus.OK:
+) -> Optional[Union[HTTPValidationError, list["IngestionRun"]]]:
+    if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
@@ -41,7 +41,7 @@ def _parse_response(
             response_200.append(response_200_item)
 
         return response_200
-    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+    if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
 
         return response_422
@@ -53,7 +53,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[HTTPValidationError, List["IngestionRun"]]]:
+) -> Response[Union[HTTPValidationError, list["IngestionRun"]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -68,7 +68,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[HTTPValidationError, List["IngestionRun"]]]:
+) -> Response[Union[HTTPValidationError, list["IngestionRun"]]]:
     """List Ingestion Runs For Ingestion Config
 
     Args:
@@ -81,7 +81,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, List['IngestionRun']]]
+        Response[Union[HTTPValidationError, list['IngestionRun']]]
     """
 
     kwargs = _get_kwargs(
@@ -103,7 +103,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[HTTPValidationError, List["IngestionRun"]]]:
+) -> Optional[Union[HTTPValidationError, list["IngestionRun"]]]:
     """List Ingestion Runs For Ingestion Config
 
     Args:
@@ -116,7 +116,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, List['IngestionRun']]
+        Union[HTTPValidationError, list['IngestionRun']]
     """
 
     return sync_detailed(
@@ -133,7 +133,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[HTTPValidationError, List["IngestionRun"]]]:
+) -> Response[Union[HTTPValidationError, list["IngestionRun"]]]:
     """List Ingestion Runs For Ingestion Config
 
     Args:
@@ -146,7 +146,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, List['IngestionRun']]]
+        Response[Union[HTTPValidationError, list['IngestionRun']]]
     """
 
     kwargs = _get_kwargs(
@@ -166,7 +166,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[HTTPValidationError, List["IngestionRun"]]]:
+) -> Optional[Union[HTTPValidationError, list["IngestionRun"]]]:
     """List Ingestion Runs For Ingestion Config
 
     Args:
@@ -179,7 +179,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, List['IngestionRun']]
+        Union[HTTPValidationError, list['IngestionRun']]
     """
 
     return (

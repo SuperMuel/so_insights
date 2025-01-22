@@ -11,6 +11,7 @@ from streamlit_theme import st_theme
 
 
 settings_page = st.Page("src/pages/settings.py", title="Settings", icon="⚙️")
+explorer_page = st.Page("src/pages/explorer.py", title="Explorer", icon="📰")
 topics_page = st.Page("src/pages/topics.py", title="Topics", icon="🔎", default=True)
 content_studio_page = st.Page(
     "src/pages/content_studio.py", title="Content Studio", icon="✍️"
@@ -168,6 +169,7 @@ if __name__ == "__main__":
     pg = st.navigation(
         [
             settings_page,
+            explorer_page,
             topics_page,
             content_studio_page,
             chatbot_page,
@@ -180,6 +182,11 @@ if __name__ == "__main__":
             # When the workspace changes, we need to reset the chatbot state
             try:
                 chatbot_callback()
+            except Exception:
+                pass
+        if explorer_callback := st.session_state.get("on_workspace_changed_explorer"):
+            try:
+                explorer_callback()
             except Exception:
                 pass
 

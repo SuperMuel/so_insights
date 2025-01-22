@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Generic, TypeVar
+
 from beanie import PydanticObjectId
 from pydantic import (
     BaseModel,
@@ -150,3 +151,13 @@ class ClusteringSessionCreate(BaseModel):
 
     class Config:
         extra = "forbid"
+
+
+T = TypeVar("T")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    total: int
+    page: int
+    per_page: int
+    items: list[T]

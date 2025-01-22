@@ -158,11 +158,18 @@ def show_starters(questions: list[str]) -> str | None:
     questions = list(set(questions))
 
     assert len(questions) <= 4
-    for col, question in zip(st.columns(len(questions)), questions):
+    for col, question in zip(
+        st.columns(
+            len(questions),
+            border=True,
+        ),
+        questions,
+    ):
         if col.button(
             question,
             use_container_width=True,
             disabled=question in st.session_state["used_starters"],
+            type="tertiary",
         ):
             st.session_state["used_starters"].add(question)
             return question

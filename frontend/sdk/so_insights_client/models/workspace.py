@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -46,9 +46,9 @@ class Workspace:
     language: Union[Unset, Language] = Language.FR
     hdbscan_settings: Union[Unset, "HdbscanSettings"] = UNSET
     enabled: Union[Unset, bool] = True
-    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         organization_id = self.organization_id
 
         name = self.name
@@ -73,13 +73,13 @@ class Workspace:
         if not isinstance(self.language, Unset):
             language = self.language.value
 
-        hdbscan_settings: Union[Unset, Dict[str, Any]] = UNSET
+        hdbscan_settings: Union[Unset, dict[str, Any]] = UNSET
         if not isinstance(self.hdbscan_settings, Unset):
             hdbscan_settings = self.hdbscan_settings.to_dict()
 
         enabled = self.enabled
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
@@ -105,7 +105,7 @@ class Workspace:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.hdbscan_settings import HdbscanSettings
 
         d = src_dict.copy()
@@ -170,7 +170,7 @@ class Workspace:
         return workspace
 
     @property
-    def additional_keys(self) -> List[str]:
+    def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
     def __getitem__(self, key: str) -> Any:

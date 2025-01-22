@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 import httpx
 
@@ -13,12 +13,12 @@ def _get_kwargs(
     workspace_id: str,
     *,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Dict[str, Any]:
-    headers: Dict[str, Any] = {}
+) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
     if not isinstance(x_organization_id, Unset):
         headers["x-organization-id"] = x_organization_id
 
-    _kwargs: Dict[str, Any] = {
+    _kwargs: dict[str, Any] = {
         "method": "get",
         "url": f"/workspaces/{workspace_id}/starters/",
     }
@@ -29,12 +29,12 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[HTTPValidationError, List[str]]]:
-    if response.status_code == HTTPStatus.OK:
-        response_200 = cast(List[str], response.json())
+) -> Optional[Union[HTTPValidationError, list[str]]]:
+    if response.status_code == 200:
+        response_200 = cast(list[str], response.json())
 
         return response_200
-    if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+    if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
 
         return response_422
@@ -46,7 +46,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[HTTPValidationError, List[str]]]:
+) -> Response[Union[HTTPValidationError, list[str]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -60,7 +60,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[HTTPValidationError, List[str]]]:
+) -> Response[Union[HTTPValidationError, list[str]]]:
     """Get Latest Starters
 
     Args:
@@ -72,7 +72,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, List[str]]]
+        Response[Union[HTTPValidationError, list[str]]]
     """
 
     kwargs = _get_kwargs(
@@ -92,7 +92,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[HTTPValidationError, List[str]]]:
+) -> Optional[Union[HTTPValidationError, list[str]]]:
     """Get Latest Starters
 
     Args:
@@ -104,7 +104,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, List[str]]
+        Union[HTTPValidationError, list[str]]
     """
 
     return sync_detailed(
@@ -119,7 +119,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[HTTPValidationError, List[str]]]:
+) -> Response[Union[HTTPValidationError, list[str]]]:
     """Get Latest Starters
 
     Args:
@@ -131,7 +131,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[HTTPValidationError, List[str]]]
+        Response[Union[HTTPValidationError, list[str]]]
     """
 
     kwargs = _get_kwargs(
@@ -149,7 +149,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[HTTPValidationError, List[str]]]:
+) -> Optional[Union[HTTPValidationError, list[str]]]:
     """Get Latest Starters
 
     Args:
@@ -161,7 +161,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[HTTPValidationError, List[str]]
+        Union[HTTPValidationError, list[str]]
     """
 
     return (

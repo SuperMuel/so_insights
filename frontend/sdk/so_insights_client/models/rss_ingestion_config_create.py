@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, TypeVar
 
 from attrs import define as _attrs_define
 
@@ -16,12 +16,12 @@ class RssIngestionConfigCreate:
     title: str
     rss_feed_url: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         title = self.title
 
         rss_feed_url = self.rss_feed_url
 
-        field_dict: Dict[str, Any] = {}
+        field_dict: dict[str, Any] = {}
         field_dict.update(
             {
                 "title": title,
@@ -32,7 +32,7 @@ class RssIngestionConfigCreate:
         return field_dict
 
     @classmethod
-    def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
         title = d.pop("title")
 
