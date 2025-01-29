@@ -20,7 +20,7 @@ class IngesterSettings(BaseSettings):
     )
 
     # Search settings
-    SEARCH_PROVIDER: SearchProvider = "duckduckgo"
+    SEARCH_PROVIDER: SearchProvider = "serperdev"
     MAX_RETRIES_PER_QUERY: int = 2
     MIN_RETRY_SLEEP_TIME_S: int = 3
     MAX_RETRY_SLEEP_TIME_S: int = 10
