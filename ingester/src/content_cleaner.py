@@ -23,12 +23,8 @@ class ArticleContentCleaner:
     def __init__(
         self,
         llm: BaseChatModel | None = None,
-        retry_llm: BaseChatModel | None = None,
     ):
         self.llm = llm or init_chat_model(ingester_settings.CONTENT_CLEANER_MODEL)
-        self.retry_llm = retry_llm or init_chat_model(
-            ingester_settings.CONTENT_CLEANER_RETRY_MODEL
-        )
         self.chain = self._create_chain()
 
     @staticmethod
