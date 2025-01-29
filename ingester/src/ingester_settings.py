@@ -47,7 +47,7 @@ class IngesterSettings(BaseSettings):
     # Content Cleaner settings
     CONTENT_CLEANER_MODEL: str = "gpt-4o-mini"
     ARTICLE_CONTENT_CLEANER_PROMPT_REF: str = (
-        "clean-article-content"  # Reference to Langsmith Hub
+        "clean-article-content-no-structured-output"  # Reference to Langsmith Hub
     )
     FIRECRAWL_API_KEY: SecretStr = Field(default=...)
 
