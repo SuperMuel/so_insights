@@ -4,11 +4,9 @@ version = "0.1.0"
 description = ""
 authors = ["Samuel Mallet  <69467005+SuperMuel@users.noreply.github.com>"]
 readme = "README.md"
-packages = [
-    { include = "src" }
-]
+packages = [{ include = "src" }]
 
-[ tool.poetry.scripts ]
+[tool.poetry.scripts]
 analyzer = "main:app"
 
 [tool.poetry.dependencies]
@@ -18,12 +16,11 @@ pydantic-settings = "^2.4.0"
 python-dotenv = "^1.0.1"
 typer = "^0.12.3"
 pydantic = "^2.8.2"
-pinecone-client = {version = "^5.0.1", extras = ["grpc"]}
+pinecone-client = { version = "^5.0.1", extras = ["grpc"] }
 hdbscan = "^0.8.38.post1"
-langchain = "^0.2.14"
-langchain-openai = "^0.1.22"
-aiohttp = "^3.10.5"
-fastapi = "^0.113.0"
+langchain = "^0.3.0"
+langchain-openai = "^0.3.3"
+fastapi = "^0.112.0"
 uvicorn = "^0.30.6"
 
 [tool.poetry.group.dev.dependencies]

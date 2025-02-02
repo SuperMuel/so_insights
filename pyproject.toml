@@ -13,6 +13,7 @@ so-insights-back = { path = "backend", develop = true }
 so-insights-front = { path = "frontend", develop = true }
 ingester = { path = "ingester", develop = true }
 analyzer = { path = "analyzer", develop = true }
+langgraph = "^0.2.69"
 
 
 [tool.poetry.group.dev.dependencies]
