@@ -15,7 +15,7 @@ def _get_kwargs(
     workspace_id: str,
     session_id: str,
     *,
-    relevancy_filter: Union[Unset, RelevancyFilter] = RelevancyFilter.ALL,
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
     n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> dict[str, Any]:
@@ -83,7 +83,7 @@ def sync_detailed(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    relevancy_filter: Union[Unset, RelevancyFilter] = RelevancyFilter.ALL,
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
     n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
@@ -94,7 +94,7 @@ def sync_detailed(
     Args:
         workspace_id (str):
         session_id (str):
-        relevancy_filter (Union[Unset, RelevancyFilter]):  Default: RelevancyFilter.ALL.
+        relevancy_filter (Union[Unset, RelevancyFilter]):
         n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 
@@ -126,7 +126,7 @@ def sync(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    relevancy_filter: Union[Unset, RelevancyFilter] = RelevancyFilter.ALL,
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
     n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
@@ -137,7 +137,7 @@ def sync(
     Args:
         workspace_id (str):
         session_id (str):
-        relevancy_filter (Union[Unset, RelevancyFilter]):  Default: RelevancyFilter.ALL.
+        relevancy_filter (Union[Unset, RelevancyFilter]):
         n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 
@@ -164,7 +164,7 @@ async def asyncio_detailed(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    relevancy_filter: Union[Unset, RelevancyFilter] = RelevancyFilter.ALL,
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
     n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
@@ -175,7 +175,7 @@ async def asyncio_detailed(
     Args:
         workspace_id (str):
         session_id (str):
-        relevancy_filter (Union[Unset, RelevancyFilter]):  Default: RelevancyFilter.ALL.
+        relevancy_filter (Union[Unset, RelevancyFilter]):
         n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 
@@ -205,7 +205,7 @@ async def asyncio(
     session_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    relevancy_filter: Union[Unset, RelevancyFilter] = RelevancyFilter.ALL,
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
     n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
@@ -216,7 +216,7 @@ async def asyncio(
     Args:
         workspace_id (str):
         session_id (str):
-        relevancy_filter (Union[Unset, RelevancyFilter]):  Default: RelevancyFilter.ALL.
+        relevancy_filter (Union[Unset, RelevancyFilter]):
         n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 

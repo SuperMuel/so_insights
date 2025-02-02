@@ -24,7 +24,7 @@ class RssIngestionConfig:
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
             created_at (Union[Unset, datetime.datetime]):
             updated_at (Union[Unset, datetime.datetime]):
-            type_ (Union[Unset, IngestionConfigType]):  Default: IngestionConfigType.RSS.
+            type_ (Union[Unset, IngestionConfigType]):
             last_run_at (Union[None, Unset, datetime.datetime]):
     """
 
@@ -34,7 +34,7 @@ class RssIngestionConfig:
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     updated_at: Union[Unset, datetime.datetime] = UNSET
-    type_: Union[Unset, IngestionConfigType] = IngestionConfigType.RSS
+    type_: Union[Unset, IngestionConfigType] = UNSET
     last_run_at: Union[None, Unset, datetime.datetime] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 

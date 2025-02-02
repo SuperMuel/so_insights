@@ -5,7 +5,6 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
-from ..models.status import Status
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="IngestionRun")
@@ -24,7 +23,7 @@ class IngestionRun:
             created_at (Union[Unset, datetime.datetime]):
             start_at (Union[None, Unset, datetime.datetime]): Timestamp when the run started
             end_at (Union[None, Unset, datetime.datetime]): Timestamp when the run ended
-            status (Union[Unset, Status]):  Default: Status.PENDING.
+            status (Union[Unset, Any]): Current status of the ingestion run Default: 'pending'.
             error (Union[None, Unset, str]): Error message if the run failed
             n_inserted (Union[None, Unset, int]): Number of new articles inserted in the DB during this run
     """
@@ -35,7 +34,7 @@ class IngestionRun:
     created_at: Union[Unset, datetime.datetime] = UNSET
     start_at: Union[None, Unset, datetime.datetime] = UNSET
     end_at: Union[None, Unset, datetime.datetime] = UNSET
-    status: Union[Unset, Status] = Status.PENDING
+    status: Union[Unset, Any] = "pending"
     error: Union[None, Unset, str] = UNSET
     n_inserted: Union[None, Unset, int] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -71,9 +70,7 @@ class IngestionRun:
         else:
             end_at = self.end_at
 
-        status: Union[Unset, str] = UNSET
-        if not isinstance(self.status, Unset):
-            status = self.status.value
+        status = self.status
 
         error: Union[None, Unset, str]
         if isinstance(self.error, Unset):
@@ -169,12 +166,7 @@ class IngestionRun:
 
         end_at = _parse_end_at(d.pop("end_at", UNSET))
 
-        _status = d.pop("status", UNSET)
-        status: Union[Unset, Status]
-        if isinstance(_status, Unset):
-            status = UNSET
-        else:
-            status = Status(_status)
+        status = d.pop("status", UNSET)
 
         def _parse_error(data: object) -> Union[None, Unset, str]:
             if data is None:
