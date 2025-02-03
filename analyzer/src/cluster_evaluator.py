@@ -40,7 +40,7 @@ class ClusterEvaluationInput(BaseModel):
         }
 
 
-EvaluationChain = Runnable[ClusterEvaluationInput, ClusterEvaluation]
+ClusterEvaluationChain = Runnable[ClusterEvaluationInput, ClusterEvaluation]
 
 
 def get_workspace_description(Workspace: Workspace) -> str:
@@ -69,7 +69,7 @@ class ClusterEvaluator:
         self.llm = llm
         self.prompt = hub.pull(analyzer_settings.CLUSTER_EVAL_PROMPT_REF)
         self.structured_llm = llm.with_structured_output(ClusterEvaluation)
-        self.chain: EvaluationChain = (
+        self.chain: ClusterEvaluationChain = (
             RunnableLambda(ClusterEvaluationInput.to_chain_input)
             | self.prompt
             | self.structured_llm
