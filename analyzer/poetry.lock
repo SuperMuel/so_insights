@@ -134,6 +134,30 @@ files = [
 ]
 
 [[package]]
+name = "anthropic"
+version = "0.45.2"
+description = "The official Python library for the anthropic API"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "anthropic-0.45.2-py3-none-any.whl", hash = "sha256:ecd746f7274451dfcb7e1180571ead624c7e1195d1d46cb7c70143d2aedb4d35"},
+    {file = "anthropic-0.45.2.tar.gz", hash = "sha256:32a18b9ecd12c91b2be4cae6ca2ab46a06937b5aa01b21308d97a6d29794fb5e"},
+]
+
+[package.dependencies]
+anyio = ">=3.5.0,<5"
+distro = ">=1.7.0,<2"
+httpx = ">=0.23.0,<1"
+jiter = ">=0.4.0,<1"
+pydantic = ">=1.9.0,<3"
+sniffio = "*"
+typing-extensions = ">=4.10,<5"
+
+[package.extras]
+bedrock = ["boto3 (>=1.28.57)", "botocore (>=1.31.57)"]
+vertex = ["google-auth (>=2,<3)"]
+
+[[package]]
 name = "anyio"
 version = "4.8.0"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
@@ -418,6 +442,17 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
+]
+
+[[package]]
+name = "defusedxml"
+version = "0.7.1"
+description = "XML bomb protection for Python stdlib modules"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
+    {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
 ]
 
 [[package]]
@@ -996,6 +1031,23 @@ PyYAML = ">=5.3"
 requests = ">=2,<3"
 SQLAlchemy = ">=1.4,<3"
 tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10"
+
+[[package]]
+name = "langchain-anthropic"
+version = "0.3.5"
+description = "An integration package connecting AnthropicMessages and LangChain"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "langchain_anthropic-0.3.5-py3-none-any.whl", hash = "sha256:bad34b02d7b4bdca9a9471bc391b01269fd8dc4600b83ca2a3e76925b7c27fe6"},
+    {file = "langchain_anthropic-0.3.5.tar.gz", hash = "sha256:2aa1673511056061680492871f386d68a8b62947e0eb1f15303ef10db16c8357"},
+]
+
+[package.dependencies]
+anthropic = ">=0.41.0,<1"
+defusedxml = ">=0.7.1,<0.8.0"
+langchain-core = ">=0.3.33,<0.4.0"
+pydantic = ">=2.7.4,<3.0.0"
 
 [[package]]
 name = "langchain-core"
@@ -2960,4 +3012,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "27f5a698ba2d96e271325c081e9948f840524aa76f6ce82ca3b3b4a30bd48820"
+content-hash = "18402cf28cde449df453b45e04d06eb6b3d9105dae3d780bce437f0f47e1fb4c"

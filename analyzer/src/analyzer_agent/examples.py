@@ -1,6 +1,4 @@
-from shared.models import Article
 from .types import Quote, Section
-import json
 
 
 EXAMPLE_SECTIONS = [

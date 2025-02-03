@@ -153,27 +153,27 @@ def combine_sections(state: ReportState):
             ]
         )
     }
+graph_builder = StateGraph(ReportState, input=StateInput)
+
+graph_builder.add_node("get_articles", get_articles)
+graph_builder.add_node("generate_sections", generate_sections)
+graph_builder.add_node("write_section", write_section)
+graph_builder.add_node("combine_sections", combine_sections)
+
+
+graph_builder.add_edge(START, "get_articles")
+graph_builder.add_edge("get_articles", "generate_sections")
+graph_builder.add_conditional_edges(
+    "generate_sections", continue_to_write_section, ["write_section"] # type: ignore
+)
+graph_builder.add_edge("write_section", "combine_sections")
+graph_builder.add_edge("combine_sections", END)
+
+graph = graph_builder.compile()
+
 
 async def create_graph():
     mongo_client = get_client(analyzer_settings.MONGODB_URI.get_secret_value())
     await my_init_beanie(mongo_client)
-
-    graph_builder = StateGraph(ReportState, input=StateInput)
-
-    graph_builder.add_node("get_articles", get_articles)
-    graph_builder.add_node("generate_sections", generate_sections)
-    graph_builder.add_node("write_section", write_section)
-    graph_builder.add_node("combine_sections", combine_sections)
-
-
-    graph_builder.add_edge(START, "get_articles")
-    graph_builder.add_edge("get_articles", "generate_sections")
-    graph_builder.add_conditional_edges(
-        "generate_sections", continue_to_write_section, ["write_section"] # type: ignore
-    )
-    graph_builder.add_edge("write_section", "combine_sections")
-    graph_builder.add_edge("combine_sections", END)
-
-    graph = graph_builder.compile()
 
     return graph

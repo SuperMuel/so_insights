@@ -1,4 +1,13 @@
 import asyncio
+import logging
+from shared.models import (
+    Cluster,
+    ClusterEvaluation,
+    Workspace,
+    ClusteringSession,
+)
+
+from src.analyzer_settings import analyzer_settings
 from datetime import datetime
 
 
@@ -6,17 +15,11 @@ from beanie import PydanticObjectId
 from beanie.operators import Exists
 from shared.models import (
     Article,
-    Cluster,
-    ClusterEvaluation,
-    ClusteringSession,
     Status,
-    Workspace,
 )
 
-import logging
 
-from src.analyzer_settings import analyzer_settings
-from src.evaluator import ClusterEvaluator
+from src.cluster_evaluator import ClusterEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
 from src.session_summary_generator import SessionSummarizer

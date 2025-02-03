@@ -345,6 +345,27 @@ class IngestionRun(Document):
         await self.replace()
 
 
+class ArticleEvaluation(BaseModel):
+    """
+    Represents an assessment of an article's quality and relevance to the research interest.
+    """
+
+    justification: str = Field(
+        ...,
+        description=(
+            "A brief justification (one to two sentences) explaining why the article was classified with the chosen verdict."
+        ),
+    )
+    relevance_level: Literal["relevant", "somewhat_relevant", "not_relevant"] = Field(
+        ...,
+        description=(
+            "The relevance classification of the article with respect to the research interest. "
+            "Use 'relevant' if the article strongly addresses the research interest, "
+            "'somewhat_relevant' if it partially relates, and 'not_relevant' if it does not relate."
+        ),
+    )
+
+
 class Article(Document):
     """
     Represents a single piece of content collected during ingestion.
@@ -397,6 +418,10 @@ class Article(Document):
     content_fetching_result: ContentFetchingResult | None = Field(
         default=None,
         description="The result of fetching and cleaning the article content",
+    )
+
+    evaluation: ArticleEvaluation | None = Field(
+        default=None,
     )
 
     @field_validator("title", mode="before")
