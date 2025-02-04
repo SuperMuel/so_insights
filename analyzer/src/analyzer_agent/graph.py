@@ -1,5 +1,7 @@
 from typing import Any
 from beanie.operators import In
+from langchain import hub
+from src.article_evaluator import format_articles
 from analyzer.src.analyzer_settings import analyzer_settings
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
@@ -8,29 +10,37 @@ from langsmith import traceable
 from shared.models import Article
 from shared.db import get_client, my_init_beanie
 from beanie import PydanticObjectId
-from src.analyzer_agent.types import Section
+from src.analyzer_agent.types import Section, ReportOutline
 from src.analyzer_agent.utils import responses_to_markdown_with_citations
 from src.analyzer_agent.state import ReportState, StateInput, WriteSectionState
-from src.analyzer_agent.examples import EXAMPLE_SECTIONS
+from langchain_openai import ChatOpenAI
 
+outline_LLM = ChatOpenAI(
+    model="o3-mini",
+    temperature=0.0,
+    reasoning_effort="medium",
+    max_retries=3,
+)
 
 client = anthropic.Anthropic()
+ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
+ANTHROPIC_MODEL_FALLBACK = "claude-3-5-haiku-latest"
 
-# ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
-ANTHROPIC_MODEL = "claude-3-5-haiku-latest"
 
 async def get_articles(state: StateInput):
-    if not state.get("articles_ids") and not state.get("articles"):
-        raise ValueError("Either articles_ids or articles must be provided")
-    
-    if state.get("articles"):
-        return # no update
+    articles, articles_ids = state.get("articles"), state.get("articles_ids")
 
-    assert state["articles_ids"]
+    if not articles_ids and not articles:
+        raise ValueError("Either articles_ids or articles must be provided")
+
+    if articles:
+        return  # no update
+
+    assert articles_ids
 
     ids = []
     # if element is multiline, split it
-    for element in state["articles_ids"]:
+    for element in articles_ids:
         if "\n" in element:
             ids.extend(element.split("\n"))
         else:
@@ -47,22 +57,29 @@ async def get_articles(state: StateInput):
         raise ValueError("No articles found")
 
     return {"articles": articles}
-    
 
-def generate_sections(state: StateInput):
-    # sections_result = sections_chain.invoke({
-    #     "articles": format_articles(state["articles"]),
-    #     "language": state["language"],
-    #     "workspace_description": state["workspace_description"]
-    # })
 
-    # return {
-    #     "sections": sections_result.sections
-    # }
+async def generate_outline(state: StateInput):
+    assert (articles := state.get("articles"))
 
-    ## just a test for the moment
+    prompt = hub.pull(analyzer_settings.REPORT_OUTLINE_PROMPT_REF)
+    structured_llm = outline_LLM.with_structured_output(ReportOutline)
 
-    return {"sections": EXAMPLE_SECTIONS}
+    chain = (prompt | structured_llm).with_config(
+        run_name="generate_outline",
+    )
+
+    outline_result = await chain.invoke(
+        {
+            "articles": format_articles(articles),
+            "language": state["language"],
+            "workspace_description": state["workspace_description"],
+        }
+    )
+
+    assert isinstance(outline_result, ReportOutline)
+
+    return {"outline": outline_result.sections}
 
 
 def article_to_anthropic_document(article: Article) -> dict[str, Any]:
@@ -109,7 +126,7 @@ Use concrete details over general statements.""".format(
                     *[
                         article_to_anthropic_document(article)
                         for article in state["articles"]
-                    ], # type: ignore
+                    ],  # type: ignore
                     {"type": "text", "text": prompt},
                 ],
             }
@@ -153,10 +170,12 @@ def combine_sections(state: ReportState):
             ]
         )
     }
+
+
 graph_builder = StateGraph(ReportState, input=StateInput)
 
 graph_builder.add_node("get_articles", get_articles)
-graph_builder.add_node("generate_sections", generate_sections)
+graph_builder.add_node("generate_sections", generate_outline)
 graph_builder.add_node("write_section", write_section)
 graph_builder.add_node("combine_sections", combine_sections)
 
@@ -164,7 +183,9 @@ graph_builder.add_node("combine_sections", combine_sections)
 graph_builder.add_edge(START, "get_articles")
 graph_builder.add_edge("get_articles", "generate_sections")
 graph_builder.add_conditional_edges(
-    "generate_sections", continue_to_write_section, ["write_section"] # type: ignore
+    "generate_sections",
+    continue_to_write_section,  # type: ignore
+    ["write_section"],
 )
 graph_builder.add_edge("write_section", "combine_sections")
 graph_builder.add_edge("combine_sections", END)

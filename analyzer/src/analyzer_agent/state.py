@@ -1,9 +1,9 @@
-from typing import Annotated
+from typing import Annotated, NotRequired
 import operator
 from typing_extensions import TypedDict
 import anthropic
 from .types import Section
-from shared.models import Article
+from shared.models import Article, Language, ModelDescription
 
 
 class ReportState(TypedDict):
@@ -18,8 +18,8 @@ class ReportState(TypedDict):
 
 
 class StateInput(TypedDict):
-    articles_ids: list[str] | None
-    articles: list[Article] | None
+    articles_ids: NotRequired[list[str]]
+    articles: NotRequired[list[Article]]
     language: str
     workspace_description: str
 

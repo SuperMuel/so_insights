@@ -1,4 +1,5 @@
 import asyncio
+from analyzer.src.analyzer_agent.graph import graph
 import logging
 from shared.models import (
     AnalysisRun,
@@ -7,9 +8,11 @@ from shared.models import (
     ClusterEvaluation,
     ClusteringAnalysisResult,
     ClusteringRunEvaluationResult,
+    ReportAnalysisResult,
     Workspace,
 )
 
+from src.analyzer_agent.state import ReportState, StateInput
 from src.analyzer_settings import analyzer_settings
 from datetime import datetime
 
@@ -37,6 +40,16 @@ def id_to_str(id: PydanticObjectId | None) -> str:
     if not id:
         raise ValueError("id is None")
     return str(id)
+
+
+async def _fetch_articles_from_date_range(
+    workspace_id: PydanticObjectId, data_start: datetime, data_end: datetime
+) -> list[Article]:
+    return await Article.find(
+        Article.workspace_id == workspace_id,
+        Article.date >= data_start,
+        Article.date <= data_end,
+    ).to_list()
 
 
 class Analyzer:
@@ -77,13 +90,75 @@ class Analyzer:
     async def handle_report_run(self, run: AnalysisRun) -> AnalysisRun:
         """
         Processes a report run from start to finish.
-        """
 
-        # check run type
+        Performs the following steps:
+        1. Validates run type and state
+        2. Retrieves workspace and articles
+        3. Generates report using LangGraph
+        4. Updates run status and result
+
+        Args:
+            run (AnalysisRun): The run to be processed.
+
+        Returns:
+            AnalysisRun: The updated run after processing.
+
+        Raises:
+            ValueError: If the run is not a report run or workspace not found.
+        """
         if run.analysis_type != AnalysisType.REPORT:
             raise ValueError(f"Run {run.id} is not a report run")
 
-        raise NotImplementedError("Report runs are not implemented yet")
+        logger.info(f"Handling report run '{run.id}'")
+        try:
+            assert run.status in [Status.pending, Status.running]
+
+            if run.status == Status.pending:
+                run.status = Status.running
+
+            run.session_start = datetime.now()
+            await run.save()
+
+            workspace = await Workspace.get(run.workspace_id)
+            if not workspace:
+                raise ValueError("Workspace not found")
+
+            articles = await _fetch_articles_from_date_range(
+                run.workspace_id, run.data_start, run.data_end
+            )
+
+            logger.info(f"Found {len(articles)} articles.")
+
+            if not articles:
+                raise ValueError("No articles found.")
+
+            input: StateInput = {
+                "articles": articles,
+                "workspace_description": workspace.description,
+                "language": workspace.language,
+            }
+
+            result_dict: ReportState = await graph.ainvoke(input)  # type: ignore
+
+            result = ReportAnalysisResult(
+                report_content=result_dict["final_report_md"],
+            )
+
+            run.result = result
+            run.status = Status.completed
+            run.session_end = datetime.now()
+            await run.save()
+
+            logger.info(f"Report run '{run.id}' finished successfully.")
+
+        except Exception as e:
+            logger.exception(f"Error handling report run: {e}")
+            run.status = Status.failed
+            run.error = str(e)
+            run.session_end = datetime.now()
+            await run.save()
+
+        return run
 
     async def handle_clustering_run(self, run: AnalysisRun) -> AnalysisRun:
         """

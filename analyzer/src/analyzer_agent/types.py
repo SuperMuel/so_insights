@@ -23,7 +23,7 @@ class Section(BaseModel):
     )
 
 
-class Sections(BaseModel):
+class ReportOutline(BaseModel):
     sections: list[Section] = Field(
         description="An ordered list of sections that form the complete outline of the final report"
     )

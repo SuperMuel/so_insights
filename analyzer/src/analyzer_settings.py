@@ -45,6 +45,7 @@ class AnalyzerSettings(BaseSettings):
     BIG_SUMMARY_PROMPT_REF: str = "big-summary"
     CONVERSATION_STARTERS_PROMPT_REF: str = "conversation-starters"
     ARTICLE_EVAL_PROMPT_REF: str = "article-eval"
+    REPORT_OUTLINE_PROMPT_REF: str = "plan-report-outline"
 
 
 analyzer_settings = AnalyzerSettings()
