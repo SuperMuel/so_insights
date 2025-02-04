@@ -80,9 +80,6 @@ with st.sidebar:
     selected_run = select_session_or_stop(client, workspace)
 
 
-st.title("🔎 Analysis")
-
-
 def _list_runs(workspace: Workspace):
     """
     Displays a list of analysis runs for the given workspace, with details in expandable sections.
@@ -308,19 +305,19 @@ def display_pagination(
             st.rerun()
 
 
-tab_title_to_filter = {
-    "Relevant": RelevancyFilter.HIGHLY_RELEVANT,
-    "Somewhat relevant": RelevancyFilter.SOMEWHAT_RELEVANT,
-    "Irrelevant": RelevancyFilter.NOT_RELEVANT,
-    "All": RelevancyFilter.ALL,
-    "Not evaluated": RelevancyFilter.UNKNOWN,
-}
-
 if selected_run.result and isinstance(selected_run.result, ClusteringAnalysisResult):
     display_clustering_run_metrics(selected_run.result)
 
     if selected_run.result.summary:
         display_clustering_run_summary(selected_run.result)
+
+    tab_title_to_filter = {
+        "Relevant": RelevancyFilter.HIGHLY_RELEVANT,
+        "Somewhat relevant": RelevancyFilter.SOMEWHAT_RELEVANT,
+        "Irrelevant": RelevancyFilter.NOT_RELEVANT,
+        "All": RelevancyFilter.ALL,
+        "Not evaluated": RelevancyFilter.UNKNOWN,
+    }
 
     tabs = st.tabs(list(tab_title_to_filter.keys()))
 
