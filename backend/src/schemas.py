@@ -151,7 +151,11 @@ class AnalysisRunCreate(BaseModel):
     data_start: PastDatetime
     data_end: datetime
     analysis_type: AnalysisType
-    params: AnalysisParams
+
+    params: AnalysisParams | None = Field(
+        default=None,
+        description="Parameters for the analysis. If None, default parameters for the workspace will be used.",
+    )
 
     class Config:
         extra = "forbid"

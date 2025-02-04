@@ -5,13 +5,17 @@ from beanie.operators import Exists, In, Or
 from fastapi import APIRouter, HTTPException, Query
 
 from shared.models import (
+    AnalysisParams,
     AnalysisRun,
     AnalysisType,
     Article,
     Cluster,
     ClusterFeedback,
+    ClusteringAnalysisParams,
     RelevanceLevel,
+    ReportAnalysisParams,
     Status,
+    Workspace,
 )
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.dependencies import (
@@ -54,7 +58,7 @@ def filter_clusters_with_relevancy(
 
 @router.get(
     "/",
-    response_model=list[AnalysisRun],
+    response_model=List[AnalysisRun],
     operation_id="list_analysis_runs",
 )
 async def list_analysis_runs(
@@ -201,6 +205,23 @@ async def delete_cluster_feedback(
     return await cluster.save()
 
 
+def _get_default_analysis_params(
+    workspace: Workspace,
+    analysis_type: AnalysisType,
+) -> AnalysisParams:
+    match analysis_type:
+        case "clustering":
+            return ClusteringAnalysisParams(
+                hdbscan_settings=workspace.hdbscan_settings,
+            )
+        case "report":
+            return ReportAnalysisParams()
+
+    raise ValueError(
+        f"Analysis type {analysis_type} not supported to create a default params"
+    )
+
+
 @router.post(
     "/",
     response_model=AnalysisRun,
@@ -213,12 +234,18 @@ async def create_analysis_run(
     """Create a new pending analysis run"""
     assert workspace.id
 
+    params = (
+        _get_default_analysis_params(workspace, run_create.analysis_type)
+        if run_create.params is None
+        else run_create.params
+    )
+
     run = AnalysisRun(
         workspace_id=workspace.id,
         data_start=run_create.data_start,
         data_end=run_create.data_end,
         analysis_type=run_create.analysis_type,
-        params=run_create.params,
+        params=params,
     )
 
     return await run.insert()
