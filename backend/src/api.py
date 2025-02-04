@@ -10,7 +10,7 @@ from shared.db import get_client, my_init_beanie
 from src.api_settings import api_settings
 from src.dependencies import get_organization
 from src.routers import (
-    clustering,
+    analysis_runs,
     ingestion_configs,
     ingestion_runs,
     organizations,
@@ -82,8 +82,8 @@ app.include_router(
 )
 
 app.include_router(
-    clustering.router,
-    prefix="/workspaces/{workspace_id}/clustering",
+    analysis_runs.router,
+    prefix="/workspaces/{workspace_id}/analysis-runs",
     dependencies=[Depends(get_organization)],
 )
 
