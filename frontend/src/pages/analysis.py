@@ -52,7 +52,7 @@ def _predefined_or_custom_date_range() -> tuple[date, date]:
     range = st.radio(
         "Date range",
         options=list(labels_to_ranges.keys()),
-        index=3,
+        index=2,  # default to last 7 days
     )
     if range == "Custom":
         range = st.date_input(
