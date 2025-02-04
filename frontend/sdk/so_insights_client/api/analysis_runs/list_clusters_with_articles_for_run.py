@@ -5,24 +5,40 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.cluster import Cluster
+from ...models.cluster_with_articles import ClusterWithArticles
 from ...models.http_validation_error import HTTPValidationError
+from ...models.relevancy_filter import RelevancyFilter
 from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     workspace_id: str,
-    cluster_id: str,
+    analysis_run_id: str,
     *,
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
+    n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
     if not isinstance(x_organization_id, Unset):
         headers["x-organization-id"] = x_organization_id
 
+    params: dict[str, Any] = {}
+
+    json_relevancy_filter: Union[Unset, str] = UNSET
+    if not isinstance(relevancy_filter, Unset):
+        json_relevancy_filter = relevancy_filter.value
+
+    params["relevancy_filter"] = json_relevancy_filter
+
+    params["n_articles"] = n_articles
+
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+
     _kwargs: dict[str, Any] = {
-        "method": "delete",
-        "url": f"/workspaces/{workspace_id}/clustering/clusters/{cluster_id}/feedback",
+        "method": "get",
+        "url": f"/workspaces/{workspace_id}/analysis-runs/{analysis_run_id}/clusters-with-articles",
+        "params": params,
     }
 
     _kwargs["headers"] = headers
@@ -31,9 +47,14 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[Cluster, HTTPValidationError]]:
+) -> Optional[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
     if response.status_code == 200:
-        response_200 = Cluster.from_dict(response.json())
+        response_200 = []
+        _response_200 = response.json()
+        for response_200_item_data in _response_200:
+            response_200_item = ClusterWithArticles.from_dict(response_200_item_data)
+
+            response_200.append(response_200_item)
 
         return response_200
     if response.status_code == 422:
@@ -48,7 +69,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[Cluster, HTTPValidationError]]:
+) -> Response[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -59,18 +80,22 @@ def _build_response(
 
 def sync_detailed(
     workspace_id: str,
-    cluster_id: str,
+    analysis_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
+    n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[Cluster, HTTPValidationError]]:
-    """Delete Cluster Feedback
+) -> Response[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
+    """List Clusters With Articles
 
-     Delete feedback for a specific cluster
+     List all clusters with their top N articles for a specific analysis run
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        analysis_run_id (str):
+        relevancy_filter (Union[Unset, RelevancyFilter]):
+        n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -78,12 +103,14 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Cluster, HTTPValidationError]]
+        Response[Union[HTTPValidationError, list['ClusterWithArticles']]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        cluster_id=cluster_id,
+        analysis_run_id=analysis_run_id,
+        relevancy_filter=relevancy_filter,
+        n_articles=n_articles,
         x_organization_id=x_organization_id,
     )
 
@@ -96,18 +123,22 @@ def sync_detailed(
 
 def sync(
     workspace_id: str,
-    cluster_id: str,
+    analysis_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
+    n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[Cluster, HTTPValidationError]]:
-    """Delete Cluster Feedback
+) -> Optional[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
+    """List Clusters With Articles
 
-     Delete feedback for a specific cluster
+     List all clusters with their top N articles for a specific analysis run
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        analysis_run_id (str):
+        relevancy_filter (Union[Unset, RelevancyFilter]):
+        n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -115,31 +146,37 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Cluster, HTTPValidationError]
+        Union[HTTPValidationError, list['ClusterWithArticles']]
     """
 
     return sync_detailed(
         workspace_id=workspace_id,
-        cluster_id=cluster_id,
+        analysis_run_id=analysis_run_id,
         client=client,
+        relevancy_filter=relevancy_filter,
+        n_articles=n_articles,
         x_organization_id=x_organization_id,
     ).parsed
 
 
 async def asyncio_detailed(
     workspace_id: str,
-    cluster_id: str,
+    analysis_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
+    n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[Cluster, HTTPValidationError]]:
-    """Delete Cluster Feedback
+) -> Response[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
+    """List Clusters With Articles
 
-     Delete feedback for a specific cluster
+     List all clusters with their top N articles for a specific analysis run
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        analysis_run_id (str):
+        relevancy_filter (Union[Unset, RelevancyFilter]):
+        n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -147,12 +184,14 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Cluster, HTTPValidationError]]
+        Response[Union[HTTPValidationError, list['ClusterWithArticles']]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        cluster_id=cluster_id,
+        analysis_run_id=analysis_run_id,
+        relevancy_filter=relevancy_filter,
+        n_articles=n_articles,
         x_organization_id=x_organization_id,
     )
 
@@ -163,18 +202,22 @@ async def asyncio_detailed(
 
 async def asyncio(
     workspace_id: str,
-    cluster_id: str,
+    analysis_run_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    relevancy_filter: Union[Unset, RelevancyFilter] = UNSET,
+    n_articles: Union[Unset, int] = 5,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[Cluster, HTTPValidationError]]:
-    """Delete Cluster Feedback
+) -> Optional[Union[HTTPValidationError, list["ClusterWithArticles"]]]:
+    """List Clusters With Articles
 
-     Delete feedback for a specific cluster
+     List all clusters with their top N articles for a specific analysis run
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        analysis_run_id (str):
+        relevancy_filter (Union[Unset, RelevancyFilter]):
+        n_articles (Union[Unset, int]):  Default: 5.
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -182,14 +225,16 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Cluster, HTTPValidationError]
+        Union[HTTPValidationError, list['ClusterWithArticles']]
     """
 
     return (
         await asyncio_detailed(
             workspace_id=workspace_id,
-            cluster_id=cluster_id,
+            analysis_run_id=analysis_run_id,
             client=client,
+            relevancy_filter=relevancy_filter,
+            n_articles=n_articles,
             x_organization_id=x_organization_id,
         )
     ).parsed

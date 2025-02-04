@@ -3,12 +3,12 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="ClusteringSessionMetadata")
+T = TypeVar("T", bound="ReportAnalysisParams")
 
 
 @_attrs_define
-class ClusteringSessionMetadata:
-    """Additional metadata about the clustering session"""
+class ReportAnalysisParams:
+    """Parameters specific to report-style analysis."""
 
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -21,10 +21,10 @@ class ClusteringSessionMetadata:
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
-        clustering_session_metadata = cls()
+        report_analysis_params = cls()
 
-        clustering_session_metadata.additional_properties = d
-        return clustering_session_metadata
+        report_analysis_params.additional_properties = d
+        return report_analysis_params
 
     @property
     def additional_keys(self) -> list[str]:

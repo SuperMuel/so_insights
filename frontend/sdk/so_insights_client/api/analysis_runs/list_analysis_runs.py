@@ -5,24 +5,43 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.cluster import Cluster
+from ...models.analysis_run import AnalysisRun
 from ...models.http_validation_error import HTTPValidationError
+from ...models.status import Status
 from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     workspace_id: str,
-    cluster_id: str,
     *,
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
     if not isinstance(x_organization_id, Unset):
         headers["x-organization-id"] = x_organization_id
 
+    params: dict[str, Any] = {}
+
+    json_statuses: Union[None, Unset, list[str]]
+    if isinstance(statuses, Unset):
+        json_statuses = UNSET
+    elif isinstance(statuses, list):
+        json_statuses = []
+        for statuses_type_0_item_data in statuses:
+            statuses_type_0_item = statuses_type_0_item_data.value
+            json_statuses.append(statuses_type_0_item)
+
+    else:
+        json_statuses = statuses
+    params["statuses"] = json_statuses
+
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": f"/workspaces/{workspace_id}/clustering/clusters/{cluster_id}",
+        "url": f"/workspaces/{workspace_id}/analysis-runs/",
+        "params": params,
     }
 
     _kwargs["headers"] = headers
@@ -31,9 +50,14 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[Cluster, HTTPValidationError]]:
+) -> Optional[Union[HTTPValidationError, list["AnalysisRun"]]]:
     if response.status_code == 200:
-        response_200 = Cluster.from_dict(response.json())
+        response_200 = []
+        _response_200 = response.json()
+        for response_200_item_data in _response_200:
+            response_200_item = AnalysisRun.from_dict(response_200_item_data)
+
+            response_200.append(response_200_item)
 
         return response_200
     if response.status_code == 422:
@@ -48,7 +72,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[Cluster, HTTPValidationError]]:
+) -> Response[Union[HTTPValidationError, list["AnalysisRun"]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -59,18 +83,18 @@ def _build_response(
 
 def sync_detailed(
     workspace_id: str,
-    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[Cluster, HTTPValidationError]]:
-    """Get Cluster
+) -> Response[Union[HTTPValidationError, list["AnalysisRun"]]]:
+    """List Analysis Runs
 
-     Get a specific cluster
+     List all analysis runs for a workspace
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -78,12 +102,12 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Cluster, HTTPValidationError]]
+        Response[Union[HTTPValidationError, list['AnalysisRun']]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        cluster_id=cluster_id,
+        statuses=statuses,
         x_organization_id=x_organization_id,
     )
 
@@ -96,18 +120,18 @@ def sync_detailed(
 
 def sync(
     workspace_id: str,
-    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[Cluster, HTTPValidationError]]:
-    """Get Cluster
+) -> Optional[Union[HTTPValidationError, list["AnalysisRun"]]]:
+    """List Analysis Runs
 
-     Get a specific cluster
+     List all analysis runs for a workspace
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -115,31 +139,31 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Cluster, HTTPValidationError]
+        Union[HTTPValidationError, list['AnalysisRun']]
     """
 
     return sync_detailed(
         workspace_id=workspace_id,
-        cluster_id=cluster_id,
         client=client,
+        statuses=statuses,
         x_organization_id=x_organization_id,
     ).parsed
 
 
 async def asyncio_detailed(
     workspace_id: str,
-    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[Cluster, HTTPValidationError]]:
-    """Get Cluster
+) -> Response[Union[HTTPValidationError, list["AnalysisRun"]]]:
+    """List Analysis Runs
 
-     Get a specific cluster
+     List all analysis runs for a workspace
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -147,12 +171,12 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Cluster, HTTPValidationError]]
+        Response[Union[HTTPValidationError, list['AnalysisRun']]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        cluster_id=cluster_id,
+        statuses=statuses,
         x_organization_id=x_organization_id,
     )
 
@@ -163,18 +187,18 @@ async def asyncio_detailed(
 
 async def asyncio(
     workspace_id: str,
-    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
+    statuses: Union[None, Unset, list[Status]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[Cluster, HTTPValidationError]]:
-    """Get Cluster
+) -> Optional[Union[HTTPValidationError, list["AnalysisRun"]]]:
+    """List Analysis Runs
 
-     Get a specific cluster
+     List all analysis runs for a workspace
 
     Args:
         workspace_id (str):
-        cluster_id (str):
+        statuses (Union[None, Unset, list[Status]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -182,14 +206,14 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Cluster, HTTPValidationError]
+        Union[HTTPValidationError, list['AnalysisRun']]
     """
 
     return (
         await asyncio_detailed(
             workspace_id=workspace_id,
-            cluster_id=cluster_id,
             client=client,
+            statuses=statuses,
             x_organization_id=x_organization_id,
         )
     ).parsed
