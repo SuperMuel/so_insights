@@ -461,6 +461,121 @@ class Article(Document):
 
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
 
+AnalysisType = Literal["clustering", "report"]
+
+
+class ClusteringAnalysisParams(BaseModel):
+    """Parameters specific to clustering analysis."""
+
+    hdbscan_settings: HdbscanSettings = Field(
+        default_factory=HdbscanSettings,
+        description="HDBSCAN algorithm settings for clustering",
+    )
+
+
+class ReportAnalysisParams(BaseModel):
+    """Parameters specific to report-style analysis."""
+
+    # Just an example for now
+    # report_template: str | None = Field(
+    #     None, description="template to use"
+    # )
+
+
+AnalysisParams = ClusteringAnalysisParams | ReportAnalysisParams
+
+
+class AnalysisResult(BaseModel):
+    """Base class for analysis results."""
+
+    analysis_type: AnalysisType
+
+    articles_count: int | None = Field(
+        default=None, description="Number of articles processed in this session"
+    )
+
+
+class ClusteringAnalysisResult(AnalysisResult):
+    """Results specific to clustering analysis."""
+
+    analysis_type: AnalysisType = "clustering"
+
+    clusters_count: int = Field(..., description="Total number of clusters formed")
+    relevant_clusters_count: int = Field(
+        ..., description="Number of clusters deemed highly relevant"
+    )
+    somewhat_relevant_clusters_count: int = Field(
+        ..., description="Number of clusters deemed somewhat relevant"
+    )
+    irrelevant_clusters_count: int = Field(
+        ..., description="Number of clusters deemed not relevant"
+    )
+    noise_articles_ids: list[PydanticObjectId] = Field(
+        ..., description="IDs of articles classified as noise"
+    )
+    noise_articles_count: int = Field(
+        ..., description="Number of articles classified as noise"
+    )
+    clustered_articles_count: int = Field(
+        ..., description="Number of articles successfully clustered"
+    )
+    summary: str | None = Field(
+        ..., description="Overall summary of the clusters deemed relevant"
+    )
+
+
+class ReportAnalysisResult(AnalysisResult):
+    """Results specific to report-style analysis."""
+
+    analysis_type: AnalysisType = "report"
+
+    report_content: str = Field(
+        ..., description="Markdown content of the generated report"
+    )
+
+
+class AnalysisRun(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+
+    created_at: PastDatetime = Field(
+        default_factory=utc_datetime_factory,
+        description="Timestamp when the run was created",
+    )
+
+    analysis_type: AnalysisType = Field(
+        ...,
+        description="Type of analysis performed in this run (e.g., 'clustering', 'report')",
+    )
+
+    error: str | None = Field(
+        default=None, description="Error message if the run failed"
+    )
+
+    session_start: PastDatetime | None = Field(
+        default=None, description="Timestamp when the session started"
+    )
+    session_end: PastDatetime | None = Field(
+        default=None, description="Timestamp when the session ended"
+    )
+
+    data_start: PastDatetime = Field(
+        default=..., description="Start date of the data range used for analysis"
+    )
+    data_end: datetime = Field(
+        default=..., description="End date of the data range used for analysis"
+    )
+
+    params: AnalysisParams
+    result: AnalysisResult | None = Field(
+        default=None, description="Result of the analysis"
+    )
+
+    def pretty_print(self) -> str:
+        return f"{self.analysis_type} analysis: {self.data_start.strftime('%d %B %Y')} → {self.data_end.strftime('%d %B %Y')}"
+
+    class Settings:
+        name = db_settings.mongodb_analysis_runs_collection
+
 
 class ClusteringSession(Document):
     """

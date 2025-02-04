@@ -9,7 +9,7 @@ from beanie.operators import Set
 
 from fastapi import FastAPI
 from src.cluster_overview_generator import ClusterOverviewGenerator
-from src.evaluator import ClusterEvaluator
+from src.cluster_evaluator import ClusterEvaluator
 from src.session_summary_generator import SessionSummarizer
 from src.starters_generator import ConversationStartersGenerator
 import typer

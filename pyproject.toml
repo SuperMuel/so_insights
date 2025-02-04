@@ -18,6 +18,7 @@ langgraph-cli = { version = "^0.1.70", extras = ["inmem"] }
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.6"
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core"]
