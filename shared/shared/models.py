@@ -547,6 +547,10 @@ class AnalysisRun(Document):
         description="Type of analysis performed in this run (e.g., 'clustering', 'report')",
     )
 
+    status: Status = Field(
+        default=Status.pending, description="Current status of the analysis run"
+    )
+
     error: str | None = Field(
         default=None, description="Error message if the run failed"
     )

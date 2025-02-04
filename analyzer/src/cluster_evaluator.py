@@ -152,7 +152,7 @@ class ClusterEvaluator:
     async def evaluate_clusters(
         self,
         clusters: Sequence[Cluster],
-        session_id: str | None = None,
+        run_id: str | None = None,
     ) -> None:
         """
         Evaluates a sequence of clusters and updates their evaluation data.
@@ -174,7 +174,7 @@ class ClusterEvaluator:
         logger.info(f"Evaluating {len(clusters)} clusters...")
         evaluations = await self._get_clusters_evaluations(
             clusters,
-            session_id,
+            run_id,
         )
 
         for cluster, evaluation in zip(clusters, evaluations):
@@ -199,7 +199,7 @@ class ClusterEvaluator:
 
         logging.info(f"Average confidence score: {confidence_avg:.2f}")
 
-    async def evaluate_session(self, session: ClusteringSession) -> None:
+    async def evaluate_clustering_run(self, session: ClusteringSession) -> None:
         """
         Evaluates all clusters associated with a given clustering session.
 
@@ -218,5 +218,5 @@ class ClusterEvaluator:
 
         await self.evaluate_clusters(
             clusters,
-            session_id=str(session.id) if session.id else None,
+            run_id=str(session.id) if session.id else None,
         )

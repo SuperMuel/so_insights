@@ -189,7 +189,7 @@ class ClusterOverviewGenerator:
 
         logger.info(f"Finished generating overviews for {len(clusters)} clusters.")
 
-    async def generate_overviews_for_session(
+    async def generate_overviews_for_clustering_run(
         self,
         session: ClusteringSession,
         *,

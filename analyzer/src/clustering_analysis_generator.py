@@ -22,7 +22,7 @@ class SessionSummaryInput(BaseModel):
 SessionSummaryChain = Runnable[SessionSummaryInput, str]
 
 
-class SessionSummarizer:
+class ClusteringAnalysisSummarizer:
     """
     Generates concise summaries of clustering sessions. This class is essential for providing
     users with a quick, high-level understanding of the main topics and trends
@@ -92,7 +92,7 @@ class SessionSummarizer:
 
         return await self.chain.ainvoke(input, config={"metadata": metadata})
 
-    async def generate_summary_for_session(
+    async def generate_summary_for_clustering_run(
         self,
         session: ClusteringSession,
     ) -> None:

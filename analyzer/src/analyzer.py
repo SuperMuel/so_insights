@@ -22,7 +22,7 @@ from shared.models import (
 from src.cluster_evaluator import ClusterEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.clustering_engine import ClusteringEngine
-from src.session_summary_generator import SessionSummarizer
+from src.clustering_analysis_generator import ClusteringAnalysisSummarizer
 from src.starters_generator import ConversationStartersGenerator
 from src.util import get_first_valid_image
 from src.vector_repository import PineconeVectorRepository
@@ -49,16 +49,16 @@ class Analyzer:
         overview_generator: ClusterOverviewGenerator,
         cluster_evaluator: ClusterEvaluator,
         starters_generator: ConversationStartersGenerator,
-        session_summarizer: SessionSummarizer,
+        clustering_summarizer: ClusteringAnalysisSummarizer,
     ):
         self.vector_repository = vector_repository
         self.clustering_engine = clustering_engine
         self.overview_generator = overview_generator
         self.evaluator = cluster_evaluator
         self.starters_generator = starters_generator
-        self.session_summarizer = session_summarizer
+        self.clustering_analysis_summarize = clustering_summarizer
 
-    async def handle_session(self, session: ClusteringSession) -> ClusteringSession:
+    async def handle_run(self, session: ClusteringSession) -> ClusteringSession:
         """
         Processes a clustering session from start to finish.
 
@@ -176,16 +176,18 @@ class Analyzer:
                 clusters.append(cluster)
 
             logger.info(f"Generating overviews for {len(clusters)} clusters.")
-            await self.overview_generator.generate_overviews_for_session(session)
+            await self.overview_generator.generate_overviews_for_clustering_run(session)
 
             logger.info(f"Evaluating {len(clusters)} clusters.")
-            await self.evaluator.evaluate_session(session)
+            await self.evaluator.evaluate_clustering_run(session)
 
             await self.update_relevancy_counts(session)
 
             await asyncio.gather(
                 self.starters_generator.generate_starters_for_workspace(workspace),
-                self.session_summarizer.generate_summary_for_session(session),
+                self.clustering_analysis_summarize.generate_summary_for_clustering_run(
+                    session
+                ),
             )
 
             logger.info(
