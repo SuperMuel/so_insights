@@ -10,11 +10,9 @@ from shared.models import (
     ArticleEvaluation,
 )
 from src.analyzer_settings import analyzer_settings
+from langchain_core.rate_limiters import InMemoryRateLimiter
 
 logger = logging.getLogger(__name__)
-
-
-from langchain_core.rate_limiters import InMemoryRateLimiter
 
 
 def format_articles(articles: list[Article], index_start: int = 1) -> str:

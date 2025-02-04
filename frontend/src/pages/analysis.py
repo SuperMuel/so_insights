@@ -1,4 +1,10 @@
 import arrow
+from datetime import date, datetime, timedelta
+from sdk.so_insights_client.models.analysis_run_create import (
+    AnalysisRunCreate,
+)
+from src.shared import create_toast
+from sdk.so_insights_client.api.analysis_runs import create_analysis_run
 import streamlit as st
 from millify import millify
 from sdk.so_insights_client.api.analysis_runs import (
@@ -34,58 +40,92 @@ workspace = get_workspace_or_stop()
 client = get_authenticated_client(workspace.organization_id)
 
 
+def _predefined_or_custom_date_range() -> tuple[date, date]:
+    labels_to_ranges = {
+        "Last 24 hours": (date.today() - timedelta(hours=24), date.today()),
+        "Last 48 hours": (date.today() - timedelta(hours=48), date.today()),
+        "Last 7 days": (date.today() - timedelta(days=7), date.today()),
+        "Last 30 days": (date.today() - timedelta(days=30), date.today()),
+        "Custom": None,
+    }
+
+    range = st.radio(
+        "Date range",
+        options=list(labels_to_ranges.keys()),
+        index=3,
+    )
+    if range == "Custom":
+        range = st.date_input(
+            "Date range",
+            value=[date.today() - timedelta(days=7), date.today()],  # type: ignore
+            min_value=date.today() - timedelta(days=365),
+            max_value=date.today(),
+        )
+        assert isinstance(range, tuple) and len(range) == 2
+    else:
+        range = labels_to_ranges[range]
+
+    return range
+
+
+@st.dialog("Analyse My Data")
+def create_new_analysis_run() -> None:
+    """
+    Dialog to create a new analysis run.
+    Allows selecting a date range and analysis type.
+    """
+
+    # Date range selection
+    start_date, end_date = _predefined_or_custom_date_range()
+
+    assert isinstance(start_date, date) and isinstance(end_date, date)
+
+    start_date = datetime.combine(start_date, datetime.min.time())
+    end_date = datetime.combine(end_date, datetime.max.time())
+    analysis_type = (
+        st.segmented_control(
+            "Analysis type",
+            options=[AnalysisType.REPORT, AnalysisType.CLUSTERING],
+            format_func=lambda x: "Topic Clustering"
+            if x == AnalysisType.CLUSTERING
+            else "Report Generation",
+            selection_mode="single",
+            default=AnalysisType.REPORT,
+        ),
+    )[0]
+    assert isinstance(analysis_type, AnalysisType)
+
+    if st.button("Start analysis", use_container_width=True):
+        run = create_analysis_run.sync(
+            workspace_id=str(workspace.field_id),
+            client=client,
+            body=AnalysisRunCreate(
+                analysis_type=analysis_type,
+                data_start=start_date,
+                data_end=end_date,
+            ),
+        )
+        if isinstance(run, HTTPValidationError):
+            st.error(f"Failed to create analysis: {run.detail}")
+        elif not run:
+            st.error("Failed to create analysis")
+        else:
+            create_toast(
+                "Analysis will launch soon.",
+                icon="✅",
+            )
+            st.rerun()
+
+
 with st.sidebar:
-    # st.subheader("Create New Analysis")
-
-    # with st.form("create_analysis_task"):
-    #     # TODO : add pre-defined date ranges (e.g. last 7 days, last 30 days)
-    #     start_date, end_date = st.date_input(  # type: ignore
-    #         "Date range",
-    #         [date.today() - timedelta(days=7), date.today()],
-    #         min_value=date.today() - timedelta(days=365),
-    #         max_value=date.today(),
-    #     )
-    #     assert isinstance(start_date, date) and isinstance(end_date, date)
-
-    #     start_date = datetime.combine(start_date, datetime.min.time())
-    #     end_date = datetime.combine(end_date, datetime.max.time())
-
-    #     submit_button = st.form_submit_button(
-    #         "Start analysis", use_container_width=True
-    #     )
-
-    #     if submit_button:
-    #         run = create_analysis_run.sync(
-    #             workspace_id=str(workspace.field_id),
-    #             client=client,
-    #             body=AnalysisRunCreate(
-    #                 analysis_type=AnalysisRunCreateAnalysisType.CLUSTERING,
-    #                 data_start=start_date,
-    #                 data_end=end_date,
-    #             ),
-    #         )
-    #         if isinstance(run, HTTPValidationError):
-    #             st.error(f"Failed to create analysis : {run.detail}")
-    #         elif not run:
-    #             st.error("Failed to create analysis")
-    #         else:
-    #             create_toast(
-    #                 "Analysis will launch soon.",
-    #                 icon="✅",
-    #             )
-    #             st.rerun()
-
-    # st.divider()
-
     selected_run = select_session_or_stop(client, workspace)
+    st.divider()
 
 
 def _list_runs(workspace: Workspace):
     """
     Displays a list of analysis runs for the given workspace, with details in expandable sections.
     """
-
-    st.header("History")
 
     runs = list_analysis_runs.sync(
         client=client,
@@ -130,10 +170,6 @@ def _list_runs(workspace: Workspace):
         )
         status.write(f"**Time window:** {humanized_time_window}")
         if result := session.result:
-            # print the instance of the result, detailed
-            print(f"{type(result).__name__} : {type(result)}")
-            print(result.additional_keys)
-            print(result)
             match result.analysis_type:
                 case AnalysisType.CLUSTERING:
                     assert isinstance(result, ClusteringAnalysisResult)
@@ -162,6 +198,9 @@ def _list_runs(workspace: Workspace):
 
 
 with st.sidebar:
+    st.subheader("🕘 My Last Analysis")
+    if st.button("New Analysis", use_container_width=True, icon="➕"):
+        create_new_analysis_run()
     _list_runs(workspace)
 
 

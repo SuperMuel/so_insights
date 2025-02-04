@@ -754,7 +754,10 @@ class ClusterEvaluation(BaseModel):
         ..., description="Your explanation for the relevance level."
     )
     relevance_level: RelevanceLevel
-    confidence_score: float = Field(..., ge=0.0, le=1.0)
+    confidence_score: float = Field(
+        ...,
+        description="A score between 0 and 1 indicating how confident we are in the relevance level of this cluster",
+    )
 
 
 class ClusterOverview(BaseModel):
