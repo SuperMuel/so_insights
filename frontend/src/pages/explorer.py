@@ -239,6 +239,11 @@ def show_article_explorer():
                 width="small",
                 help="How the article was found, e.g. RSS feed, DuckDuckGO, Serper.dev...",
             ),
+            "evaluation": st.column_config.TextColumn(
+                "Evaluation",
+                width="small",
+                help="Evaluation of the article",
+            ),
         }
 
         # Prepare data for DataFrame
@@ -253,6 +258,9 @@ def show_article_explorer():
                 "content_error": article.content_cleaning_error,
                 "url": article.url,
                 "provider": article.provider,
+                "evaluation": article.evaluation.relevance_level
+                if article.evaluation
+                else None,
             }
             for article in articles
         ]

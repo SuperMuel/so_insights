@@ -549,6 +549,11 @@ class ReportAnalysisResult(BaseModel):
         ..., description="Markdown content of the generated report"
     )
 
+    relevant_articles_ids: list[PydanticObjectId] | None = Field(
+        default=None,
+        description="IDs of articles deemed relevant and used in the report",
+    )
+
 
 AnalysisResult = ClusteringAnalysisResult | ReportAnalysisResult
 

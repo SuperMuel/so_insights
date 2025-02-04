@@ -1,5 +1,7 @@
 import asyncio
-from analyzer.src.analyzer_agent.graph import graph
+
+from src.article_evaluator import ArticleEvaluator
+from src.analyzer_agent.graph import graph
 import logging
 from shared.models import (
     AnalysisRun,
@@ -17,7 +19,7 @@ from src.analyzer_settings import analyzer_settings
 from datetime import datetime
 
 
-from beanie import PydanticObjectId
+from beanie import BulkWriter, PydanticObjectId
 from beanie.operators import Exists
 from shared.models import (
     Article,
@@ -63,6 +65,7 @@ class Analyzer:
         vector_repository: PineconeVectorRepository,
         clustering_engine: ClusteringEngine,
         overview_generator: ClusterOverviewGenerator,
+        article_evaluator: ArticleEvaluator,
         cluster_evaluator: ClusterEvaluator,
         starters_generator: ConversationStartersGenerator,
         clustering_summarizer: ClusteringAnalysisSummarizer,
@@ -70,7 +73,8 @@ class Analyzer:
         self.vector_repository = vector_repository
         self.clustering_engine = clustering_engine
         self.overview_generator = overview_generator
-        self.evaluator = cluster_evaluator
+        self.article_evaluator = article_evaluator
+        self.cluster_evaluator = cluster_evaluator
         self.starters_generator = starters_generator
         self.clustering_analysis_summarizer = clustering_summarizer
 
@@ -86,6 +90,54 @@ class Analyzer:
                 return await self.handle_report_run(run)
 
         raise ValueError(f"Unknown analysis type: {run.analysis_type}")
+
+    async def _evaluate_articles_if_needed(
+        self, articles: list[Article]
+    ) -> list[Article]:
+        """
+        Evaluates articles that don't have an evaluation yet. Saves the evaluations in the database and returns the updated articles.
+
+        Args:
+            articles: List of articles to evaluate if needed
+
+        Returns:
+            The input list of articles, with evaluations added where needed
+        """
+        not_evaluated = [article for article in articles if not article.evaluation]
+
+        if not not_evaluated:
+            logger.info("No articles to evaluate")
+            return articles
+
+        assert (
+            len(set(article.workspace_id for article in not_evaluated)) == 1
+        ), "All articles must be from the same workspace"
+
+        workspace = await Workspace.get(articles[0].workspace_id)
+        if not workspace:
+            raise ValueError("Workspace not found")
+
+        logger.info(f"Evaluating {len(not_evaluated)} articles")
+
+        evaluations = await self.article_evaluator.evaluate_articles(
+            not_evaluated, workspace.description
+        )
+
+        # Update articles with their evaluations
+        async with BulkWriter() as bulk_writer:
+            for article, evaluation in zip(not_evaluated, evaluations):
+                article.evaluation = evaluation
+                await article.save(bulk_writer=bulk_writer)
+
+        # Create a mapping of updated articles
+        article_map = {article.id: article for article in articles}
+        for article in not_evaluated:
+            article_map[article.id] = article
+
+        logger.info(f"Updated {len(not_evaluated)} articles with evaluations")
+
+        # Return list with updated articles in original order
+        return [article_map[article.id] for article in articles]
 
     async def handle_report_run(self, run: AnalysisRun) -> AnalysisRun:
         """
@@ -127,21 +179,44 @@ class Analyzer:
                 run.workspace_id, run.data_start, run.data_end
             )
 
-            logger.info(f"Found {len(articles)} articles.")
-
             if not articles:
                 raise ValueError("No articles found.")
 
+            logger.info(f"Found {len(articles)} articles.")
+
+            # Evaluate articles if needed
+            articles = await self._evaluate_articles_if_needed(articles)
+
+            assert all(article.evaluation for article in articles)
+
+            relevant_articles = [
+                article
+                for article in articles
+                if article.evaluation
+                and article.evaluation.relevance_level == "relevant"
+            ]
+
+            if not relevant_articles:
+                raise ValueError("No relevant articles found")
+
+            logger.info(f"Found {len(relevant_articles)} relevant articles")
+
             input: StateInput = {
-                "articles": articles,
+                "articles": relevant_articles,
                 "workspace_description": workspace.description,
                 "language": workspace.language,
             }
 
             result_dict: ReportState = await graph.ainvoke(input)  # type: ignore
 
+            relevant_articles_ids = [
+                article.id for article in relevant_articles if article.id
+            ]
+            assert len(relevant_articles_ids) == len(relevant_articles)
+
             result = ReportAnalysisResult(
                 report_content=result_dict["final_report_md"],
+                relevant_articles_ids=relevant_articles_ids,
             )
 
             run.result = result
@@ -282,7 +357,7 @@ class Analyzer:
             await self.overview_generator.generate_overviews_for_clustering_run(run)
 
             logger.info(f"Evaluating {len(clusters)} clusters.")
-            await self.evaluator.evaluate_clustering_run(run)
+            await self.cluster_evaluator.evaluate_clustering_run(run)
 
             await self.update_relevancy_counts(run)
 

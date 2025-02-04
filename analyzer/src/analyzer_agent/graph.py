@@ -2,7 +2,7 @@ from typing import Any
 from beanie.operators import In
 from langchain import hub
 from src.article_evaluator import format_articles
-from analyzer.src.analyzer_settings import analyzer_settings
+from src.analyzer_settings import analyzer_settings
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
 import anthropic
@@ -14,10 +14,12 @@ from src.analyzer_agent.types import Section, ReportOutline
 from src.analyzer_agent.utils import responses_to_markdown_with_citations
 from src.analyzer_agent.state import ReportState, StateInput, WriteSectionState
 from langchain_openai import ChatOpenAI
+import logging
+
+logger = logging.getLogger(__name__)
 
 outline_LLM = ChatOpenAI(
     model="o3-mini",
-    temperature=0.0,
     reasoning_effort="medium",
     max_retries=3,
 )
@@ -56,10 +58,13 @@ async def get_articles(state: StateInput):
     if not articles:
         raise ValueError("No articles found")
 
+    logger.info(f"Found {len(articles)} articles")
+
     return {"articles": articles}
 
 
 async def generate_outline(state: StateInput):
+    logger.info("Generating outline")
     assert (articles := state.get("articles"))
 
     prompt = hub.pull(analyzer_settings.REPORT_OUTLINE_PROMPT_REF)
@@ -69,7 +74,7 @@ async def generate_outline(state: StateInput):
         run_name="generate_outline",
     )
 
-    outline_result = await chain.invoke(
+    outline_result = await chain.ainvoke(
         {
             "articles": format_articles(articles),
             "language": state["language"],
@@ -77,9 +82,11 @@ async def generate_outline(state: StateInput):
         }
     )
 
+    logger.info(f"Generated outline with {len(outline_result.sections)} sections")
+
     assert isinstance(outline_result, ReportOutline)
 
-    return {"outline": outline_result.sections}
+    return {"sections": outline_result.sections}
 
 
 def article_to_anthropic_document(article: Article) -> dict[str, Any]:
@@ -93,6 +100,7 @@ def article_to_anthropic_document(article: Article) -> dict[str, Any]:
 
 @traceable
 def write_section(state: WriteSectionState):
+    logger.info(f"Writing section {state['section'].title}")
     prompt = """You are an expert report writer. Your task is to write a section of a report based on a collection of articles that relate to a specific research interest.
 
 The final report will be written in {language}, even if the collected articles are in multiple languages.
@@ -154,6 +162,7 @@ def continue_to_write_section(state: ReportState):
 
 
 def combine_sections(state: ReportState):
+    logger.info("Combining sections")
     sections = state["sections"]
     assert len(sections) == len(state["sections_raw_anthropic_responses"])
 

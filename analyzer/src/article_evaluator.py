@@ -63,7 +63,7 @@ class ArticleEvaluationInput(BaseModel):
     def to_chain_input(self) -> dict[str, str]:
         return {
             "articles": format_articles(self.articles),
-            "workspace_description": self.workspace_description,
+            "research_interest": self.workspace_description,
         }
 
 
@@ -78,7 +78,9 @@ class EvaluationsBatch(BaseModel):
 
 
 class ArticleEvaluator:
-    def __init__(self, llm: BaseChatModel, rate_limiter: InMemoryRateLimiter | None):
+    def __init__(
+        self, llm: BaseChatModel, rate_limiter: InMemoryRateLimiter | None = None
+    ):
         self.llm = llm
         self.prompt = hub.pull(analyzer_settings.ARTICLE_EVAL_PROMPT_REF)
         self.structured_llm = llm.with_structured_output(EvaluationsBatch)

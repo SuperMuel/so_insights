@@ -4,7 +4,7 @@ import anthropic
 from shared.models import Article
 
 
-def responses_to_markdown_with_citations(
+def responses_to_markdown_with_citations(  # TODO : when two differents citations are sequential, we should merge them. e.g instead of writing [1](url1)[1](url1), we should write [1](url1)
     responses: list[anthropic.types.Message], articles: list[Article]
 ) -> list[str]:
     """

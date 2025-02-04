@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from beanie.operators import Set
 
 from fastapi import FastAPI
+from src.article_evaluator import ArticleEvaluator
 from src.cluster_overview_generator import ClusterOverviewGenerator
 from src.cluster_evaluator import ClusterEvaluator
 from src.clustering_analysis_generator import ClusteringAnalysisSummarizer
@@ -60,6 +61,7 @@ async def setup():
     gpt_4o_mini = init_chat_model("gpt-4o-mini")
 
     overview_generator = ClusterOverviewGenerator(llm=gpt_4o_mini)
+    article_evaluator = ArticleEvaluator(llm=gpt_4o_mini)
     cluster_evaluator = ClusterEvaluator(llm=gpt_4o_mini)
     starters_generator = ConversationStartersGenerator(llm=gpt_4o_mini)
     clustering_analysis_summarizer = ClusteringAnalysisSummarizer(llm=gpt_4o_mini)
@@ -68,6 +70,7 @@ async def setup():
         vector_repository=vector_repository,
         clustering_engine=clustering_engine,
         overview_generator=overview_generator,
+        article_evaluator=article_evaluator,
         cluster_evaluator=cluster_evaluator,
         starters_generator=starters_generator,
         clustering_summarizer=clustering_analysis_summarizer,
@@ -434,7 +437,7 @@ def watch(
 
                 logger.info(f"Processing run {run.id} for workspace {run.workspace_id}")
 
-                updated_run = await analyzer.handle_clustering_run(run)
+                updated_run = await analyzer.handle_run(run)
                 logger.info(f"Completed run {updated_run.id}")
 
                 if (datetime.now() - start_time).total_seconds() >= max_runtime:
