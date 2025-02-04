@@ -2,11 +2,12 @@ import logging
 from typing import Annotated, Sequence
 from pydantic import BaseModel, StringConstraints
 from shared.models import (
+    AnalysisRun,
+    AnalysisType,
     Cluster,
     ClusterEvaluation,
     ClusterOverview,
     Workspace,
-    ClusteringSession,
 )
 from langchain_core.runnables import Runnable, RunnableLambda
 
@@ -40,7 +41,7 @@ class ClusterEvaluationInput(BaseModel):
         }
 
 
-EvaluationChain = Runnable[ClusterEvaluationInput, ClusterEvaluation]
+ClusterEvaluationChain = Runnable[ClusterEvaluationInput, ClusterEvaluation]
 
 
 def get_workspace_description(Workspace: Workspace) -> str:
@@ -69,7 +70,7 @@ class ClusterEvaluator:
         self.llm = llm
         self.prompt = hub.pull(analyzer_settings.CLUSTER_EVAL_PROMPT_REF)
         self.structured_llm = llm.with_structured_output(ClusterEvaluation)
-        self.chain: EvaluationChain = (
+        self.chain: ClusterEvaluationChain = (
             RunnableLambda(ClusterEvaluationInput.to_chain_input)
             | self.prompt
             | self.structured_llm
@@ -103,7 +104,7 @@ class ClusterEvaluator:
     async def _get_clusters_evaluations(
         self,
         clusters: Sequence[Cluster],
-        session_id: str | None,
+        run_id: str | None,
     ) -> list[ClusterEvaluation]:
         """
         Generates evaluations for a sequence of clusters.
@@ -113,7 +114,7 @@ class ClusterEvaluator:
 
         Args:
             clusters (Sequence[Cluster]): The clusters to be evaluated.
-            session_id (str | None): The ID of the clustering session, only for logging purposes.
+            run_id (str | None): The ID of the clustering run, only for logging purposes.
 
         Returns:
             list[ClusterEvaluation]: A list of evaluation results for the clusters.
@@ -144,7 +145,7 @@ class ClusterEvaluator:
             config={
                 "metadata": {
                     "workspace_id": workspace.id,
-                    **({"session_id": session_id} if session_id else {}),
+                    **({"run_id": run_id} if run_id else {}),
                 }
             },
         )
@@ -152,14 +153,14 @@ class ClusterEvaluator:
     async def evaluate_clusters(
         self,
         clusters: Sequence[Cluster],
-        session_id: str | None = None,
+        run_id: str | None = None,
     ) -> None:
         """
         Evaluates a sequence of clusters and updates their evaluation data.
 
         Args:
             clusters (Sequence[Cluster]): The clusters to be evaluated.
-            session_id (str | None): The ID of the clustering session, only for logging purposes.
+            run_id (str | None): The ID of the clustering run, only for logging purposes.
 
         Note:
             This method updates the clusters in the database with their evaluations. But it should be refactored
@@ -174,7 +175,7 @@ class ClusterEvaluator:
         logger.info(f"Evaluating {len(clusters)} clusters...")
         evaluations = await self._get_clusters_evaluations(
             clusters,
-            session_id,
+            run_id,
         )
 
         for cluster, evaluation in zip(clusters, evaluations):
@@ -199,24 +200,27 @@ class ClusterEvaluator:
 
         logging.info(f"Average confidence score: {confidence_avg:.2f}")
 
-    async def evaluate_session(self, session: ClusteringSession) -> None:
+    async def evaluate_clustering_run(self, run: AnalysisRun) -> None:
         """
-        Evaluates all clusters associated with a given clustering session.
+        Evaluates all clusters associated with a given clustering run.
 
-        This method retrieves all clusters for the specified session,
+        This method retrieves all clusters for the specified run,
         evaluates them, and updates their evaluation data in the database.
 
         Args:
-            session (ClusteringSession): The clustering session whose clusters are to be evaluated.
+            run (AnalysisRun): The clustering run whose clusters are to be evaluated.
         """
 
-        clusters = await session.get_sorted_clusters()
+        if run.analysis_type != AnalysisType.CLUSTERING:
+            raise ValueError(f"Run {run.id} is not a clustering run")
+
+        clusters = await run.get_sorted_clusters()
 
         if not clusters:
-            logger.info("No clusters found for the given session.")
+            logger.info("No clusters found for the given run.")
             return
 
         await self.evaluate_clusters(
             clusters,
-            session_id=str(session.id) if session.id else None,
+            run_id=str(run.id) if run.id else None,
         )

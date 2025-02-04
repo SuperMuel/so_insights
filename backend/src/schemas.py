@@ -11,6 +11,8 @@ from pydantic import (
 )
 
 from shared.models import (
+    AnalysisParams,
+    AnalysisType,
     Cluster,
     ClusterEvaluation,
     HdbscanSettings,
@@ -145,9 +147,15 @@ class IngestionRunCreate(BaseModel):
     ingestion_config_id: PydanticObjectId
 
 
-class ClusteringSessionCreate(BaseModel):
+class AnalysisRunCreate(BaseModel):
     data_start: PastDatetime
     data_end: datetime
+    analysis_type: AnalysisType
+
+    params: AnalysisParams | None = Field(
+        default=None,
+        description="Parameters for the analysis. If None, default parameters for the workspace will be used.",
+    )
 
     class Config:
         extra = "forbid"

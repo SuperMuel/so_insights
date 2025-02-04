@@ -2,7 +2,13 @@ from langchain.chat_models.base import BaseChatModel
 from langchain import hub
 from pydantic import BaseModel
 from shared.language import Language
-from shared.models import ClusterOverview, ClusteringSession, Workspace
+from shared.models import (
+    AnalysisRun,
+    AnalysisType,
+    ClusterOverview,
+    ClusteringAnalysisResult,
+    Workspace,
+)
 from langchain_core.runnables import Runnable, RunnableLambda
 import logging
 from langchain_core.output_parsers import StrOutputParser
@@ -22,7 +28,7 @@ class SessionSummaryInput(BaseModel):
 SessionSummaryChain = Runnable[SessionSummaryInput, str]
 
 
-class SessionSummarizer:
+class ClusteringAnalysisSummarizer:
     """
     Generates concise summaries of clustering sessions. This class is essential for providing
     users with a quick, high-level understanding of the main topics and trends
@@ -49,10 +55,10 @@ class SessionSummarizer:
 
         include_summary = (
             len(overviews)
-            < analyzer_settings.INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD
+            < analyzer_settings.INCLUDE_CLUSTER_SUMMARIES_FOR_CLUSTERING_SUMMARY_THRESHOLD
         )
 
-        overviews = overviews[: analyzer_settings.SESSION_SUMMARY_MAX_CLUSTERS]
+        overviews = overviews[: analyzer_settings.CLUSTERING_SUMMARY_MAX_CLUSTERS]
 
         if include_summary:
             return "\n\n".join(
@@ -92,21 +98,29 @@ class SessionSummarizer:
 
         return await self.chain.ainvoke(input, config={"metadata": metadata})
 
-    async def generate_summary_for_session(
+    async def generate_summary_for_clustering_run(
         self,
-        session: ClusteringSession,
+        run: AnalysisRun,
     ) -> None:
         """
-        Generates and saves a summary for a specific clustering session.
+        Generates and saves a summary for a specific clustering run.
         Handles the entire process from retrieving clusters to saving the final summary.
 
         Note:
             Filters for relevant clusters to focus the summary on the most important content.
         """
 
-        logger.info(f"Generating session summary for session {session.id}.")
+        if run.analysis_type != AnalysisType.CLUSTERING:
+            raise ValueError(f"Run {run.id} is not a clustering run")
 
-        clusters = await session.get_sorted_clusters()
+        if not run.result:
+            raise ValueError(f"Run {run.id} has no result")
+
+        assert isinstance(run.result, ClusteringAnalysisResult)
+
+        logger.info(f"Generating run summary for run {run.id}.")
+
+        clusters = await run.get_sorted_clusters()
 
         assert all(
             cluster.overview for cluster in clusters
@@ -124,10 +138,10 @@ class SessionSummarizer:
         ]
 
         if not relevant_overviews:
-            logger.warning(f"No relevant overviews found for session {session.id}")
+            logger.warning(f"No relevant overviews found for session {run.id}")
             return
 
-        workspace = await Workspace.get(session.workspace_id)
+        workspace = await Workspace.get(run.workspace_id)
         assert workspace
 
         input = SessionSummaryInput(
@@ -138,12 +152,12 @@ class SessionSummarizer:
         output = await self.ainvoke(
             input,
             metadata={
-                "clustering_session_id": session.id,
-                "workspace_id": session.workspace_id,
+                "clustering_run_id": run.id,
+                "workspace_id": run.workspace_id,
             },
         )
 
-        session.summary = output
-        await session.save()
+        run.result.summary = output
+        await run.save()
 
-        logger.info(f"Generated session summary for session {session.id}.")
+        logger.info(f"Generated run summary for run {run.id}.")

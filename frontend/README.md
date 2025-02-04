@@ -6,7 +6,7 @@ The Streamlit-based web interface for the SO Insights project, providing a compr
 
 - **Workspace Management**: Create, edit, and switch between workspaces for different projects or topics.
 - **Data Sources Management**: Configure and manage both web search and RSS feed ingestion sources, and more coming soon.
-- **Topic Analysis**: Visualize and interact with clustering results from ingested data. Provide feedback to improve subsequent analyses.
+- **Analysis**: Run and visualize different types of analysis on ingested data, starting with topic clustering. Provide feedback to improve subsequent analyses.
 - **Content Studio**: Generate social media content and blog posts based on analyzed topics, with AI-generated text and images.
 - **Chatbot Interface**: Interact with your data through natural language queries.
 
@@ -52,21 +52,10 @@ The Streamlit-based web interface for the SO Insights project, providing a compr
    poetry run streamlit run app.py
    ```
 
-## Project Structure
-
-- `app.py`: Main entry point and navigation setup
-- `src/`:
-  - `pages/`: Individual page implementations (workspaces, topics, content_studio, chatbot)
-  - `shared.py`: Shared utility functions
-  - `app_settings.py`: Application settings and configuration
-  - `content_generation.py`: Functions for content generation
-  - `image_generation.py`: Functions for image generation
-- `sdk/`: Generated API client for backend communication
-
 ## Key Components
 
 1. **Workspaces**: Manage multiple workspaces for different projects or topics.
-2. **Topics**: Analyze and visualize detected topics in collected articles.
+2. **Analysis**: Run and visualize different types of analysis on collected articles. Visualize either the detected clusters with their images, or a full fledged report.
 3. **Content Studio**: Generate content for various platforms (Twitter, LinkedIn, blog posts) based on analyzed topics.
 4. **Chatbot**: Ask questions about your data using natural language.
 

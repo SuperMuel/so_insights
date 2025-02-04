@@ -1,24 +1,37 @@
 from typing import Annotated, List, Literal
+
+from beanie.odm.queries.find import FindMany
+from beanie.operators import Exists, In, Or
 from fastapi import APIRouter, HTTPException, Query
+
+from shared.models import (
+    AnalysisParams,
+    AnalysisRun,
+    AnalysisType,
+    Article,
+    Cluster,
+    ClusterFeedback,
+    ClusteringAnalysisParams,
+    RelevanceLevel,
+    ReportAnalysisParams,
+    Status,
+    Workspace,
+)
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.dependencies import (
+    ExistingAnalysisRun,
     ExistingCluster,
-    ExistingClusteringSession,
+    ExistingClusteringRun,
+    ExistingReportRun,
     ExistingWorkspace,
 )
-from beanie.operators import In, Exists, Or
-from beanie.odm.queries.find import FindMany
-from shared.models import (
-    Article,
-    ClusterFeedback,
-    ClusteringSession,
-    Cluster,
-    RelevanceLevel,
-    Status,
+from src.schemas import (
+    AnalysisRunCreate,
+    ArticlePreview,
+    ClusterWithArticles,
 )
-from src.schemas import ArticlePreview, ClusterWithArticles, ClusteringSessionCreate
 
-router = APIRouter(tags=["clustering"])
+router = APIRouter(tags=["analysis_runs"])
 
 type RelevancyFilter = Literal[RelevanceLevel, "all", "unknown"]
 
@@ -44,51 +57,52 @@ def filter_clusters_with_relevancy(
 
 
 @router.get(
-    "/sessions",
-    response_model=list[ClusteringSession],
-    operation_id="list_clustering_sessions",
+    "/",
+    response_model=List[AnalysisRun],
+    operation_id="list_analysis_runs",
 )
-async def list_clustering_sessions(
+async def list_analysis_runs(
     workspace: ExistingWorkspace,
     statuses: Annotated[list[Status] | None, Query()] = None,
-    # async def read_items(q: Annotated[list[str] | None, Query()] = None):
 ):
-    """List all clustering sessions for a workspace"""
-    sessions = ClusteringSession.find(ClusteringSession.workspace_id == workspace.id)
+    """List all analysis runs for a workspace"""
+    runs = AnalysisRun.find(AnalysisRun.workspace_id == workspace.id)
 
     if statuses is not None:
-        sessions = sessions.find(In(ClusteringSession.status, statuses))
+        runs = runs.find(In(AnalysisRun.status, statuses))
 
-    sessions = sessions.sort(
-        -ClusteringSession.created_at,  # type: ignore
+    runs = runs.sort(
+        -AnalysisRun.created_at,  # type: ignore
     )
 
-    return await sessions.to_list()
+    return await runs.to_list()
 
 
 @router.get(
-    "/sessions/{session_id}",
-    response_model=ClusteringSession,
-    operation_id="get_clustering_session",
+    "/{analysis_run_id}",
+    response_model=AnalysisRun,
+    operation_id="get_analysis_run",
 )
-async def get_clustering_session(session: ExistingClusteringSession):
-    """Get a specific clustering session"""
-    return session
+async def get_analysis_run(
+    analysis_run: ExistingAnalysisRun,
+):
+    """Get a specific analysis run"""
+    return analysis_run
 
 
 @router.get(
-    "/sessions/{session_id}/clusters",
+    "/{analysis_run_id}/clusters",
     response_model=list[Cluster],
-    operation_id="list_clusters_for_session",
+    operation_id="list_clusters_for_clustering_run",
 )
 async def list_clusters(
-    session: ExistingClusteringSession,
+    analysis_run: ExistingClusteringRun,
     relevance_levels: Annotated[List[RelevanceLevel] | None, Query()] = None,
 ):
-    """List all clusters for a specific clustering session"""
+    """List all clusters for a specific analysis run"""
     clusters = Cluster.find(
-        Cluster.session_id == session.id,
-        Cluster.workspace_id == session.workspace_id,
+        Cluster.session_id == analysis_run.id,
+        Cluster.workspace_id == analysis_run.workspace_id,
     )
 
     if relevance_levels is not None:
@@ -113,20 +127,20 @@ async def get_cluster(cluster: ExistingCluster):
 
 
 @router.get(
-    "/sessions/{session_id}/clusters-with-articles",
+    "/{analysis_run_id}/clusters-with-articles",
     response_model=list[ClusterWithArticles],
-    operation_id="list_clusters_with_articles_for_session",
+    operation_id="list_clusters_with_articles_for_run",
 )
 async def list_clusters_with_articles(
-    session: ExistingClusteringSession,
+    analysis_run: ExistingClusteringRun,
     relevancy_filter: RelevancyFilter = "all",
     n_articles: int = 5,
 ):
-    """List all clusters with their top N articles for a specific clustering session"""
+    """List all clusters with their top N articles for a specific analysis run"""
 
     clusters = Cluster.find(
-        Cluster.session_id == session.id,
-        Cluster.workspace_id == session.workspace_id,
+        Cluster.session_id == analysis_run.id,
+        Cluster.workspace_id == analysis_run.workspace_id,
     )
 
     clusters = filter_clusters_with_relevancy(clusters, relevancy_filter)
@@ -191,22 +205,47 @@ async def delete_cluster_feedback(
     return await cluster.save()
 
 
-@router.post(
-    "/sessions",
-    response_model=ClusteringSession,
-    operation_id="create_clustering_session",
-)
-async def create_clustering_session(
-    workspace: ExistingWorkspace, session_create: ClusteringSessionCreate
-):
-    """Create a new pending clustering session"""
-    assert workspace.id
+def _get_default_analysis_params(
+    workspace: Workspace,
+    analysis_type: AnalysisType,
+) -> AnalysisParams:
+    match analysis_type:
+        case AnalysisType.CLUSTERING:
+            return ClusteringAnalysisParams(
+                hdbscan_settings=workspace.hdbscan_settings,
+            )
+        case AnalysisType.REPORT:
+            return ReportAnalysisParams()
 
-    session = ClusteringSession(
-        workspace_id=workspace.id,
-        data_start=session_create.data_start,
-        data_end=session_create.data_end,
-        nb_days=(session_create.data_end - session_create.data_start).days,
+    raise ValueError(
+        f"Analysis type {analysis_type} not supported to create a default params"
     )
 
-    return await session.insert()
+
+@router.post(
+    "/",
+    response_model=AnalysisRun,
+    operation_id="create_analysis_run",
+)
+async def create_analysis_run(
+    workspace: ExistingWorkspace,
+    run_create: AnalysisRunCreate,
+):
+    """Create a new pending analysis run"""
+    assert workspace.id
+
+    params = (
+        _get_default_analysis_params(workspace, run_create.analysis_type)
+        if run_create.params is None
+        else run_create.params
+    )
+
+    run = AnalysisRun(
+        workspace_id=workspace.id,
+        data_start=run_create.data_start,
+        data_end=run_create.data_end,
+        analysis_type=run_create.analysis_type,
+        params=params,
+    )
+
+    return await run.insert()

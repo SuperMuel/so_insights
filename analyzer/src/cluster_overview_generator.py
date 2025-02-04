@@ -1,12 +1,13 @@
-from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain import hub
+from pydantic import BaseModel, Field
 from shared.language import Language
 from shared.models import (
+    AnalysisRun,
+    AnalysisType,
     Article,
     Cluster,
     ClusterOverview,
-    ClusteringSession,
     Workspace,
 )
 from beanie.operators import In
@@ -189,24 +190,27 @@ class ClusterOverviewGenerator:
 
         logger.info(f"Finished generating overviews for {len(clusters)} clusters.")
 
-    async def generate_overviews_for_session(
+    async def generate_overviews_for_clustering_run(
         self,
-        session: ClusteringSession,
+        run: AnalysisRun,
         *,
         max_concurrency: int = analyzer_settings.OVERVIEW_GENERATION_MAX_CONCURRENCY,
         only_missing: bool = False,
     ) -> None:
         """
-        Generate overviews for all clusters in a clustering session.
+        Generate overviews for all clusters in a clustering run.
 
         Args:
-            session (ClusteringSession): The clustering session to process.
+            run (AnalysisRun): The clustering run to process. Must be of type "clustering".
             max_concurrency (int): Maximum number of concurrent overview generations.
             only_missing (bool): If True, only generate overviews for clusters without existing overviews.
         """
 
-        logger.info(f"Generating overviews for session {session.id}")
-        clusters = await Cluster.find(Cluster.session_id == session.id).to_list()
+        if run.analysis_type != AnalysisType.CLUSTERING:
+            raise ValueError(f"Run {run.id} is not a clustering run")
+
+        logger.info(f"Generating overviews for run {run.id}")
+        clusters = await Cluster.find(Cluster.session_id == run.id).to_list()
         logger.info(f"Found {len(clusters)} clusters")
 
         if only_missing:
@@ -214,4 +218,4 @@ class ClusterOverviewGenerator:
             logger.info(f"Found {len(clusters)} clusters without overviews")
 
         await self.generate_overviews(clusters, max_concurrency=max_concurrency)
-        logger.info(f"Finished generating overviews for session {session.id}")
+        logger.info(f"Finished generating overviews for run {run.id}")

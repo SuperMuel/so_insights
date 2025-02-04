@@ -25,7 +25,8 @@ class ClusterEvaluation:
         Attributes:
             justification (str): Your explanation for the relevance level.
             relevance_level (ClusterEvaluationRelevanceLevel):
-            confidence_score (float):
+            confidence_score (float): A score between 0 and 1 indicating how confident we are in the relevance level of this
+                cluster
     """
 
     justification: str

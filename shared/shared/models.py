@@ -345,6 +345,27 @@ class IngestionRun(Document):
         await self.replace()
 
 
+class ArticleEvaluation(BaseModel):
+    """
+    Represents an assessment of an article's quality and relevance to the research interest.
+    """
+
+    justification: str = Field(
+        ...,
+        description=(
+            "A brief justification (one to two sentences) explaining why the article was classified with the chosen verdict."
+        ),
+    )
+    relevance_level: Literal["relevant", "somewhat_relevant", "not_relevant"] = Field(
+        ...,
+        description=(
+            "The relevance classification of the article with respect to the research interest. "
+            "Use 'relevant' if the article strongly addresses the research interest, "
+            "'somewhat_relevant' if it partially relates, and 'not_relevant' if it does not relate."
+        ),
+    )
+
+
 class Article(Document):
     """
     Represents a single piece of content collected during ingestion.
@@ -399,6 +420,10 @@ class Article(Document):
         description="The result of fetching and cleaning the article content",
     )
 
+    evaluation: ArticleEvaluation | None = Field(
+        default=None,
+    )
+
     @field_validator("title", mode="before")
     @classmethod
     def truncate_title(cls, v: str) -> str:
@@ -435,6 +460,186 @@ class Article(Document):
 
 
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
+
+
+class ClusteringAnalysisParams(BaseModel):
+    """Parameters specific to clustering analysis."""
+
+    hdbscan_settings: HdbscanSettings = Field(
+        default_factory=HdbscanSettings,
+        description="HDBSCAN algorithm settings for clustering",
+    )
+
+
+class ReportAnalysisParams(BaseModel):
+    """Parameters specific to report-style analysis."""
+
+    # Just an example for now
+    # report_template: str | None = Field(
+    #     None, description="template to use"
+    # )
+
+
+class AnalysisType(str, Enum):
+    CLUSTERING = "clustering"
+    REPORT = "report"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+AnalysisParams = ClusteringAnalysisParams | ReportAnalysisParams
+
+
+class ClusteringRunEvaluationResult(BaseModel):
+    relevant_clusters_count: int = Field(
+        ..., description="Number of clusters deemed highly relevant"
+    )
+    somewhat_relevant_clusters_count: int = Field(
+        ..., description="Number of clusters deemed somewhat relevant"
+    )
+    irrelevant_clusters_count: int = Field(
+        ..., description="Number of clusters deemed not relevant"
+    )
+
+
+class ClusteringAnalysisResult(BaseModel):
+    """Results specific to clustering analysis."""
+
+    analysis_type: AnalysisType = AnalysisType.CLUSTERING
+
+    articles_count: int | None = Field(
+        default=None, description="Number of articles processed in this session"
+    )
+
+    clusters_count: int = Field(..., description="Total number of clusters formed")
+    noise_articles_ids: list[PydanticObjectId] = Field(
+        ..., description="IDs of articles classified as noise"
+    )
+    noise_articles_count: int = Field(
+        ..., description="Number of articles classified as noise"
+    )
+    clustered_articles_count: int = Field(
+        ..., description="Number of articles successfully clustered"
+    )
+    evaluation: ClusteringRunEvaluationResult | None = Field(
+        default=None, description="Evaluation of the clustering run"
+    )
+    summary: str | None = Field(
+        default=None, description="Overall summary of the clusters deemed relevant"
+    )
+    data_loading_time_s: float | None = Field(
+        default=None, description="Time taken to load the data, in seconds"
+    )
+    clustering_time_s: float | None = Field(
+        default=None, description="Time taken to cluster the data, in seconds"
+    )
+
+
+class ReportAnalysisResult(BaseModel):
+    """Results specific to report-style analysis."""
+
+    analysis_type: AnalysisType = AnalysisType.REPORT
+
+    articles_count: int | None = Field(
+        default=None, description="Number of articles processed in this session"
+    )
+
+    report_content: str = Field(
+        ..., description="Markdown content of the generated report"
+    )
+
+    relevant_articles_ids: list[PydanticObjectId] | None = Field(
+        default=None,
+        description="IDs of articles deemed relevant and used in the report",
+    )
+
+
+AnalysisResult = ClusteringAnalysisResult | ReportAnalysisResult
+
+
+class AnalysisRun(Document):
+    workspace_id: Annotated[PydanticObjectId, Indexed()]
+
+    created_at: PastDatetime = Field(
+        default_factory=utc_datetime_factory,
+        description="Timestamp when the run was created",
+    )
+
+    analysis_type: AnalysisType = Field(
+        ...,
+        description="Type of analysis performed in this run (e.g., 'clustering', 'report')",
+    )
+
+    status: Status = Field(
+        default=Status.pending, description="Current status of the analysis run"
+    )
+
+    error: str | None = Field(
+        default=None, description="Error message if the run failed"
+    )
+
+    session_start: PastDatetime | None = Field(
+        default=None, description="Timestamp when the session started"
+    )
+    session_end: PastDatetime | None = Field(
+        default=None, description="Timestamp when the session ended"
+    )
+
+    data_start: PastDatetime = Field(
+        default=..., description="Start date of the data range used for analysis"
+    )
+    data_end: datetime = Field(
+        default=..., description="End date of the data range used for analysis"
+    )
+
+    params: AnalysisParams
+    result: AnalysisResult | None = Field(
+        default=None, description="Result of the analysis"
+    )
+
+    def pretty_print(self) -> str:
+        return f"{self.analysis_type} analysis: {self.data_start.strftime('%d %B %Y')} → {self.data_end.strftime('%d %B %Y')}"
+
+    class Settings:
+        name = db_settings.mongodb_analysis_runs_collection
+
+    async def get_sorted_clusters(
+        self,
+        relevance_level: RelevanceLevel | None = None,
+        limit: int | None = None,
+    ) -> list["Cluster"]:
+        """
+        Get a list of clusters from the Clustering run.
+
+        Args:
+            relevance_level: The relevance level to filter the clusters by.
+            limit: The maximum number of clusters to return.
+
+        Returns:
+            A list of clusters sorted by the number of articles in each cluster.
+
+        Raises:
+            ValueError: If the run is not a clustering run.
+        """
+        if self.analysis_type != AnalysisType.CLUSTERING:
+            raise ValueError(f"Run {self.id} is not a clustering run")
+
+        clusters = Cluster.find_many(Cluster.session_id == self.id)
+
+        if relevance_level:
+            clusters = clusters.find(
+                Exists(Cluster.evaluation),
+                Cluster.evaluation != None,  # noqa: E711
+                Cluster.evaluation.relevance_level == relevance_level,  # type: ignore "relevance_level" is not a known attribute of "None"
+            )
+
+        clusters = clusters.sort(-Cluster.articles_count)  # type: ignore
+
+        if limit:
+            clusters = clusters.limit(limit)
+
+        return await clusters.to_list()
 
 
 class ClusteringSession(Document):
@@ -554,7 +759,10 @@ class ClusterEvaluation(BaseModel):
         ..., description="Your explanation for the relevance level."
     )
     relevance_level: RelevanceLevel
-    confidence_score: float = Field(..., ge=0.0, le=1.0)
+    confidence_score: float = Field(
+        ...,
+        description="A score between 0 and 1 indicating how confident we are in the relevance level of this cluster",
+    )
 
 
 class ClusterOverview(BaseModel):

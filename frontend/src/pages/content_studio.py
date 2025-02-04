@@ -4,15 +4,18 @@ from src.app_settings import app_settings
 from st_copy_to_clipboard import st_copy_to_clipboard
 import pandas as pd
 from src.image_generation import GetImgAI, generate_image_prompt
-from sdk.so_insights_client.api.clustering import (
-    list_clusters_for_session,
+from sdk.so_insights_client.api.analysis_runs import (
+    list_analysis_runs,
+    list_clusters_for_clustering_run,
+    list_clusters_with_articles_for_run,
 )
+from sdk.so_insights_client.models.list_clusters_for_clustering_run_relevance_levels_type_0_item import (
+    ListClustersForClusteringRunRelevanceLevelsType0Item as RelevanceLevelsItem,
+)
+from sdk.so_insights_client.models.analysis_run import AnalysisRun
 from sdk.so_insights_client.models.cluster import Cluster
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.language import Language
-from sdk.so_insights_client.models.list_clusters_for_session_relevance_levels_type_0_item import (
-    ListClustersForSessionRelevanceLevelsType0Item as RelevanceLevelsItem,
-)
 from sdk.so_insights_client.models.workspace import Workspace
 from src.content_generation import create_social_media_content
 import streamlit as st
@@ -48,16 +51,16 @@ def get_llm(model_name: str = "gpt-4o"):
 
 
 @st.cache_data
-def _get_clusters_for_session(
+def _get_clusters_for_clustering_run(
     workspace_id,
-    session_id,
+    run_id,
     relevance_levels: list[RelevanceLevelsItem] | None = None,
 ):
     with st.spinner("Fetching clusters..."):
-        clusters = list_clusters_for_session.sync(
+        clusters = list_clusters_for_clustering_run.sync(
             workspace_id=workspace_id,
             client=client,
-            session_id=session_id,
+            analysis_run_id=run_id,
             relevance_levels=relevance_levels,
         )
 
@@ -92,7 +95,7 @@ def select_clusters(workspace: Workspace):
         assert workspace.field_id and session.field_id
 
         clusters = (
-            _get_clusters_for_session(
+            _get_clusters_for_clustering_run(
                 workspace.field_id,
                 session.field_id,
                 relevance_levels=[RelevanceLevelsItem.HIGHLY_RELEVANT],

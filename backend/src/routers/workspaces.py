@@ -46,7 +46,7 @@ async def list_workspaces(
     )
 
     return await workspaces.sort(
-        Workspace.created_at,  # type: ignore
+        -Workspace.created_at,  # type: ignore
     ).to_list()
 
 

@@ -25,12 +25,14 @@ class AnalyzerSettings(BaseSettings):
     OVERVIEW_GENERATION_MAX_CONCURRENCY: int = 5
     OVERVIEW_GENERATION_INCLUDE_CONTENTS: bool = True
 
+    ARTICLE_EVAL_BATCH_SIZE: int = 10
+
     # when the number of clusters found is less than this value
     # we will also include the clusters summaries (instead of just the titles)
-    # as material for the summary of session
-    INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD: int = Field(default=30)
+    # as material for the summary of the clustering
+    INCLUDE_CLUSTER_SUMMARIES_FOR_CLUSTERING_SUMMARY_THRESHOLD: int = Field(default=30)
 
-    SESSION_SUMMARY_MAX_CLUSTERS: int = 400
+    CLUSTERING_SUMMARY_MAX_CLUSTERS: int = 400
 
     # Watcher settings
     POLLING_INTERVAL_S: int = 10
@@ -42,6 +44,8 @@ class AnalyzerSettings(BaseSettings):
     CLUSTER_EVAL_PROMPT_REF: str = "cluster-eval"
     BIG_SUMMARY_PROMPT_REF: str = "big-summary"
     CONVERSATION_STARTERS_PROMPT_REF: str = "conversation-starters"
+    ARTICLE_EVAL_PROMPT_REF: str = "article-eval"
+    REPORT_OUTLINE_PROMPT_REF: str = "plan-report-outline"
 
 
 analyzer_settings = AnalyzerSettings()

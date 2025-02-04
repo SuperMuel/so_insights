@@ -55,7 +55,7 @@ class _ArticleDocument:
 
 
 embeddings = VoyageAIEmbeddings(  # type:ignore #Arguments missing for parameters "_client", "_aclient"
-    voyage_api_key=app_settings.VOYAGEAI_API_KEY.get_secret_value(),
+    api_key=app_settings.VOYAGEAI_API_KEY.get_secret_value(),
     model=app_settings.EMBEDDING_MODEL,
 )
 

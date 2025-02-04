@@ -10,6 +10,7 @@ from ..models.search_provider import SearchProvider
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.article_evaluation import ArticleEvaluation
     from ..models.content_fetching_result import ContentFetchingResult
 
 
@@ -42,6 +43,7 @@ class Article:
                 False.
             content_fetching_result (Union['ContentFetchingResult', None, Unset]): The result of fetching and cleaning the
                 article content
+            evaluation (Union['ArticleEvaluation', None, Unset]):
     """
 
     workspace_id: str
@@ -60,9 +62,11 @@ class Article:
     ingestion_run_id: Union[None, Unset, str] = UNSET
     vector_indexed: Union[Unset, bool] = False
     content_fetching_result: Union["ContentFetchingResult", None, Unset] = UNSET
+    evaluation: Union["ArticleEvaluation", None, Unset] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.article_evaluation import ArticleEvaluation
         from ..models.content_fetching_result import ContentFetchingResult
 
         workspace_id = self.workspace_id
@@ -131,6 +135,14 @@ class Article:
         else:
             content_fetching_result = self.content_fetching_result
 
+        evaluation: Union[None, Unset, dict[str, Any]]
+        if isinstance(self.evaluation, Unset):
+            evaluation = UNSET
+        elif isinstance(self.evaluation, ArticleEvaluation):
+            evaluation = self.evaluation.to_dict()
+        else:
+            evaluation = self.evaluation
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -164,11 +176,14 @@ class Article:
             field_dict["vector_indexed"] = vector_indexed
         if content_fetching_result is not UNSET:
             field_dict["content_fetching_result"] = content_fetching_result
+        if evaluation is not UNSET:
+            field_dict["evaluation"] = evaluation
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
+        from ..models.article_evaluation import ArticleEvaluation
         from ..models.content_fetching_result import ContentFetchingResult
 
         d = src_dict.copy()
@@ -274,6 +289,23 @@ class Article:
 
         content_fetching_result = _parse_content_fetching_result(d.pop("content_fetching_result", UNSET))
 
+        def _parse_evaluation(data: object) -> Union["ArticleEvaluation", None, Unset]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                evaluation_type_0 = ArticleEvaluation.from_dict(data)
+
+                return evaluation_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union["ArticleEvaluation", None, Unset], data)
+
+        evaluation = _parse_evaluation(d.pop("evaluation", UNSET))
+
         article = cls(
             workspace_id=workspace_id,
             title=title,
@@ -291,6 +323,7 @@ class Article:
             ingestion_run_id=ingestion_run_id,
             vector_indexed=vector_indexed,
             content_fetching_result=content_fetching_result,
+            evaluation=evaluation,
         )
 
         article.additional_properties = d

@@ -10,9 +10,11 @@ import streamlit as st
 from streamlit_theme import st_theme
 
 
-settings_page = st.Page("src/pages/settings.py", title="Settings", icon="⚙️")
-explorer_page = st.Page("src/pages/explorer.py", title="Explorer", icon="📰")
-topics_page = st.Page("src/pages/topics.py", title="Topics", icon="🔎", default=True)
+settings_page = st.Page("src/pages/settings.py", title="Workspace Settings", icon="⚙️")
+explorer_page = st.Page("src/pages/explorer.py", title="My Data", icon="💾")
+analysis_page = st.Page(
+    "src/pages/analysis.py", title="Analysis", icon="🔎", default=True
+)
 content_studio_page = st.Page(
     "src/pages/content_studio.py", title="Content Studio", icon="✍️"
 )
@@ -170,7 +172,7 @@ if __name__ == "__main__":
         [
             settings_page,
             explorer_page,
-            topics_page,
+            analysis_page,
             content_studio_page,
             chatbot_page,
         ]

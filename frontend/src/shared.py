@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from babel import Locale
-from sdk.so_insights_client.api.clustering import list_clustering_sessions
-from sdk.so_insights_client.models.clustering_session import ClusteringSession
+from sdk.so_insights_client.api.analysis_runs import list_analysis_runs
+from sdk.so_insights_client.models.analysis_run import AnalysisRun
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.language import Language
 import streamlit as st
@@ -82,34 +82,34 @@ def show_all_toasts():
         toasts.remove(toast)
 
 
-def select_session_or_stop(client: Client, workspace: Workspace) -> ClusteringSession:
+def select_session_or_stop(client: Client, workspace: Workspace) -> AnalysisRun:
     """
-    Allows the user to select a clustering session for the current workspace.
-    Stops the app if no sessions are found or selected.
+    Allows the user to select an AnalysisRun for the current workspace.
+    Stops the app if no AnalysisRuns are found or selected.
     """
-    sessions = list_clustering_sessions.sync(
+    analysis_runs = list_analysis_runs.sync(
         client=client,
         workspace_id=str(workspace.field_id),
         statuses=[Status.COMPLETED],
     )
-    if not sessions:
-        st.warning("No clustering sessions found for this workspace.")
+    if not analysis_runs:
+        st.warning("No analysis runs found for this workspace.")
         st.stop()
 
-    if isinstance(sessions, HTTPValidationError):
-        st.error(sessions.detail)
+    if isinstance(analysis_runs, HTTPValidationError):
+        st.error(analysis_runs.detail)
         st.stop()
 
-    session = st.selectbox(
-        "Select a clustering session",
-        options=sessions,
-        format_func=lambda s: dates_to_session_label(s.data_start, s.data_end),
+    analysis_run = st.selectbox(
+        "Select an analysis",
+        options=analysis_runs,
+        format_func=lambda r: dates_to_session_label(r.data_start, r.data_end),
     )
-    if not session:
-        st.warning("Please select a session.")
+    if not analysis_run:
+        st.warning("Please select an analysis.")
         st.stop()
 
-    return session
+    return analysis_run
 
 
 def language_to_str(language: Language) -> str:

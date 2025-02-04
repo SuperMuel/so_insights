@@ -5,16 +5,15 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.clustering_session import ClusteringSession
-from ...models.clustering_session_create import ClusteringSessionCreate
+from ...models.cluster import Cluster
 from ...models.http_validation_error import HTTPValidationError
 from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     workspace_id: str,
+    cluster_id: str,
     *,
-    body: ClusteringSessionCreate,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
@@ -22,14 +21,9 @@ def _get_kwargs(
         headers["x-organization-id"] = x_organization_id
 
     _kwargs: dict[str, Any] = {
-        "method": "post",
-        "url": f"/workspaces/{workspace_id}/clustering/sessions",
+        "method": "get",
+        "url": f"/workspaces/{workspace_id}/analysis-runs/clusters/{cluster_id}",
     }
-
-    _body = body.to_dict()
-
-    _kwargs["json"] = _body
-    headers["Content-Type"] = "application/json"
 
     _kwargs["headers"] = headers
     return _kwargs
@@ -37,9 +31,9 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[ClusteringSession, HTTPValidationError]]:
+) -> Optional[Union[Cluster, HTTPValidationError]]:
     if response.status_code == 200:
-        response_200 = ClusteringSession.from_dict(response.json())
+        response_200 = Cluster.from_dict(response.json())
 
         return response_200
     if response.status_code == 422:
@@ -54,7 +48,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[ClusteringSession, HTTPValidationError]]:
+) -> Response[Union[Cluster, HTTPValidationError]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -65,31 +59,31 @@ def _build_response(
 
 def sync_detailed(
     workspace_id: str,
+    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: ClusteringSessionCreate,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[ClusteringSession, HTTPValidationError]]:
-    """Create Clustering Session
+) -> Response[Union[Cluster, HTTPValidationError]]:
+    """Get Cluster
 
-     Create a new pending clustering session
+     Get a specific cluster
 
     Args:
         workspace_id (str):
+        cluster_id (str):
         x_organization_id (Union[None, Unset, str]):
-        body (ClusteringSessionCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ClusteringSession, HTTPValidationError]]
+        Response[Union[Cluster, HTTPValidationError]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        body=body,
+        cluster_id=cluster_id,
         x_organization_id=x_organization_id,
     )
 
@@ -102,63 +96,63 @@ def sync_detailed(
 
 def sync(
     workspace_id: str,
+    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: ClusteringSessionCreate,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[ClusteringSession, HTTPValidationError]]:
-    """Create Clustering Session
+) -> Optional[Union[Cluster, HTTPValidationError]]:
+    """Get Cluster
 
-     Create a new pending clustering session
+     Get a specific cluster
 
     Args:
         workspace_id (str):
+        cluster_id (str):
         x_organization_id (Union[None, Unset, str]):
-        body (ClusteringSessionCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ClusteringSession, HTTPValidationError]
+        Union[Cluster, HTTPValidationError]
     """
 
     return sync_detailed(
         workspace_id=workspace_id,
+        cluster_id=cluster_id,
         client=client,
-        body=body,
         x_organization_id=x_organization_id,
     ).parsed
 
 
 async def asyncio_detailed(
     workspace_id: str,
+    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: ClusteringSessionCreate,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Response[Union[ClusteringSession, HTTPValidationError]]:
-    """Create Clustering Session
+) -> Response[Union[Cluster, HTTPValidationError]]:
+    """Get Cluster
 
-     Create a new pending clustering session
+     Get a specific cluster
 
     Args:
         workspace_id (str):
+        cluster_id (str):
         x_organization_id (Union[None, Unset, str]):
-        body (ClusteringSessionCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ClusteringSession, HTTPValidationError]]
+        Response[Union[Cluster, HTTPValidationError]]
     """
 
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
-        body=body,
+        cluster_id=cluster_id,
         x_organization_id=x_organization_id,
     )
 
@@ -169,33 +163,33 @@ async def asyncio_detailed(
 
 async def asyncio(
     workspace_id: str,
+    cluster_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    body: ClusteringSessionCreate,
     x_organization_id: Union[None, Unset, str] = UNSET,
-) -> Optional[Union[ClusteringSession, HTTPValidationError]]:
-    """Create Clustering Session
+) -> Optional[Union[Cluster, HTTPValidationError]]:
+    """Get Cluster
 
-     Create a new pending clustering session
+     Get a specific cluster
 
     Args:
         workspace_id (str):
+        cluster_id (str):
         x_organization_id (Union[None, Unset, str]):
-        body (ClusteringSessionCreate):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ClusteringSession, HTTPValidationError]
+        Union[Cluster, HTTPValidationError]
     """
 
     return (
         await asyncio_detailed(
             workspace_id=workspace_id,
+            cluster_id=cluster_id,
             client=client,
-            body=body,
             x_organization_id=x_organization_id,
         )
     ).parsed

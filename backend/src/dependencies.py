@@ -4,8 +4,9 @@ from beanie import PydanticObjectId
 from fastapi import Depends, HTTPException, Header
 
 from shared.models import (
+    AnalysisRun,
+    AnalysisType,
     Cluster,
-    ClusteringSession,
     IngestionConfig,
     IngestionRun,
     Organization,
@@ -108,18 +109,41 @@ async def get_ingestion_run(
 ExistingIngestionRun = Annotated[IngestionRun, Depends(get_ingestion_run)]
 
 
-async def get_clustering_session(
-    session_id: str | PydanticObjectId, workspace: ExistingWorkspace
-) -> ClusteringSession:
-    session = await ClusteringSession.get(session_id)
-    if not session or session.workspace_id != workspace.id:
-        raise HTTPException(status_code=404, detail="Clustering session not found")
-    return session
+async def get_analysis_run(
+    analysis_run_id: str | PydanticObjectId,
+    workspace: ExistingWorkspace,
+) -> AnalysisRun:
+    analysis_run = await AnalysisRun.get(analysis_run_id)
+    if not analysis_run or analysis_run.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="Analysis run not found")
+    return analysis_run
 
 
-ExistingClusteringSession = Annotated[
-    ClusteringSession, Depends(get_clustering_session)
-]
+ExistingAnalysisRun = Annotated[AnalysisRun, Depends(get_analysis_run)]
+
+
+async def get_clustering_run(
+    analysis_run: ExistingAnalysisRun,
+) -> AnalysisRun:
+    if analysis_run.analysis_type != AnalysisType.CLUSTERING:
+        raise HTTPException(
+            status_code=404, detail="Analysis run is not a clustering run"
+        )
+    return analysis_run
+
+
+ExistingClusteringRun = Annotated[AnalysisRun, Depends(get_clustering_run)]
+
+
+async def get_report_run(
+    analysis_run: ExistingAnalysisRun,
+) -> AnalysisRun:
+    if analysis_run.analysis_type != AnalysisType.REPORT:
+        raise HTTPException(status_code=404, detail="Analysis run is not a report run")
+    return analysis_run
+
+
+ExistingReportRun = Annotated[AnalysisRun, Depends(get_report_run)]
 
 
 async def get_cluster(
