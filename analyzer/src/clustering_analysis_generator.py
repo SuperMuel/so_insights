@@ -2,7 +2,12 @@ from langchain.chat_models.base import BaseChatModel
 from langchain import hub
 from pydantic import BaseModel
 from shared.language import Language
-from shared.models import ClusterOverview, ClusteringSession, Workspace
+from shared.models import (
+    AnalysisRun,
+    ClusterOverview,
+    ClusteringAnalysisResult,
+    Workspace,
+)
 from langchain_core.runnables import Runnable, RunnableLambda
 import logging
 from langchain_core.output_parsers import StrOutputParser
@@ -94,19 +99,27 @@ class ClusteringAnalysisSummarizer:
 
     async def generate_summary_for_clustering_run(
         self,
-        session: ClusteringSession,
+        run: AnalysisRun,
     ) -> None:
         """
-        Generates and saves a summary for a specific clustering session.
+        Generates and saves a summary for a specific clustering run.
         Handles the entire process from retrieving clusters to saving the final summary.
 
         Note:
             Filters for relevant clusters to focus the summary on the most important content.
         """
 
-        logger.info(f"Generating session summary for session {session.id}.")
+        if run.analysis_type != "clustering":
+            raise ValueError(f"Run {run.id} is not a clustering run")
 
-        clusters = await session.get_sorted_clusters()
+        if not run.result:
+            raise ValueError(f"Run {run.id} has no result")
+
+        assert isinstance(run.result, ClusteringAnalysisResult)
+
+        logger.info(f"Generating run summary for run {run.id}.")
+
+        clusters = await run.get_sorted_clusters()
 
         assert all(
             cluster.overview for cluster in clusters
@@ -124,10 +137,10 @@ class ClusteringAnalysisSummarizer:
         ]
 
         if not relevant_overviews:
-            logger.warning(f"No relevant overviews found for session {session.id}")
+            logger.warning(f"No relevant overviews found for session {run.id}")
             return
 
-        workspace = await Workspace.get(session.workspace_id)
+        workspace = await Workspace.get(run.workspace_id)
         assert workspace
 
         input = SessionSummaryInput(
@@ -138,12 +151,12 @@ class ClusteringAnalysisSummarizer:
         output = await self.ainvoke(
             input,
             metadata={
-                "clustering_session_id": session.id,
-                "workspace_id": session.workspace_id,
+                "clustering_run_id": run.id,
+                "workspace_id": run.workspace_id,
             },
         )
 
-        session.summary = output
-        await session.save()
+        run.result.summary = output
+        await run.save()
 
-        logger.info(f"Generated session summary for session {session.id}.")
+        logger.info(f"Generated run summary for run {run.id}.")

@@ -271,7 +271,7 @@ def summarize_clustering_run(run_id: str) -> None:
             return
 
         await (
-            analyzer.clustering_analysis_summarize.generate_summary_for_clustering_run(
+            analyzer.clustering_analysis_summarizer.generate_summary_for_clustering_run(
                 run
             )
         )
@@ -345,7 +345,7 @@ def repair():
 
             if not result.summary or evaluations_changed:
                 typer.echo(f"Generating summary for run: {run.id}")
-                await analyzer.clustering_analysis_summarize.generate_summary_for_clustering_run(
+                await analyzer.clustering_analysis_summarizer.generate_summary_for_clustering_run(
                     run
                 )
 
@@ -433,7 +433,7 @@ def watch(
 
                 logger.info(f"Processing run {run.id} for workspace {run.workspace_id}")
 
-                updated_run = await analyzer.handle_run(run)
+                updated_run = await analyzer.handle_clustering_run(run)
                 logger.info(f"Completed run {updated_run.id}")
 
                 if (datetime.now() - start_time).total_seconds() >= max_runtime:

@@ -495,12 +495,7 @@ class AnalysisResult(BaseModel):
     )
 
 
-class ClusteringAnalysisResult(AnalysisResult):
-    """Results specific to clustering analysis."""
-
-    analysis_type: AnalysisType = "clustering"
-
-    clusters_count: int = Field(..., description="Total number of clusters formed")
+class ClusteringRunEvaluationResult(BaseModel):
     relevant_clusters_count: int = Field(
         ..., description="Number of clusters deemed highly relevant"
     )
@@ -510,6 +505,14 @@ class ClusteringAnalysisResult(AnalysisResult):
     irrelevant_clusters_count: int = Field(
         ..., description="Number of clusters deemed not relevant"
     )
+
+
+class ClusteringAnalysisResult(AnalysisResult):
+    """Results specific to clustering analysis."""
+
+    analysis_type: AnalysisType = "clustering"
+
+    clusters_count: int = Field(..., description="Total number of clusters formed")
     noise_articles_ids: list[PydanticObjectId] = Field(
         ..., description="IDs of articles classified as noise"
     )
@@ -519,8 +522,17 @@ class ClusteringAnalysisResult(AnalysisResult):
     clustered_articles_count: int = Field(
         ..., description="Number of articles successfully clustered"
     )
+    evaluation: ClusteringRunEvaluationResult | None = Field(
+        default=None, description="Evaluation of the clustering run"
+    )
     summary: str | None = Field(
-        ..., description="Overall summary of the clusters deemed relevant"
+        default=None, description="Overall summary of the clusters deemed relevant"
+    )
+    data_loading_time_s: float | None = Field(
+        default=None, description="Time taken to load the data, in seconds"
+    )
+    clustering_time_s: float | None = Field(
+        default=None, description="Time taken to cluster the data, in seconds"
     )
 
 
@@ -579,6 +591,43 @@ class AnalysisRun(Document):
 
     class Settings:
         name = db_settings.mongodb_analysis_runs_collection
+
+    async def get_sorted_clusters(
+        self,
+        relevance_level: RelevanceLevel | None = None,
+        limit: int | None = None,
+    ) -> list["Cluster"]:
+        """
+        Get a list of clusters from the Clustering run.
+
+        Args:
+            relevance_level: The relevance level to filter the clusters by.
+            limit: The maximum number of clusters to return.
+
+        Returns:
+            A list of clusters sorted by the number of articles in each cluster.
+
+        Raises:
+            ValueError: If the run is not a clustering run.
+        """
+        if self.analysis_type != "clustering":
+            raise ValueError(f"Run {self.id} is not a clustering run")
+
+        clusters = Cluster.find_many(Cluster.session_id == self.id)
+
+        if relevance_level:
+            clusters = clusters.find(
+                Exists(Cluster.evaluation),
+                Cluster.evaluation != None,  # noqa: E711
+                Cluster.evaluation.relevance_level == relevance_level,  # type: ignore "relevance_level" is not a known attribute of "None"
+            )
+
+        clusters = clusters.sort(-Cluster.articles_count)  # type: ignore
+
+        if limit:
+            clusters = clusters.limit(limit)
+
+        return await clusters.to_list()
 
 
 class ClusteringSession(Document):

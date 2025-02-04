@@ -1,10 +1,12 @@
 import asyncio
 import logging
 from shared.models import (
+    AnalysisRun,
     Cluster,
     ClusterEvaluation,
+    ClusteringAnalysisResult,
+    ClusteringRunEvaluationResult,
     Workspace,
-    ClusteringSession,
 )
 
 from src.analyzer_settings import analyzer_settings
@@ -38,7 +40,7 @@ def id_to_str(id: PydanticObjectId | None) -> str:
 
 class Analyzer:
     """
-    Orchestrates the entire analysis process for clustering sessions, including
+    Orchestrates the entire analysis process for clustering runs, including
     data retrieval, clustering, overview generation, evaluation, and summarization.
     """
 
@@ -56,11 +58,35 @@ class Analyzer:
         self.overview_generator = overview_generator
         self.evaluator = cluster_evaluator
         self.starters_generator = starters_generator
-        self.clustering_analysis_summarize = clustering_summarizer
+        self.clustering_analysis_summarizer = clustering_summarizer
 
-    async def handle_run(self, session: ClusteringSession) -> ClusteringSession:
+    async def handle_run(self, run: AnalysisRun) -> AnalysisRun:
         """
-        Processes a clustering session from start to finish.
+        Handles a run based on its analysis type.
+        """
+
+        match run.analysis_type:
+            case "clustering":
+                return await self.handle_clustering_run(run)
+            case "report":
+                return await self.handle_report_run(run)
+
+        raise ValueError(f"Unknown analysis type: {run.analysis_type}")
+
+    async def handle_report_run(self, run: AnalysisRun) -> AnalysisRun:
+        """
+        Processes a report run from start to finish.
+        """
+
+        # check run type
+        if run.analysis_type != "report":
+            raise ValueError(f"Run {run.id} is not a report run")
+
+        raise NotImplementedError("Report runs are not implemented yet")
+
+    async def handle_clustering_run(self, run: AnalysisRun) -> AnalysisRun:
+        """
+        Processes a clustering run from start to finish.
 
         Performs the following steps:
         1. Retrieves articles and their vector representations
@@ -72,35 +98,41 @@ class Analyzer:
         Handles exceptions and updates session status accordingly.
 
         Args:
-            session (ClusteringSession): The session to be processed.
+            run (AnalysisRun): The run to be processed.
 
         Returns:
-            ClusteringSession: The updated session after processing.
+            AnalysisRun: The updated run after processing.
+
+        Raises:
+            ValueError: If the run is not a clustering run.
         """
 
+        if run.analysis_type != "clustering":
+            raise ValueError(f"Run {run.id} is not a clustering run")
+
         try:
-            assert session.status in [
+            assert run.status in [
                 Status.pending,
                 Status.running,
             ]  # Session can already be set to be running to avoid multiple processing
 
-            if session.status == Status.pending:
-                session.status = Status.running
+            if run.status == Status.pending:
+                run.status = Status.running
 
-            session.session_start = datetime.now()
+            run.session_start = datetime.now()
 
-            await session.save()
+            await run.save()
 
-            logger.info(f"Handling clustering session '{session.id}'")
+            logger.info(f"Handling clustering run '{run.id}'")
 
-            workspace = await Workspace.get(session.workspace_id)
+            workspace = await Workspace.get(run.workspace_id)
             if not workspace:
                 raise ValueError("Workspace not found")
 
             all_articles = await Article.find(
-                Article.workspace_id == session.workspace_id,
-                Article.date >= session.data_start,
-                Article.date <= session.data_end,
+                Article.workspace_id == run.workspace_id,
+                Article.date >= run.data_start,
+                Article.date <= run.data_end,
             ).to_list()
 
             logger.info(f"Found {len(all_articles)} articles.")
@@ -116,12 +148,10 @@ class Analyzer:
 
             vectors = self.vector_repository.fetch_vectors(
                 [id_to_str(article.id) for article in all_articles],
-                namespace=id_to_str(session.workspace_id),
+                namespace=id_to_str(run.workspace_id),
             )
 
-            data_loading_time_s = (
-                datetime.now() - session.session_start
-            ).total_seconds()
+            data_loading_time_s = (datetime.now() - run.session_start).total_seconds()
 
             logger.info(f"Fetched {len(vectors)} vectors.")
 
@@ -133,36 +163,33 @@ class Analyzer:
                 f"Clustering finished. Found {len(clustering_result.clusters)} clusters."
             )
 
-            session.articles_count = len(all_articles)
-            session.clusters_count = len(clustering_result.clusters)
-            session.noise_articles_ids = [
-                PydanticObjectId(article.id) for article in clustering_result.noise
-            ]
-            session.noise_articles_count = len(clustering_result.noise)
-            session.clustered_articles_count = sum(
-                len(cluster.articles) for cluster in clustering_result.clusters
+            run.result = ClusteringAnalysisResult(
+                articles_count=len(all_articles),
+                clusters_count=len(clustering_result.clusters),
+                noise_articles_ids=[
+                    PydanticObjectId(article.id) for article in clustering_result.noise
+                ],
+                noise_articles_count=len(clustering_result.noise),
+                clustered_articles_count=sum(
+                    len(cluster.articles) for cluster in clustering_result.clusters
+                ),
+                data_loading_time_s=data_loading_time_s,
+                clustering_time_s=clustering_result.clustering_duration_s,
             )
-            session.metadata.update(
-                {
-                    "algorithm": "hdbscan",
-                    "min_cluster_size": workspace.hdbscan_settings.min_cluster_size,
-                    "min_samples": workspace.hdbscan_settings.min_samples,
-                    "data_loading_time_s": data_loading_time_s,
-                    "clustering_time_s": clustering_result.clustering_duration_s,
-                }
-            )
-            await session.save()
 
-            assert session.id
+            await run.save()
 
+            assert run.id
+
+            # Create clusters
             clusters = []
             for cluster_result in clustering_result.clusters:
                 articles_ids = [
                     PydanticObjectId(article.id) for article in cluster_result.articles
                 ]
                 cluster: Cluster = await Cluster(
-                    workspace_id=session.workspace_id,
-                    session_id=session.id,
+                    workspace_id=run.workspace_id,
+                    session_id=run.id,
                     articles_ids=articles_ids,
                     articles_count=len(cluster_result.articles),
                     first_image=await get_first_valid_image(
@@ -176,50 +203,61 @@ class Analyzer:
                 clusters.append(cluster)
 
             logger.info(f"Generating overviews for {len(clusters)} clusters.")
-            await self.overview_generator.generate_overviews_for_clustering_run(session)
+            await self.overview_generator.generate_overviews_for_clustering_run(run)
 
             logger.info(f"Evaluating {len(clusters)} clusters.")
-            await self.evaluator.evaluate_clustering_run(session)
+            await self.evaluator.evaluate_clustering_run(run)
 
-            await self.update_relevancy_counts(session)
+            await self.update_relevancy_counts(run)
 
             await asyncio.gather(
                 self.starters_generator.generate_starters_for_workspace(workspace),
-                self.clustering_analysis_summarize.generate_summary_for_clustering_run(
-                    session
+                self.clustering_analysis_summarizer.generate_summary_for_clustering_run(
+                    run
                 ),
             )
 
             logger.info(
-                f"Clustering session '{session.id}' finished. Found {session.clusters_count} clusters."
+                f"Clustering run '{run.id}' finished. Found {run.result.clusters_count} clusters."
             )
 
-            session.status = Status.completed
-            session.session_end = datetime.now()
-            await session.save()
+            run.status = Status.completed
+            run.session_end = datetime.now()
+            await run.save()
 
         except Exception as e:
-            logger.exception(f"Error handling clustering session: {e}")
-            session.status = Status.failed
-            session.error = str(e)
-            session.session_end = datetime.now()
-            await session.save()
+            logger.exception(f"Error handling clustering run: {e}")
+            run.status = Status.failed
+            run.error = str(e)
+            run.session_end = datetime.now()
+            await run.save()
 
-        return session
+        return run
 
-    async def update_relevancy_counts(self, session: ClusteringSession):
+    async def update_relevancy_counts(self, run: AnalysisRun):
         """
-        Updates the relevancy counts for a clustering session based on cluster evaluations.
+        Updates the relevancy counts for a clustering run based on cluster evaluations.
 
         Calculates and sets the counts for highly relevant, somewhat relevant, and irrelevant
         clusters in the session.
 
         Args:
-            session (ClusteringSession): The session to update.
+            run (AnalysisRun): The run to update.
+
+        Raises:
+            ValueError: If the run is not a clustering run or has no result.
         """
 
+        if run.analysis_type != "clustering":
+            raise ValueError(f"Run {run.id} is not a clustering run")
+
+        if not run.result:
+            raise ValueError(f"Run {run.id} has no result")
+
+        assert isinstance(run.result, ClusteringAnalysisResult)
+
         evaluated_clusters = await Cluster.find(
-            Cluster.session_id == session.id,
+            Cluster.session_id == run.id,
             Exists(Cluster.evaluation),
             Cluster.evaluation != None,  # noqa: E711
         ).to_list()
@@ -257,8 +295,18 @@ class Analyzer:
             == len(evaluations)
         )
 
-        session.relevant_clusters_count = relevant_clusters_count
-        session.somewhat_relevant_clusters_count = somewhat_relevant_clusters_count
-        session.irrelevant_clusters_count = irrelevant_clusters_count
+        assert isinstance(run.result, ClusteringAnalysisResult)
 
-        await session.save()
+        evaluation = ClusteringRunEvaluationResult(
+            relevant_clusters_count=relevant_clusters_count,
+            somewhat_relevant_clusters_count=somewhat_relevant_clusters_count,
+            irrelevant_clusters_count=irrelevant_clusters_count,
+        )
+
+        run.result.evaluation = evaluation
+
+        logger.info(
+            f"Updated relevancy counts for clustering run '{run.id}'. Evaluation: {evaluation}"
+        )
+
+        await run.save()
