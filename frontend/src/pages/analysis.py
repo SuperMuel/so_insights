@@ -122,6 +122,7 @@ with st.sidebar:
     st.divider()
 
 
+@st.fragment(run_every=10)
 def _list_runs(workspace: Workspace):
     """
     Displays a list of analysis runs for the given workspace, with details in expandable sections.
@@ -138,7 +139,7 @@ def _list_runs(workspace: Workspace):
 
     if not runs:
         st.warning(
-            "No analysis found. You can launch an analysis of your data using the form on the left."
+            "No analysis found. You can launch an analysis of your data using the button on the left."
         )
         return
 
