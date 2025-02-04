@@ -5,13 +5,14 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
-from ..models.analysis_run_analysis_type import AnalysisRunAnalysisType
+from ..models.analysis_type import AnalysisType
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.analysis_result import AnalysisResult
     from ..models.clustering_analysis_params import ClusteringAnalysisParams
+    from ..models.clustering_analysis_result import ClusteringAnalysisResult
     from ..models.report_analysis_params import ReportAnalysisParams
+    from ..models.report_analysis_result import ReportAnalysisResult
 
 
 T = TypeVar("T", bound="AnalysisRun")
@@ -22,7 +23,7 @@ class AnalysisRun:
     """
     Attributes:
         workspace_id (str):  Example: 5eb7cf5a86d9755df3a6c593.
-        analysis_type (AnalysisRunAnalysisType): Type of analysis performed in this run (e.g., 'clustering', 'report')
+        analysis_type (AnalysisType):
         data_start (datetime.datetime): Start date of the data range used for analysis
         data_end (datetime.datetime): End date of the data range used for analysis
         params (Union['ClusteringAnalysisParams', 'ReportAnalysisParams']):
@@ -32,11 +33,11 @@ class AnalysisRun:
         error (Union[None, Unset, str]): Error message if the run failed
         session_start (Union[None, Unset, datetime.datetime]): Timestamp when the session started
         session_end (Union[None, Unset, datetime.datetime]): Timestamp when the session ended
-        result (Union['AnalysisResult', None, Unset]): Result of the analysis
+        result (Union['ClusteringAnalysisResult', 'ReportAnalysisResult', None, Unset]): Result of the analysis
     """
 
     workspace_id: str
-    analysis_type: AnalysisRunAnalysisType
+    analysis_type: AnalysisType
     data_start: datetime.datetime
     data_end: datetime.datetime
     params: Union["ClusteringAnalysisParams", "ReportAnalysisParams"]
@@ -46,12 +47,13 @@ class AnalysisRun:
     error: Union[None, Unset, str] = UNSET
     session_start: Union[None, Unset, datetime.datetime] = UNSET
     session_end: Union[None, Unset, datetime.datetime] = UNSET
-    result: Union["AnalysisResult", None, Unset] = UNSET
+    result: Union["ClusteringAnalysisResult", "ReportAnalysisResult", None, Unset] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        from ..models.analysis_result import AnalysisResult
         from ..models.clustering_analysis_params import ClusteringAnalysisParams
+        from ..models.clustering_analysis_result import ClusteringAnalysisResult
+        from ..models.report_analysis_result import ReportAnalysisResult
 
         workspace_id = self.workspace_id
 
@@ -104,7 +106,9 @@ class AnalysisRun:
         result: Union[None, Unset, dict[str, Any]]
         if isinstance(self.result, Unset):
             result = UNSET
-        elif isinstance(self.result, AnalysisResult):
+        elif isinstance(self.result, ClusteringAnalysisResult):
+            result = self.result.to_dict()
+        elif isinstance(self.result, ReportAnalysisResult):
             result = self.result.to_dict()
         else:
             result = self.result
@@ -139,14 +143,15 @@ class AnalysisRun:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
-        from ..models.analysis_result import AnalysisResult
         from ..models.clustering_analysis_params import ClusteringAnalysisParams
+        from ..models.clustering_analysis_result import ClusteringAnalysisResult
         from ..models.report_analysis_params import ReportAnalysisParams
+        from ..models.report_analysis_result import ReportAnalysisResult
 
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
 
-        analysis_type = AnalysisRunAnalysisType(d.pop("analysis_type"))
+        analysis_type = AnalysisType(d.pop("analysis_type"))
 
         data_start = isoparse(d.pop("data_start"))
 
@@ -230,7 +235,7 @@ class AnalysisRun:
 
         session_end = _parse_session_end(d.pop("session_end", UNSET))
 
-        def _parse_result(data: object) -> Union["AnalysisResult", None, Unset]:
+        def _parse_result(data: object) -> Union["ClusteringAnalysisResult", "ReportAnalysisResult", None, Unset]:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -238,12 +243,20 @@ class AnalysisRun:
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                result_type_0 = AnalysisResult.from_dict(data)
+                result_type_0 = ClusteringAnalysisResult.from_dict(data)
 
                 return result_type_0
             except:  # noqa: E722
                 pass
-            return cast(Union["AnalysisResult", None, Unset], data)
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                result_type_1 = ReportAnalysisResult.from_dict(data)
+
+                return result_type_1
+            except:  # noqa: E722
+                pass
+            return cast(Union["ClusteringAnalysisResult", "ReportAnalysisResult", None, Unset], data)
 
         result = _parse_result(d.pop("result", UNSET))
 

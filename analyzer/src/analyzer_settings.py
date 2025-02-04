@@ -29,10 +29,10 @@ class AnalyzerSettings(BaseSettings):
 
     # when the number of clusters found is less than this value
     # we will also include the clusters summaries (instead of just the titles)
-    # as material for the summary of session
-    INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD: int = Field(default=30)
+    # as material for the summary of the clustering
+    INCLUDE_CLUSTER_SUMMARIES_FOR_CLUSTERING_SUMMARY_THRESHOLD: int = Field(default=30)
 
-    SESSION_SUMMARY_MAX_CLUSTERS: int = 400
+    CLUSTERING_SUMMARY_MAX_CLUSTERS: int = 400
 
     # Watcher settings
     POLLING_INTERVAL_S: int = 10

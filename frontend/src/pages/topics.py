@@ -1,112 +1,111 @@
-from datetime import date, datetime, timedelta
 import arrow
-from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
-from sdk.so_insights_client.models.clustering_session import ClusteringSession
-from sdk.so_insights_client.models.clustering_session_create import (
-    ClusteringSessionCreate,
-)
-from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
-from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
-
-
-from sdk.so_insights_client.models.workspace import Workspace
-from src.app_settings import app_settings
 import streamlit as st
 from millify import millify
-
-from sdk.so_insights_client.api.clustering import (
-    create_clustering_session,
-    list_clustering_sessions,
-    list_clusters_with_articles_for_session,
+from sdk.so_insights_client.api.analysis_runs import (
+    list_analysis_runs,
+    list_clusters_with_articles_for_run,
     set_cluster_feedback,
 )
-from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 
+from sdk.so_insights_client.models.analysis_type import AnalysisType
+from sdk.so_insights_client.models.cluster_feedback import ClusterFeedback
+from sdk.so_insights_client.models.cluster_with_articles import ClusterWithArticles
+from sdk.so_insights_client.models.clustering_analysis_result import (
+    ClusteringAnalysisResult,
+)
+from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
+from sdk.so_insights_client.models.relevancy_filter import RelevancyFilter
+from sdk.so_insights_client.models.report_analysis_result import ReportAnalysisResult
+from sdk.so_insights_client.models.workspace import Workspace
+from streamlit.elements.lib.mutable_status_container import StatusContainer
+
+from src.app_settings import app_settings
 from src.shared import (
-    create_toast,
     dates_to_session_label,
     get_authenticated_client,
     get_workspace_or_stop,
     select_session_or_stop,
     task_status_to_st_status,
 )
-from streamlit.elements.lib.mutable_status_container import StatusContainer
+
+CLUSTERS_PER_PAGE = app_settings.CLUSTERS_PER_PAGE
 
 workspace = get_workspace_or_stop()
 client = get_authenticated_client(workspace.organization_id)
 
 
 with st.sidebar:
-    st.subheader("Create New Analysis")
+    # st.subheader("Create New Analysis")
 
-    with st.form("create_analysis_task"):
-        # TODO : add pre-defined date ranges (e.g. last 7 days, last 30 days)
-        start_date, end_date = st.date_input(  # type: ignore
-            "Date range",
-            [date.today() - timedelta(days=7), date.today()],
-            min_value=date.today() - timedelta(days=365),
-            max_value=date.today(),
-        )
-        assert isinstance(start_date, date) and isinstance(end_date, date)
+    # with st.form("create_analysis_task"):
+    #     # TODO : add pre-defined date ranges (e.g. last 7 days, last 30 days)
+    #     start_date, end_date = st.date_input(  # type: ignore
+    #         "Date range",
+    #         [date.today() - timedelta(days=7), date.today()],
+    #         min_value=date.today() - timedelta(days=365),
+    #         max_value=date.today(),
+    #     )
+    #     assert isinstance(start_date, date) and isinstance(end_date, date)
 
-        start_date = datetime.combine(start_date, datetime.min.time())
-        end_date = datetime.combine(end_date, datetime.max.time())
+    #     start_date = datetime.combine(start_date, datetime.min.time())
+    #     end_date = datetime.combine(end_date, datetime.max.time())
 
-        submit_button = st.form_submit_button(
-            "Start analysis", use_container_width=True
-        )
+    #     submit_button = st.form_submit_button(
+    #         "Start analysis", use_container_width=True
+    #     )
 
-        if submit_button:
-            session = create_clustering_session.sync(
-                workspace_id=str(workspace.field_id),
-                client=client,
-                body=ClusteringSessionCreate(
-                    data_start=start_date,
-                    data_end=end_date,
-                ),
-            )
-            if isinstance(session, HTTPValidationError):
-                st.error(f"Failed to create analysis : {session.detail}")
-            elif not session:
-                st.error("Failed to create analysis")
-            else:
-                create_toast(
-                    "Analysis will launch soon.",
-                    icon="✅",
-                )
-                st.rerun()
+    #     if submit_button:
+    #         run = create_analysis_run.sync(
+    #             workspace_id=str(workspace.field_id),
+    #             client=client,
+    #             body=AnalysisRunCreate(
+    #                 analysis_type=AnalysisRunCreateAnalysisType.CLUSTERING,
+    #                 data_start=start_date,
+    #                 data_end=end_date,
+    #             ),
+    #         )
+    #         if isinstance(run, HTTPValidationError):
+    #             st.error(f"Failed to create analysis : {run.detail}")
+    #         elif not run:
+    #             st.error("Failed to create analysis")
+    #         else:
+    #             create_toast(
+    #                 "Analysis will launch soon.",
+    #                 icon="✅",
+    #             )
+    #             st.rerun()
 
-    st.divider()
+    # st.divider()
 
-    selected_session = select_session_or_stop(client, workspace)
-
-
-st.title("🔎 Topics detection")
-
-CLUSTERS_PER_PAGE = app_settings.CLUSTERS_PER_PAGE
+    selected_run = select_session_or_stop(client, workspace)
 
 
-def _list_sessions(workspace: Workspace):
+st.title("🔎 Analysis")
+
+
+def _list_runs(workspace: Workspace):
     """
-    Displays a list of clustering sessions for the given workspace, with details in expandable sections.
+    Displays a list of analysis runs for the given workspace, with details in expandable sections.
     """
 
-    sessions = list_clustering_sessions.sync(
+    st.header("History")
+
+    runs = list_analysis_runs.sync(
         client=client,
         workspace_id=str(workspace.field_id),
     )
 
-    if isinstance(sessions, HTTPValidationError):
-        st.error(sessions.detail)
+    if isinstance(runs, HTTPValidationError):
+        st.error(runs.detail)
         return
 
-    if not sessions:
+    if not runs:
         st.warning(
             "No analysis found. You can launch an analysis of your data using the form on the left."
         )
         return
 
-    for session in sessions:
+    for session in runs:
         assert session.status
         status: StatusContainer = st.status(
             label=dates_to_session_label(session.data_start, session.data_end),
@@ -115,6 +114,7 @@ def _list_sessions(workspace: Workspace):
 
         status.write(f"ID : {session.field_id}")
         status.write(f"Status : {session.status}")
+        status.write(f"Analysis type : {session.analysis_type}")
         if session.error:
             status.write(f"Error : {session.error}")
         status.write(f"Created at {session.created_at}")
@@ -132,33 +132,67 @@ def _list_sessions(workspace: Workspace):
             arrow.get(session.data_start), only_distance=True
         )
         status.write(f"**Time window:** {humanized_time_window}")
-
-        status.write(
-            f"Total number of articles : {millify(session.articles_count) if session.articles_count else 'N/A'}"
-        )
-        status.write(f"Total number of clusters : {session.clusters_count}")
-        status.write(
-            f"Total number of relevant clusters : {session.relevant_clusters_count}"
-        )
-        status.write(
-            f"Total number of somewhat relevant clusters : {session.somewhat_relevant_clusters_count}"
-        )
-        status.write(
-            f"Total number of irrelevant clusters : {session.irrelevant_clusters_count}"
-        )
+        if result := session.result:
+            # print the instance of the result, detailed
+            print(f"{type(result).__name__} : {type(result)}")
+            print(result.additional_keys)
+            print(result)
+            match result.analysis_type:
+                case AnalysisType.CLUSTERING:
+                    assert isinstance(result, ClusteringAnalysisResult)
+                    status.write(
+                        f"Total number of articles : {millify(result.articles_count) if result.articles_count else 'N/A'}"
+                    )
+                    status.write(f"Total number of clusters : {result.clusters_count}")
+                    if result.evaluation:
+                        status.write(
+                            f"Total number of relevant clusters : {result.evaluation.relevant_clusters_count}"
+                        )
+                        status.write(
+                            f"Total number of somewhat relevant clusters : {result.evaluation.somewhat_relevant_clusters_count}"
+                        )
+                        status.write(
+                            f"Total number of irrelevant clusters : {result.evaluation.irrelevant_clusters_count}"
+                        )
+                    else:
+                        status.write("No evaluation available")
+                case AnalysisType.REPORT:
+                    status.write(
+                        f"Total number of articles : {millify(result.articles_count) if result.articles_count else 'N/A'}"
+                    )
+                case _:
+                    raise ValueError(f"Unknown analysis type: {result.analysis_type}")
 
 
 with st.sidebar:
-    _list_sessions(workspace)
+    _list_runs(workspace)
 
 
-def display_session_metrics(session: ClusteringSession):
+def display_clustering_run_metrics(clustering_result: ClusteringAnalysisResult):
     metrics = [
-        ("Total number of topics", session.clusters_count),
-        ("Relevant topics", session.relevant_clusters_count),
-        ("Somewhat relevant topics", session.somewhat_relevant_clusters_count),
-        ("Irrelevant topics", session.irrelevant_clusters_count),
-        ("Number of articles analysed", millify(session.articles_count, precision=2)),
+        ("Total number of topics", clustering_result.clusters_count),
+        (
+            "Relevant topics",
+            clustering_result.evaluation.relevant_clusters_count
+            if clustering_result.evaluation
+            else "N/A",
+        ),
+        (
+            "Somewhat relevant topics",
+            clustering_result.evaluation.somewhat_relevant_clusters_count
+            if clustering_result.evaluation
+            else "N/A",
+        ),
+        (
+            "Irrelevant topics",
+            clustering_result.evaluation.irrelevant_clusters_count
+            if clustering_result.evaluation
+            else "N/A",
+        ),
+        (
+            "Number of articles analysed",
+            millify(clustering_result.articles_count, precision=2),
+        ),
     ]
 
     cols = st.columns(len(metrics))
@@ -166,10 +200,8 @@ def display_session_metrics(session: ClusteringSession):
         cols[i].metric(label, value)
 
 
-display_session_metrics(selected_session)
-
-if selected_session.summary:
-    st.info(f"**{selected_session.summary}**", icon="🔥")
+def display_clustering_run_summary(clustering_result: ClusteringAnalysisResult):
+    st.info(f"**{clustering_result.summary}**", icon="🔥")
 
 
 def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
@@ -228,12 +260,12 @@ def display_clusters(clusters: list[ClusterWithArticles], tab_id: str):
 
 def fetch_clusters(
     relevancy_filter: RelevancyFilter,
-    session_id: str,
+    run_id: str,
     workspace_id: str,
 ):
-    clusters_with_articles = list_clusters_with_articles_for_session.sync(
+    clusters_with_articles = list_clusters_with_articles_for_run.sync(
         client=client,
-        session_id=session_id,
+        analysis_run_id=run_id,
         workspace_id=workspace_id,
         relevancy_filter=relevancy_filter,
     )
@@ -284,33 +316,42 @@ tab_title_to_filter = {
     "Not evaluated": RelevancyFilter.UNKNOWN,
 }
 
-tabs = st.tabs(list(tab_title_to_filter.keys()))
+if selected_run.result and isinstance(selected_run.result, ClusteringAnalysisResult):
+    display_clustering_run_metrics(selected_run.result)
 
-for tab, filter in zip(tabs, tab_title_to_filter.values()):
-    with tab:
-        assert selected_session.field_id and workspace.field_id
-        clusters_with_articles = fetch_clusters(
-            filter,
-            selected_session.field_id,
-            workspace.field_id,
-        )
+    if selected_run.result.summary:
+        display_clustering_run_summary(selected_run.result)
 
-        if not clusters_with_articles:
-            st.warning("No topics found.")
-            continue
+    tabs = st.tabs(list(tab_title_to_filter.keys()))
 
-        page = st.session_state.get(f"page_{filter}", 1)
+    for tab, filter in zip(tabs, tab_title_to_filter.values()):
+        with tab:
+            assert selected_run.field_id and workspace.field_id
+            clusters_with_articles = fetch_clusters(
+                filter,
+                selected_run.field_id,
+                workspace.field_id,
+            )
 
-        display_clusters(
-            clusters_with_articles[
-                (page - 1) * CLUSTERS_PER_PAGE : page * CLUSTERS_PER_PAGE
-            ],
-            tab_id=str(filter),
-        )
+            if not clusters_with_articles:
+                st.warning("No topics found.")
+                continue
 
-        display_pagination(
-            total_items=len(clusters_with_articles),
-            items_per_page=CLUSTERS_PER_PAGE,
-            current_page=page,
-            filter=str(filter),
-        )
+            page = st.session_state.get(f"page_{filter}", 1)
+
+            display_clusters(
+                clusters_with_articles[
+                    (page - 1) * CLUSTERS_PER_PAGE : page * CLUSTERS_PER_PAGE
+                ],
+                tab_id=str(filter),
+            )
+
+            display_pagination(
+                total_items=len(clusters_with_articles),
+                items_per_page=CLUSTERS_PER_PAGE,
+                current_page=page,
+                filter=str(filter),
+            )
+
+elif selected_run.result and isinstance(selected_run.result, ReportAnalysisResult):
+    st.write(selected_run.result.report_content)

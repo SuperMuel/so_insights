@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 from attrs import define as _attrs_define
 from dateutil.parser import isoparse
 
-from ..models.analysis_run_create_analysis_type import AnalysisRunCreateAnalysisType
+from ..models.analysis_type import AnalysisType
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -21,14 +21,14 @@ class AnalysisRunCreate:
     Attributes:
         data_start (datetime.datetime):
         data_end (datetime.datetime):
-        analysis_type (AnalysisRunCreateAnalysisType):
+        analysis_type (AnalysisType):
         params (Union['ClusteringAnalysisParams', 'ReportAnalysisParams', None, Unset]): Parameters for the analysis. If
             None, default parameters for the workspace will be used.
     """
 
     data_start: datetime.datetime
     data_end: datetime.datetime
-    analysis_type: AnalysisRunCreateAnalysisType
+    analysis_type: AnalysisType
     params: Union["ClusteringAnalysisParams", "ReportAnalysisParams", None, Unset] = UNSET
 
     def to_dict(self) -> dict[str, Any]:
@@ -74,7 +74,7 @@ class AnalysisRunCreate:
 
         data_end = isoparse(d.pop("data_end"))
 
-        analysis_type = AnalysisRunCreateAnalysisType(d.pop("analysis_type"))
+        analysis_type = AnalysisType(d.pop("analysis_type"))
 
         def _parse_params(data: object) -> Union["ClusteringAnalysisParams", "ReportAnalysisParams", None, Unset]:
             if data is None:

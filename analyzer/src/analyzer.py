@@ -2,6 +2,7 @@ import asyncio
 import logging
 from shared.models import (
     AnalysisRun,
+    AnalysisType,
     Cluster,
     ClusterEvaluation,
     ClusteringAnalysisResult,
@@ -66,9 +67,9 @@ class Analyzer:
         """
 
         match run.analysis_type:
-            case "clustering":
+            case AnalysisType.CLUSTERING:
                 return await self.handle_clustering_run(run)
-            case "report":
+            case AnalysisType.REPORT:
                 return await self.handle_report_run(run)
 
         raise ValueError(f"Unknown analysis type: {run.analysis_type}")
@@ -79,7 +80,7 @@ class Analyzer:
         """
 
         # check run type
-        if run.analysis_type != "report":
+        if run.analysis_type != AnalysisType.REPORT:
             raise ValueError(f"Run {run.id} is not a report run")
 
         raise NotImplementedError("Report runs are not implemented yet")
@@ -93,9 +94,9 @@ class Analyzer:
         2. Executes clustering
         3. Generates cluster overviews
         4. Evaluates clusters
-        5. Generates conversation starters and session summary
+        5. Generates conversation starters and clustering summary
 
-        Handles exceptions and updates session status accordingly.
+        Handles exceptions and updates clustering status accordingly.
 
         Args:
             run (AnalysisRun): The run to be processed.
@@ -107,14 +108,14 @@ class Analyzer:
             ValueError: If the run is not a clustering run.
         """
 
-        if run.analysis_type != "clustering":
+        if run.analysis_type != AnalysisType.CLUSTERING:
             raise ValueError(f"Run {run.id} is not a clustering run")
 
         try:
             assert run.status in [
                 Status.pending,
                 Status.running,
-            ]  # Session can already be set to be running to avoid multiple processing
+            ]  # Run can already be set to be running to avoid multiple processing
 
             if run.status == Status.pending:
                 run.status = Status.running
@@ -239,7 +240,7 @@ class Analyzer:
         Updates the relevancy counts for a clustering run based on cluster evaluations.
 
         Calculates and sets the counts for highly relevant, somewhat relevant, and irrelevant
-        clusters in the session.
+        clusters in the clustering run.
 
         Args:
             run (AnalysisRun): The run to update.
@@ -248,7 +249,7 @@ class Analyzer:
             ValueError: If the run is not a clustering run or has no result.
         """
 
-        if run.analysis_type != "clustering":
+        if run.analysis_type != AnalysisType.CLUSTERING:
             raise ValueError(f"Run {run.id} is not a clustering run")
 
         if not run.result:

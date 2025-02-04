@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from shared.language import Language
 from shared.models import (
     AnalysisRun,
+    AnalysisType,
     ClusterOverview,
     ClusteringAnalysisResult,
     Workspace,
@@ -54,10 +55,10 @@ class ClusteringAnalysisSummarizer:
 
         include_summary = (
             len(overviews)
-            < analyzer_settings.INCLUDE_CLUSTER_SUMMARIES_FOR_SESSION_SUMMARY_THRESHOLD
+            < analyzer_settings.INCLUDE_CLUSTER_SUMMARIES_FOR_CLUSTERING_SUMMARY_THRESHOLD
         )
 
-        overviews = overviews[: analyzer_settings.SESSION_SUMMARY_MAX_CLUSTERS]
+        overviews = overviews[: analyzer_settings.CLUSTERING_SUMMARY_MAX_CLUSTERS]
 
         if include_summary:
             return "\n\n".join(
@@ -109,7 +110,7 @@ class ClusteringAnalysisSummarizer:
             Filters for relevant clusters to focus the summary on the most important content.
         """
 
-        if run.analysis_type != "clustering":
+        if run.analysis_type != AnalysisType.CLUSTERING:
             raise ValueError(f"Run {run.id} is not a clustering run")
 
         if not run.result:

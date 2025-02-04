@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Header
 
 from shared.models import (
     AnalysisRun,
+    AnalysisType,
     Cluster,
     IngestionConfig,
     IngestionRun,
@@ -124,7 +125,7 @@ ExistingAnalysisRun = Annotated[AnalysisRun, Depends(get_analysis_run)]
 async def get_clustering_run(
     analysis_run: ExistingAnalysisRun,
 ) -> AnalysisRun:
-    if analysis_run.analysis_type != "clustering":
+    if analysis_run.analysis_type != AnalysisType.CLUSTERING:
         raise HTTPException(
             status_code=404, detail="Analysis run is not a clustering run"
         )
@@ -137,7 +138,7 @@ ExistingClusteringRun = Annotated[AnalysisRun, Depends(get_clustering_run)]
 async def get_report_run(
     analysis_run: ExistingAnalysisRun,
 ) -> AnalysisRun:
-    if analysis_run.analysis_type != "report":
+    if analysis_run.analysis_type != AnalysisType.REPORT:
         raise HTTPException(status_code=404, detail="Analysis run is not a report run")
     return analysis_run
 

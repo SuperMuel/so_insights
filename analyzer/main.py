@@ -24,6 +24,7 @@ from langchain.chat_models import init_chat_model
 from shared.db import get_client, my_init_beanie
 from shared.models import (
     AnalysisRun,
+    AnalysisType,
     Cluster,
     ClusteringAnalysisParams,
     ClusteringAnalysisResult,
@@ -115,7 +116,7 @@ def create_clustering_analysis_tasks(
                     workspace_id=workspace.id,
                     data_start=datetime.now() - timedelta(days=days),
                     data_end=datetime.now(),
-                    analysis_type="clustering",
+                    analysis_type=AnalysisType.CLUSTERING,
                     params=ClusteringAnalysisParams(
                         hdbscan_settings=workspace.hdbscan_settings,
                     ),
@@ -151,7 +152,7 @@ def generate_overviews(
                 typer.echo(f"No run found for the given id: {run_id}", err=True)
                 continue
 
-            if run.analysis_type != "clustering":
+            if run.analysis_type != AnalysisType.CLUSTERING:
                 raise ValueError(
                     f"This analysis run is not a clustering AnalysisRun: {run_id}"
                 )
@@ -191,7 +192,7 @@ def evaluate(runs_ids: list[str]):
                 typer.echo(f"No run found for the given id: {run_id}", err=True)
                 continue
 
-            if run.analysis_type != "clustering":
+            if run.analysis_type != AnalysisType.CLUSTERING:
                 typer.echo(
                     f"This analysis run is not a clustering AnalysisRun: {run_id}",
                     err=True,
@@ -263,7 +264,7 @@ def summarize_clustering_run(run_id: str) -> None:
             typer.echo(f"No run found for the given id: {run_id}", err=True)
             return
 
-        if run.analysis_type != "clustering":
+        if run.analysis_type != AnalysisType.CLUSTERING:
             typer.echo(
                 f"This analysis run is not a clustering AnalysisRun: {run_id}",
                 err=True,
@@ -302,7 +303,7 @@ def repair():
             workspace = await Workspace.get(run.workspace_id)
             assert workspace and run.id
 
-            if run.analysis_type != "clustering":
+            if run.analysis_type != AnalysisType.CLUSTERING:
                 typer.echo(
                     f"This analysis run is not a clustering AnalysisRun: {run.id}",
                     err=True,

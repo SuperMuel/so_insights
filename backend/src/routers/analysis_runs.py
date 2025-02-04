@@ -210,11 +210,11 @@ def _get_default_analysis_params(
     analysis_type: AnalysisType,
 ) -> AnalysisParams:
     match analysis_type:
-        case "clustering":
+        case AnalysisType.CLUSTERING:
             return ClusteringAnalysisParams(
                 hdbscan_settings=workspace.hdbscan_settings,
             )
-        case "report":
+        case AnalysisType.REPORT:
             return ReportAnalysisParams()
 
     raise ValueError(

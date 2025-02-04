@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class AnalysisRunAnalysisType(str, Enum):
+class AnalysisType(str, Enum):
     CLUSTERING = "clustering"
     REPORT = "report"
 

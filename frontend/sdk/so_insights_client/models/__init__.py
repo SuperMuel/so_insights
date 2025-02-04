@@ -1,11 +1,8 @@
 """Contains all the data models used in inputs/outputs"""
 
-from .analysis_result import AnalysisResult
-from .analysis_result_analysis_type import AnalysisResultAnalysisType
 from .analysis_run import AnalysisRun
-from .analysis_run_analysis_type import AnalysisRunAnalysisType
 from .analysis_run_create import AnalysisRunCreate
-from .analysis_run_create_analysis_type import AnalysisRunCreateAnalysisType
+from .analysis_type import AnalysisType
 from .article import Article
 from .article_content_cleaner_output import ArticleContentCleanerOutput
 from .article_evaluation import ArticleEvaluation
@@ -18,6 +15,8 @@ from .cluster_feedback import ClusterFeedback
 from .cluster_overview import ClusterOverview
 from .cluster_with_articles import ClusterWithArticles
 from .clustering_analysis_params import ClusteringAnalysisParams
+from .clustering_analysis_result import ClusteringAnalysisResult
+from .clustering_run_evaluation_result import ClusteringRunEvaluationResult
 from .content_fetching_result import ContentFetchingResult
 from .hdbscan_settings import HdbscanSettings
 from .http_validation_error import HTTPValidationError
@@ -34,6 +33,7 @@ from .paginated_response_article import PaginatedResponseArticle
 from .region import Region
 from .relevancy_filter import RelevancyFilter
 from .report_analysis_params import ReportAnalysisParams
+from .report_analysis_result import ReportAnalysisResult
 from .rss_ingestion_config import RssIngestionConfig
 from .rss_ingestion_config_create import RssIngestionConfigCreate
 from .rss_ingestion_config_update import RssIngestionConfigUpdate
@@ -51,12 +51,9 @@ from .workspace_create import WorkspaceCreate
 from .workspace_update import WorkspaceUpdate
 
 __all__ = (
-    "AnalysisResult",
-    "AnalysisResultAnalysisType",
     "AnalysisRun",
-    "AnalysisRunAnalysisType",
     "AnalysisRunCreate",
-    "AnalysisRunCreateAnalysisType",
+    "AnalysisType",
     "Article",
     "ArticleContentCleanerOutput",
     "ArticleEvaluation",
@@ -67,6 +64,8 @@ __all__ = (
     "ClusterEvaluationRelevanceLevel",
     "ClusterFeedback",
     "ClusteringAnalysisParams",
+    "ClusteringAnalysisResult",
+    "ClusteringRunEvaluationResult",
     "ClusterOverview",
     "ClusterWithArticles",
     "ContentFetchingResult",
@@ -83,6 +82,7 @@ __all__ = (
     "Region",
     "RelevancyFilter",
     "ReportAnalysisParams",
+    "ReportAnalysisResult",
     "RssIngestionConfig",
     "RssIngestionConfigCreate",
     "RssIngestionConfigUpdate",

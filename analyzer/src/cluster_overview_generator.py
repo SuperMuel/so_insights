@@ -4,6 +4,7 @@ from langchain import hub
 from shared.language import Language
 from shared.models import (
     AnalysisRun,
+    AnalysisType,
     Article,
     Cluster,
     ClusterOverview,
@@ -205,7 +206,7 @@ class ClusterOverviewGenerator:
             only_missing (bool): If True, only generate overviews for clusters without existing overviews.
         """
 
-        if run.analysis_type != "clustering":
+        if run.analysis_type != AnalysisType.CLUSTERING:
             raise ValueError(f"Run {run.id} is not a clustering run")
 
         logger.info(f"Generating overviews for run {run.id}")

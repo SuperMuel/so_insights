@@ -3,6 +3,7 @@ from typing import Annotated, Sequence
 from pydantic import BaseModel, StringConstraints
 from shared.models import (
     AnalysisRun,
+    AnalysisType,
     Cluster,
     ClusterEvaluation,
     ClusterOverview,
@@ -210,7 +211,7 @@ class ClusterEvaluator:
             run (AnalysisRun): The clustering run whose clusters are to be evaluated.
         """
 
-        if run.analysis_type != "clustering":
+        if run.analysis_type != AnalysisType.CLUSTERING:
             raise ValueError(f"Run {run.id} is not a clustering run")
 
         clusters = await run.get_sorted_clusters()

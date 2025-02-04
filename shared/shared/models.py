@@ -461,8 +461,6 @@ class Article(Document):
 
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
 
-AnalysisType = Literal["clustering", "report"]
-
 
 class ClusteringAnalysisParams(BaseModel):
     """Parameters specific to clustering analysis."""
@@ -482,17 +480,15 @@ class ReportAnalysisParams(BaseModel):
     # )
 
 
+class AnalysisType(str, Enum):
+    CLUSTERING = "clustering"
+    REPORT = "report"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
 AnalysisParams = ClusteringAnalysisParams | ReportAnalysisParams
-
-
-class AnalysisResult(BaseModel):
-    """Base class for analysis results."""
-
-    analysis_type: AnalysisType
-
-    articles_count: int | None = Field(
-        default=None, description="Number of articles processed in this session"
-    )
 
 
 class ClusteringRunEvaluationResult(BaseModel):
@@ -507,10 +503,14 @@ class ClusteringRunEvaluationResult(BaseModel):
     )
 
 
-class ClusteringAnalysisResult(AnalysisResult):
+class ClusteringAnalysisResult(BaseModel):
     """Results specific to clustering analysis."""
 
-    analysis_type: AnalysisType = "clustering"
+    analysis_type: AnalysisType = AnalysisType.CLUSTERING
+
+    articles_count: int | None = Field(
+        default=None, description="Number of articles processed in this session"
+    )
 
     clusters_count: int = Field(..., description="Total number of clusters formed")
     noise_articles_ids: list[PydanticObjectId] = Field(
@@ -536,14 +536,21 @@ class ClusteringAnalysisResult(AnalysisResult):
     )
 
 
-class ReportAnalysisResult(AnalysisResult):
+class ReportAnalysisResult(BaseModel):
     """Results specific to report-style analysis."""
 
-    analysis_type: AnalysisType = "report"
+    analysis_type: AnalysisType = AnalysisType.REPORT
+
+    articles_count: int | None = Field(
+        default=None, description="Number of articles processed in this session"
+    )
 
     report_content: str = Field(
         ..., description="Markdown content of the generated report"
     )
+
+
+AnalysisResult = ClusteringAnalysisResult | ReportAnalysisResult
 
 
 class AnalysisRun(Document):
@@ -610,7 +617,7 @@ class AnalysisRun(Document):
         Raises:
             ValueError: If the run is not a clustering run.
         """
-        if self.analysis_type != "clustering":
+        if self.analysis_type != AnalysisType.CLUSTERING:
             raise ValueError(f"Run {self.id} is not a clustering run")
 
         clusters = Cluster.find_many(Cluster.session_id == self.id)
