@@ -30,17 +30,22 @@ The Shared module is used by:
 
 6. **Article**: This is a single piece of content, like a news article or blog post, that the system has collected.
 
-7. **ClusteringSession**: Represents a complete execution of the clustering algorithm on a set of articles. It includes metadata such as the time range of articles processed, the number of clusters formed, and various statistics about the clustering results.
+7. **AnalysisRun**: Represents a single execution of an analysis process, replacing `ClusteringSession`. It can represent different types of analyses, such as clustering or report generation.
 
 8. **Cluster**: Represents a group of thematically related articles identified by the clustering algorithm. Each cluster contains references to its member articles, typically sorted by their relevance or similarity to the cluster's central theme. Clusters are the primary output of the analysis process, providing a structured way to navigate and understand large volumes of content.
 
+
 9. **ClusterOverview**: LLM-generated title and summary of a cluster's content that captures the main theme or topic shared by the majority of articles in the cluster. This overview is essential for quickly understanding the content of a cluster without needing to read all its articles.
 
-10. **ClusterEvaluation**: LLM-generated assessment of a cluster's quality and relevance to the workspace's focus. This evaluation helps prioritize clusters for user review and can be used to refine the clustering process.
+10. **AnalysisParams**: Base class for analysis parameters, with subclasses like `ClusteringAnalysisParams` and `ReportAnalysisParams` for different analysis types.
+11. **AnalysisResult**: Base class for analysis results, with subclasses like `ClusteringAnalysisResult` and `ReportAnalysisResult` to store results specific to each analysis type.
+12. **ClusteringAnalysisResult**: Stores results specific to clustering analysis, such as cluster counts and summaries.
+13. **ClusterEvaluation**: LLM-generated assessment of a cluster's quality and relevance to the workspace's focus. This evaluation helps prioritize clusters for user review and can be used to refine the clustering process.
 
-11. **ClusterFeedback**: This allows users to say whether they found a particular group of articles useful or not helps improve the analysis process over time.
+14. **ClusterFeedback**: This allows users to say whether they found a particular group of articles useful or not helps improve the analysis process over time.
 
-12. **Starters**: These are pre-made questions or conversation starters to help users begin exploring the collected information using the chatbot
+15. **Starters**: These are pre-made questions or conversation starters to help users begin exploring the collected information using the chatbot
+
 
 ### Utilities
 

@@ -12,7 +12,6 @@ Before diving into the features, let's explain some key concepts:
 - **Vector**: In this context, a vector is the mathematical representation of an embedding. Each article is represented as a vector in a high-dimensional space.
 - **Clustering**: The process of grouping similar articles together based on their vector representations.
 - **HDBSCAN**: Hierarchical Density-Based Spatial Clustering of Applications with Noise, the algorithm we use for clustering.
-- **Large Language Model (LLM)**: An AI system trained to understand and generate human-like text. We use LLMs to generate summaries, evaluations, and insights.
 
 ## Features
 
@@ -105,7 +104,7 @@ The analyzer works with several important data models:
 
 - **Workspace**: Represents a project or topic, containing settings and metadata for all related content.
 - **Article**: Represents a single piece of content (e.g., news article, blog post) collected during ingestion.
-- **ClusteringSession**: Represents a single run of the clustering process on a set of articles. It also maintains the state of the task.
+- **AnalysisRun**: Represents a single run of the analysis process on a set of articles. It also maintains the state of the task.
 - **Cluster**: A group of related articles identified during clustering.
 - **ClusterOverview**: A summary of a cluster's content, including a title and brief description.
 - **ClusterEvaluation**: An assessment of a cluster's relevance and quality.

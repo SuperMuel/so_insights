@@ -36,18 +36,27 @@ The Ingester component is responsible for:
 - Performing web searches to online news sources based on user predefined queries
 - Fetches full content of articles and cleans it using LLM.
 - Ingesting articles from RSS feeds
+- Getting the full content of articles using Firecrawl or JinaAI.
 - Coming soon : Ingesting data from Twitter, Linkedin.. 
 - Storing articles in MongoDB and indexing them in Pinecone
 - Watching for tasks and executing them in the background
 
 ### Analyzer
 
-The Analyzer component handles:
+The Analyzer component handles different types of analyses:
+
+**1. Clustering**
 - Clustering of articles using HDBSCAN algorithm
-- Generating titles summaries for clusters using LLMs
+- Generating titles and summaries for clusters using LLMs
 - Evaluating the relevance and quality of clusters based on user preferences
 - Generating conversation starters for the chatbot
-- Watching for tasks and executing them in the background
+
+**2. Report Generation**
+- Generating a full fledged report by analyzing the entire content of the articles.
+- Uses LangGraph to orchestrate the different steps of the report generation.
+- `o3-mini` to identify the outline of the report, `claude-3-5-sonnet` to generate each section.
+
+The analyzer is watching for tasks and executing them in the background
 
 ### Backend
 
@@ -81,11 +90,11 @@ The Shared component provides:
 - **API Framework**: FastAPI
 - **Frontend Framework**: Streamlit
 - **Clustering**: scikit-learn, HDBSCAN
-- **LLMs**: LangChain with `gpt-4o-mini`
+- **LLMs**: LangChain and LangGraph with `gpt-4o-mini`, `o3-mini`, `claude-3-5-sonnet`
 - **Image Generation**: GetImg.ai API and Flux
 - **Vector Database**: Pinecone
 - **Dependency Management**: Poetry
-- **Deployment**: Docker and Streamlit Community Cloud
+- **Deployment**: Docker and Scaleway Serverless Containers
 
 ## Getting Started
 
