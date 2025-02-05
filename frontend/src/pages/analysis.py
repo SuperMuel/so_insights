@@ -117,11 +117,6 @@ def create_new_analysis_run() -> None:
             st.rerun()
 
 
-with st.sidebar:
-    selected_run = select_session_or_stop(client, workspace)
-    st.divider()
-
-
 @st.fragment(run_every=10)
 def _list_runs(workspace: Workspace):
     """
@@ -173,7 +168,9 @@ def _list_runs(workspace: Workspace):
         if result := session.result:
             match result.analysis_type:
                 case AnalysisType.CLUSTERING:
-                    assert isinstance(result, ClusteringAnalysisResult)
+                    assert isinstance(
+                        result, ClusteringAnalysisResult
+                    ), f"Expected ClusteringAnalysisResult, got {type(result)}"
                     status.write(
                         f"Total number of articles : {millify(result.articles_count) if result.articles_count else 'N/A'}"
                     )
@@ -199,10 +196,15 @@ def _list_runs(workspace: Workspace):
 
 
 with st.sidebar:
+    select_run_container = st.container()
+    st.divider()
     st.subheader("🕘 My Last Analysis")
     if st.button("New Analysis", use_container_width=True, icon="➕"):
         create_new_analysis_run()
     _list_runs(workspace)
+
+    with select_run_container:
+        selected_run = select_session_or_stop(client, workspace)
 
 
 def display_clustering_run_metrics(clustering_result: ClusteringAnalysisResult):
