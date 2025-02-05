@@ -3,7 +3,7 @@ import operator
 from typing_extensions import TypedDict
 import anthropic
 from .types import Section
-from shared.models import Article, Language, ModelDescription
+from shared.models import Article
 
 
 class ReportState(TypedDict):

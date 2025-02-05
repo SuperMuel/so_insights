@@ -1,8 +1,9 @@
 from datetime import date, datetime
+from beanie.operators import In
 from logging import getLogger
 from typing import Literal
 
-from beanie import SortDirection
+from beanie import PydanticObjectId, SortDirection
 from fastapi import APIRouter, Query, status
 
 from shared.models import Article, Workspace, utc_datetime_factory
@@ -71,6 +72,29 @@ async def update_workspace(
     update_data = workspace_update.model_dump(exclude_unset=True)
     update_data["updated_at"] = utc_datetime_factory()
     return await workspace.update({"$set": update_data})
+
+
+@router.get(
+    "/{workspace_id}/articles/by-ids",
+    response_model=list[Article],
+    status_code=status.HTTP_200_OK,
+    operation_id="get_articles_by_ids",
+)
+async def get_articles_by_ids(
+    workspace: ExistingWorkspace,
+    article_ids: list[str] = Query(..., description="List of article IDs to fetch"),
+) -> list[Article]:
+    """
+    Get multiple articles by their IDs for a given workspace.
+
+    Only returns articles that belong to the specified workspace.
+    """
+    articles = await Article.find(
+        Article.workspace_id == workspace.id,
+        In(Article.id, [PydanticObjectId(id) for id in article_ids]),
+    ).to_list()
+
+    return articles
 
 
 @router.get(

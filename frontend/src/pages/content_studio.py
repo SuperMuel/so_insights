@@ -5,14 +5,11 @@ from st_copy_to_clipboard import st_copy_to_clipboard
 import pandas as pd
 from src.image_generation import GetImgAI, generate_image_prompt
 from sdk.so_insights_client.api.analysis_runs import (
-    list_analysis_runs,
     list_clusters_for_clustering_run,
-    list_clusters_with_articles_for_run,
 )
 from sdk.so_insights_client.models.list_clusters_for_clustering_run_relevance_levels_type_0_item import (
     ListClustersForClusteringRunRelevanceLevelsType0Item as RelevanceLevelsItem,
 )
-from sdk.so_insights_client.models.analysis_run import AnalysisRun
 from sdk.so_insights_client.models.cluster import Cluster
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.language import Language

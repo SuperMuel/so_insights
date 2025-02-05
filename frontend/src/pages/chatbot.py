@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from langchain_core.runnables.config import RunnableConfig
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import Iterable, Sequence
 from uuid import uuid4
 from pydantic import HttpUrl
 from langchain.chains import create_history_aware_retriever
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from sdk.so_insights_client.api.starters import get_latest_starters
+from sdk.so_insights_client.api.workspaces import get_articles_by_ids
+from sdk.so_insights_client.models.article import Article
+from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.app_settings import app_settings
 from src.shared import get_authenticated_client, get_workspace_or_stop
@@ -193,18 +196,38 @@ def _fetch_qa_prompt():
     return hub.pull(app_settings.QA_RAG_PROMPT_REF)
 
 
-def convert_docs(docs: Iterable[Document]) -> SetOfUniqueArticles:
+def fetch_docs(docs: Iterable[Document]) -> SetOfUniqueArticles:
     assert workspace.field_id
-    articles = list(map(_ArticleDocument.from_document, docs))
+    articles_ids = [doc.id for doc in docs if doc.id]
 
+    if not articles_ids:
+        st.warning(
+            "No relevant articles found to ground the answer. The chatbot will rely only on its internal knowledge, which may lead to inaccurate or outdated responses."
+        )
+        return SetOfUniqueArticles([])
+    # fetch the full articles from the backend
+    articles = get_articles_by_ids.sync(
+        client=client,
+        workspace_id=workspace.field_id,
+        article_ids=articles_ids,
+    )
+
+    if not articles or isinstance(articles, HTTPValidationError):
+        st.error(f"Error fetching articles: {articles}")
+        st.stop()
+
+    print(f"Fetched {len(articles)} articles")
     # deduplicate
     return SetOfUniqueArticles(articles)  # type:ignore
 
 
-def format_docs(articles: SetOfUniqueArticles) -> str:
+def format_docs(articles: SetOfUniqueArticles | Sequence[Article]) -> str:
+    if not articles:
+        return "No articles found to ground the answer."
     separator = "\n\n---\n\n"
+    print(f"Formatting {len(articles)} articles")
     return separator.join(
-        f"{article.title} - (Published on {article.date.strftime('%Y-%m-%d')})\n{article.url}\n{article.content if article.content else article.body}"
+        f"# {article.title} - (Published on {article.date.strftime('%Y-%m-%d')})\n{article.url}\n{article.content if article.content else article.body}"
         for article in articles
     )
 
@@ -214,7 +237,7 @@ def create_chain(retriever: VectorStoreRetriever):
     rag_chain = (
         RunnablePassthrough.assign(
             context=_create_history_aware_retriever(retriever)
-            | convert_docs
+            | fetch_docs
             | format_docs,
             date=RunnableLambda(lambda _: datetime.now().strftime("%Y-%m-%d")),
         )
