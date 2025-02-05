@@ -1,5 +1,6 @@
 from typing import Literal
 import requests
+from sdk.so_insights_client.models.analysis_type import AnalysisType
 from src.app_settings import app_settings
 from st_copy_to_clipboard import st_copy_to_clipboard
 import pandas as pd
@@ -87,7 +88,11 @@ def select_clusters(workspace: Workspace):
     # TODO : add relevancy filter
     with st.form("select_clusters"):
         st.info("Choose the topics you wish to discuss in the content. ⬇️", icon="ℹ️")
-        session = select_session_or_stop(client, workspace)
+        session = select_session_or_stop(
+            client,
+            workspace,
+            analysis_types=[AnalysisType.CLUSTERING],
+        )
 
         assert workspace.field_id and session.field_id
 

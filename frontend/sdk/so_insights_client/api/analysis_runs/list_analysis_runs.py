@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.analysis_run import AnalysisRun
+from ...models.analysis_type import AnalysisType
 from ...models.http_validation_error import HTTPValidationError
 from ...models.status import Status
 from ...types import UNSET, Response, Unset
@@ -15,6 +16,7 @@ def _get_kwargs(
     workspace_id: str,
     *,
     statuses: Union[None, Unset, list[Status]] = UNSET,
+    analysis_types: Union[None, Unset, list[AnalysisType]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
@@ -35,6 +37,19 @@ def _get_kwargs(
     else:
         json_statuses = statuses
     params["statuses"] = json_statuses
+
+    json_analysis_types: Union[None, Unset, list[str]]
+    if isinstance(analysis_types, Unset):
+        json_analysis_types = UNSET
+    elif isinstance(analysis_types, list):
+        json_analysis_types = []
+        for analysis_types_type_0_item_data in analysis_types:
+            analysis_types_type_0_item = analysis_types_type_0_item_data.value
+            json_analysis_types.append(analysis_types_type_0_item)
+
+    else:
+        json_analysis_types = analysis_types
+    params["analysis_types"] = json_analysis_types
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
@@ -86,6 +101,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     statuses: Union[None, Unset, list[Status]] = UNSET,
+    analysis_types: Union[None, Unset, list[AnalysisType]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
@@ -95,6 +111,7 @@ def sync_detailed(
     Args:
         workspace_id (str):
         statuses (Union[None, Unset, list[Status]]):
+        analysis_types (Union[None, Unset, list[AnalysisType]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -108,6 +125,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         statuses=statuses,
+        analysis_types=analysis_types,
         x_organization_id=x_organization_id,
     )
 
@@ -123,6 +141,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     statuses: Union[None, Unset, list[Status]] = UNSET,
+    analysis_types: Union[None, Unset, list[AnalysisType]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
@@ -132,6 +151,7 @@ def sync(
     Args:
         workspace_id (str):
         statuses (Union[None, Unset, list[Status]]):
+        analysis_types (Union[None, Unset, list[AnalysisType]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -146,6 +166,7 @@ def sync(
         workspace_id=workspace_id,
         client=client,
         statuses=statuses,
+        analysis_types=analysis_types,
         x_organization_id=x_organization_id,
     ).parsed
 
@@ -155,6 +176,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     statuses: Union[None, Unset, list[Status]] = UNSET,
+    analysis_types: Union[None, Unset, list[AnalysisType]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
@@ -164,6 +186,7 @@ async def asyncio_detailed(
     Args:
         workspace_id (str):
         statuses (Union[None, Unset, list[Status]]):
+        analysis_types (Union[None, Unset, list[AnalysisType]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -177,6 +200,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         workspace_id=workspace_id,
         statuses=statuses,
+        analysis_types=analysis_types,
         x_organization_id=x_organization_id,
     )
 
@@ -190,6 +214,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     statuses: Union[None, Unset, list[Status]] = UNSET,
+    analysis_types: Union[None, Unset, list[AnalysisType]] = UNSET,
     x_organization_id: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
@@ -199,6 +224,7 @@ async def asyncio(
     Args:
         workspace_id (str):
         statuses (Union[None, Unset, list[Status]]):
+        analysis_types (Union[None, Unset, list[AnalysisType]]):
         x_organization_id (Union[None, Unset, str]):
 
     Raises:
@@ -214,6 +240,7 @@ async def asyncio(
             workspace_id=workspace_id,
             client=client,
             statuses=statuses,
+            analysis_types=analysis_types,
             x_organization_id=x_organization_id,
         )
     ).parsed

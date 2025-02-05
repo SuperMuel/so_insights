@@ -3,6 +3,7 @@ from dateutil.relativedelta import relativedelta
 from babel import Locale
 from sdk.so_insights_client.api.analysis_runs import list_analysis_runs
 from sdk.so_insights_client.models.analysis_run import AnalysisRun
+from sdk.so_insights_client.models.analysis_type import AnalysisType
 from sdk.so_insights_client.models.http_validation_error import HTTPValidationError
 from sdk.so_insights_client.models.language import Language
 import streamlit as st
@@ -82,7 +83,12 @@ def show_all_toasts():
         toasts.remove(toast)
 
 
-def select_session_or_stop(client: Client, workspace: Workspace) -> AnalysisRun:
+def select_session_or_stop(
+    client: Client,
+    workspace: Workspace,
+    *,
+    analysis_types: list[AnalysisType] | None = None,
+) -> AnalysisRun:
     """
     Allows the user to select an AnalysisRun for the current workspace.
     Stops the app if no AnalysisRuns are found or selected.
@@ -91,6 +97,7 @@ def select_session_or_stop(client: Client, workspace: Workspace) -> AnalysisRun:
         client=client,
         workspace_id=str(workspace.field_id),
         statuses=[Status.COMPLETED],
+        analysis_types=analysis_types,
     )
     if not analysis_runs:
         st.warning("No analysis runs found for this workspace.")

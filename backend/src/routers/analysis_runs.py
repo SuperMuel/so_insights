@@ -63,12 +63,16 @@ def filter_clusters_with_relevancy(
 async def list_analysis_runs(
     workspace: ExistingWorkspace,
     statuses: Annotated[list[Status] | None, Query()] = None,
+    analysis_types: Annotated[list[AnalysisType] | None, Query()] = None,
 ):
     """List all analysis runs for a workspace"""
     runs = AnalysisRun.find(AnalysisRun.workspace_id == workspace.id)
 
     if statuses is not None:
         runs = runs.find(In(AnalysisRun.status, statuses))
+
+    if analysis_types is not None:
+        runs = runs.find(In(AnalysisRun.analysis_type, analysis_types))
 
     runs = runs.sort(
         -AnalysisRun.created_at,  # type: ignore
