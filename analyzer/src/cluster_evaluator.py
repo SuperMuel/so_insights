@@ -214,7 +214,7 @@ class ClusterEvaluator:
         if run.analysis_type != AnalysisType.CLUSTERING:
             raise ValueError(f"Run {run.id} is not a clustering run")
 
-        clusters = await run.get_sorted_clusters()
+        clusters = await run.get_largest_clusters()
 
         if not clusters:
             logger.info("No clusters found for the given run.")

@@ -139,13 +139,6 @@ class Workspace(Document):
     class Settings:
         name: str = db_settings.mongodb_workspaces_collection
 
-    def get_sorted_sessions(self) -> FindMany["ClusteringSession"]:
-        return ClusteringSession.find(
-            ClusteringSession.workspace_id == self.id,
-        ).sort(
-            -ClusteringSession.data_end  # type:ignore
-        )
-
     async def get_starters(self) -> list["Starters"]:
         return await Starters.find(
             Starters.workspace_id == self.id,
@@ -604,20 +597,22 @@ class AnalysisRun(Document):
     class Settings:
         name = db_settings.mongodb_analysis_runs_collection
 
-    async def get_sorted_clusters(
+    async def get_largest_clusters(
         self,
         relevance_level: RelevanceLevel | None = None,
         limit: int | None = None,
     ) -> list["Cluster"]:
         """
-        Get a list of clusters from the Clustering run.
+        Get a list of clusters from the Clustering run, sorted by number of articles in descending order.
 
         Args:
-            relevance_level: The relevance level to filter the clusters by.
-            limit: The maximum number of clusters to return.
+            relevance_level: The relevance level to filter the clusters by. If provided, only returns clusters with matching relevance.
+            limit: The maximum number of clusters to return. If provided, returns at most this many clusters.
 
         Returns:
-            A list of clusters sorted by the number of articles in each cluster.
+            A list of clusters sorted by the number of articles in descending order (most articles first).
+            If relevance_level is provided, only includes clusters with that relevance level.
+            If limit is provided, returns at most that many clusters.
 
         Raises:
             ValueError: If the run is not a clustering run.

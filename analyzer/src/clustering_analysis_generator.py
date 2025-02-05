@@ -120,7 +120,7 @@ class ClusteringAnalysisSummarizer:
 
         logger.info(f"Generating run summary for run {run.id}.")
 
-        clusters = await run.get_sorted_clusters()
+        clusters = await run.get_largest_clusters()
 
         assert all(
             cluster.overview for cluster in clusters

@@ -4,7 +4,9 @@ from langchain import hub
 from pydantic import BaseModel, Field
 from shared.language import Language
 from shared.models import (
-    ClusterOverview,
+    AnalysisRun,
+    AnalysisType,
+    ReportAnalysisResult,
     Starters,
     Workspace,
 )
@@ -21,8 +23,12 @@ class ConversationStartersGenerationInput(BaseModel):
     """Input for the chat starters generation."""
 
     n: int = Field(..., gt=0, le=4)
-    data: list[ClusterOverview] = Field(...)
+    formatted_data: str = Field(
+        ...,
+        description="Formatted data to use as input for the chat starters generation.",
+    )
     language: Language
+    workspace_description: str
 
 
 class _QuestionsOutput(BaseModel):
@@ -50,10 +56,9 @@ class ConversationStartersGenerator:
         def _format_input(input: ConversationStartersGenerationInput) -> dict[str, Any]:
             return {
                 "n": input.n,
-                "data": "\n\n".join(
-                    [f"**{o.title}**\n{o.summary}" for o in input.data]
-                ),
+                "data": input.formatted_data,
                 "language": input.language.to_full_name(),
+                "workspace_description": input.workspace_description,
             }
 
         return (RunnableLambda(_format_input) | prompt | structured_llm).with_config(
@@ -85,53 +90,67 @@ class ConversationStartersGenerator:
 
         return await self.chain.ainvoke(input, config={"metadata": metadata})
 
-    async def generate_starters_for_workspace(
+    async def generate_new_conversation_starters(
         self,
         workspace: Workspace,
+        run: AnalysisRun,
         n: int = 4,
     ) -> None:
         """
         Generates and saves conversation starters for a specific workspace.
 
-        Processes the most recent and relevant cluster overviews to create
-        engaging questions tailored to the workspace's content and language.
+        Uses the last report or the largest relevant clusters of the analysis run
+        to create engaging questions tailored to the workspace's content and language.
 
         Args:
             workspace (Workspace): The workspace for which to generate starters.
-            n (int): The number of starters to generate (default: 4).
+            run (AnalysisRun): The analysis run to use to generate starters.
+            n (int): The maximum number of starters to generate (default: 4).
         """
 
         assert n > 0
         logger.info(
-            f"Generating chat starters for workspace {workspace.id} ({workspace.name})"
+            f"Generating chat starters for workspace {workspace.id} ({workspace.name}) with analysis run {run.id}"
         )
 
-        sessions = await workspace.get_sorted_sessions().to_list()
-        if not sessions:
-            logger.info(f"No clustering sessions found for workspace {workspace.id}")
-            return
-
-        overviews: list[ClusterOverview] = []
-
-        for session in sessions:
-            clusters = await session.get_sorted_clusters(
-                relevance_level="highly_relevant"
-            )
-            _overviews = [c.overview for c in clusters if c.overview]
-            overviews.extend(_overviews[: n - len(overviews)])
-
-            if len(overviews) >= n:
-                break
-
-        if not overviews:
-            logger.warning(f"No overviews found for workspace {workspace.id}")
-            return
+        match run.analysis_type:
+            case AnalysisType.CLUSTERING:
+                clusters = await run.get_largest_clusters(
+                    relevance_level="highly_relevant", limit=n
+                )
+                if not clusters:
+                    logger.warning(
+                        f"No relevant clusters found for the analysis run {run.id}"
+                    )
+                    return
+                overviews = [c.overview for c in clusters if c.overview]
+                data = "\n\n".join([f"**{o.title}**\n{o.summary}" for o in overviews])
+                logger.info(
+                    f"Using {len(overviews)} overviews of {len(clusters)} clusters for starters generation"
+                )
+            case AnalysisType.REPORT:
+                assert run.result is not None and isinstance(
+                    run.result, ReportAnalysisResult
+                )
+                data = run.result.report_content
+                logger.info(
+                    f"Using {len(data)} characters of report content for starters generation"
+                )
 
         input = ConversationStartersGenerationInput(
-            n=n, data=overviews, language=workspace.language
+            n=n,
+            formatted_data=data,
+            language=workspace.language,
+            workspace_description=workspace.description,
         )
 
-        output = await self.ainvoke(input, metadata={"workspace_id": workspace.id})
+        output = await self.ainvoke(
+            input,
+            metadata={
+                "workspace_id": workspace.id,
+                "analysis_run_id": run.id,
+            },
+        )
 
         assert workspace.id
         starters = await Starters(

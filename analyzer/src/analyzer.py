@@ -226,6 +226,16 @@ class Analyzer:
 
             logger.info(f"Report run '{run.id}' finished successfully.")
 
+            try:
+                await self.starters_generator.generate_new_conversation_starters(
+                    workspace, run
+                )
+            except Exception as e:
+                logger.exception(
+                    f"Error generating conversation starters for report run {run.id}",
+                    exc_info=e,
+                )
+
         except Exception as e:
             logger.exception(f"Error handling report run: {e}")
             run.status = Status.failed
@@ -361,12 +371,20 @@ class Analyzer:
 
             await self.update_relevancy_counts(run)
 
-            await asyncio.gather(
-                self.starters_generator.generate_starters_for_workspace(workspace),
-                self.clustering_analysis_summarizer.generate_summary_for_clustering_run(
-                    run
-                ),
-            )
+            try:
+                await asyncio.gather(
+                    self.starters_generator.generate_new_conversation_starters(
+                        workspace, run
+                    ),
+                    self.clustering_analysis_summarizer.generate_summary_for_clustering_run(
+                        run
+                    ),
+                )
+            except Exception as e:
+                logger.exception(
+                    f"Error generating conversation starters or summary for clustering run {run.id}",
+                    exc_info=e,
+                )
 
             logger.info(
                 f"Clustering run '{run.id}' finished. Found {run.result.clusters_count} clusters."

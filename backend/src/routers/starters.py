@@ -10,16 +10,19 @@ router = APIRouter(tags=["starters"])
     response_model=list[str],
     operation_id="get_latest_starters",
 )
-async def get_latest_starters(workspace: ExistingWorkspace):
+async def get_latest_starters(workspace: ExistingWorkspace) -> list[str]:
+    # Get the most recent starters document
     latest_starters = (
         await Starters.find(
             Starters.workspace_id == workspace.id,
         )
         .sort(-Starters.created_at)  # type: ignore
-        .first_or_none()
+        .limit(4)
     )
 
-    if not latest_starters:
-        return []
+    output: list[str] = []
 
-    return latest_starters.starters
+    while len(output) < 4 and latest_starters:
+        output.extend(latest_starters.pop(0).starters)
+
+    return output[:4]

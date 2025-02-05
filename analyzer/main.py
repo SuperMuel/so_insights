@@ -29,6 +29,7 @@ from shared.models import (
     Cluster,
     ClusteringAnalysisParams,
     ClusteringAnalysisResult,
+    Starters,
     Status,
     Workspace,
 )
@@ -241,7 +242,24 @@ def generate_starters(
                     )
 
         for workspace in workspaces:
-            await analyzer.starters_generator.generate_starters_for_workspace(workspace)
+            run = (
+                await AnalysisRun.find(
+                    AnalysisRun.workspace_id == workspace.id,
+                    AnalysisRun.status == Status.completed,
+                )
+                .sort(-AnalysisRun.created_at)  # type: ignore
+                .first_or_none()
+            )
+            if not run:
+                typer.echo(
+                    f"No clustering run found for the given workspace: {workspace.id}",
+                    err=True,
+                )
+                continue
+
+            await analyzer.starters_generator.generate_new_conversation_starters(
+                workspace, run
+            )
 
         mongo_client.close()
 
@@ -353,12 +371,18 @@ def repair():
                     run
                 )
 
-            if evaluations_changed or not (await workspace.get_last_starters()):
+            last_starters = await Starters.find_one(
+                Starters.workspace_id == workspace.id,
+                sort=(-Starters.created_at),  # type: ignore
+            )
+            if not last_starters or (
+                evaluations_changed and run.created_at > last_starters.created_at
+            ):
                 typer.echo(
                     f"Generating conversation starters for workspace: {workspace.id}"
                 )
-                await analyzer.starters_generator.generate_starters_for_workspace(
-                    workspace
+                await analyzer.starters_generator.generate_new_conversation_starters(
+                    workspace, run
                 )
 
             typer.echo(f"Completed repairs for run: {run.id}")
