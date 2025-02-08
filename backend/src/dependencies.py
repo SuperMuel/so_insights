@@ -138,7 +138,7 @@ ExistingClusteringRun = Annotated[AnalysisRun, Depends(get_clustering_run)]
 async def get_report_run(
     analysis_run: ExistingAnalysisRun,
 ) -> AnalysisRun:
-    if analysis_run.analysis_type != AnalysisType.REPORT:
+    if analysis_run.analysis_type != AnalysisType.AGENTIC:
         raise HTTPException(status_code=404, detail="Analysis run is not a report run")
     return analysis_run
 

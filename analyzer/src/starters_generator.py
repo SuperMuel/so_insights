@@ -128,7 +128,7 @@ class ConversationStartersGenerator:
                 logger.info(
                     f"Using {len(overviews)} overviews of {len(clusters)} clusters for starters generation"
                 )
-            case AnalysisType.REPORT:
+            case AnalysisType.AGENTIC:
                 assert run.result is not None and isinstance(
                     run.result, ReportAnalysisResult
                 )

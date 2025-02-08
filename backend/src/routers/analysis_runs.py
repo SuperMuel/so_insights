@@ -13,7 +13,7 @@ from shared.models import (
     ClusterFeedback,
     ClusteringAnalysisParams,
     RelevanceLevel,
-    ReportAnalysisParams,
+    AgenticAnalysisParams,
     Status,
     Workspace,
 )
@@ -217,8 +217,8 @@ def _get_default_analysis_params(
             return ClusteringAnalysisParams(
                 hdbscan_settings=workspace.hdbscan_settings,
             )
-        case AnalysisType.REPORT:
-            return ReportAnalysisParams()
+        case AnalysisType.AGENTIC:
+            return AgenticAnalysisParams()
 
     raise ValueError(
         f"Analysis type {analysis_type} not supported to create a default params"

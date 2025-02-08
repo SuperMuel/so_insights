@@ -86,7 +86,7 @@ class Analyzer:
         match run.analysis_type:
             case AnalysisType.CLUSTERING:
                 return await self.handle_clustering_run(run)
-            case AnalysisType.REPORT:
+            case AnalysisType.AGENTIC:
                 return await self.handle_report_run(run)
 
         raise ValueError(f"Unknown analysis type: {run.analysis_type}")
@@ -158,7 +158,7 @@ class Analyzer:
         Raises:
             ValueError: If the run is not a report run or workspace not found.
         """
-        if run.analysis_type != AnalysisType.REPORT:
+        if run.analysis_type != AnalysisType.AGENTIC:
             raise ValueError(f"Run {run.id} is not a report run")
 
         logger.info(f"Handling report run '{run.id}'")

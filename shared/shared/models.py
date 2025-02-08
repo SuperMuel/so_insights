@@ -464,24 +464,24 @@ class ClusteringAnalysisParams(BaseModel):
     )
 
 
-class ReportAnalysisParams(BaseModel):
-    """Parameters specific to report-style analysis."""
+class AgenticAnalysisParams(BaseModel):
+    """Parameters specific to agentic analysis."""
 
     # Just an example for now
-    # report_template: str | None = Field(
-    #     None, description="template to use"
+    # custom_instructions: str | None = Field(
+    #     None, description="Custom instructions to pass to the agent"
     # )
 
 
 class AnalysisType(str, Enum):
     CLUSTERING = "clustering"
-    REPORT = "report"
+    AGENTIC = "agentic"
 
     def __str__(self) -> str:
         return str(self.value)
 
 
-AnalysisParams = ClusteringAnalysisParams | ReportAnalysisParams
+AnalysisParams = ClusteringAnalysisParams | AgenticAnalysisParams
 
 
 class ClusteringRunEvaluationResult(BaseModel):
@@ -532,7 +532,7 @@ class ClusteringAnalysisResult(BaseModel):
 class ReportAnalysisResult(BaseModel):
     """Results specific to report-style analysis."""
 
-    analysis_type: AnalysisType = AnalysisType.REPORT
+    analysis_type: AnalysisType = AnalysisType.AGENTIC
 
     articles_count: int | None = Field(
         default=None, description="Number of articles processed in this session"
