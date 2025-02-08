@@ -14,7 +14,7 @@ from shared.models import (
     Workspace,
 )
 
-from src.analyzer_agent.state import ReportState, StateInput
+from src.analyzer_agent.state import AgenticTopicsState, StateInput
 from src.analyzer_settings import analyzer_settings
 from datetime import datetime
 
@@ -203,11 +203,14 @@ class Analyzer:
 
             input: StateInput = {
                 "articles": relevant_articles,
+                "articles_ids": [
+                    str(article.id) for article in relevant_articles if article.id
+                ],
                 "workspace_description": workspace.description,
                 "language": workspace.language,
             }
 
-            result_dict: ReportState = await graph.ainvoke(input)  # type: ignore
+            result_dict: AgenticTopicsState = await graph.ainvoke(input)  # type: ignore
 
             relevant_articles_ids = [
                 article.id for article in relevant_articles if article.id
@@ -215,8 +218,8 @@ class Analyzer:
             assert len(relevant_articles_ids) == len(relevant_articles)
 
             result = AgenticAnalysisResult(
-                report_content=result_dict["final_report_md"],
-                relevant_articles_ids=relevant_articles_ids,
+                topics=result_dict["topics"],
+                summary=result_dict["summary"],
             )
 
             run.result = result

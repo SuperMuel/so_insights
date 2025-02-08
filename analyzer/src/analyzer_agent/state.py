@@ -6,16 +6,16 @@ from .types import TopicBlueprint
 from shared.models import Article, Topic
 
 
-class ReportState(TypedDict):
+class AgenticTopicsState(TypedDict):
     articles: list[Article]
     language: str
     workspace_description: str
-    sections: list[TopicBlueprint]
-    sections_raw_anthropic_responses: Annotated[
+    topic_blueprints: list[TopicBlueprint]
+    topic_blueprints_raw_anthropic_responses: Annotated[
         list[anthropic.types.Message], operator.add
     ]
-    final_report_md: str
-    topics: list[Topic]
+    topics: Annotated[list[Topic], operator.add]
+    summary: str
 
 
 class StateInput(TypedDict):
@@ -29,11 +29,4 @@ class WriteTopicState(TypedDict):
     articles: list[Article]
     language: str
     workspace_description: str
-    topic: TopicBlueprint
-
-
-class WriteSectionState(TypedDict):
-    articles: list[Article]
-    language: str
-    workspace_description: str
-    section: TopicBlueprint
+    topic_blueprint: TopicBlueprint

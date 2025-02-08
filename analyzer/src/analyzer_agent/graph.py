@@ -1,5 +1,6 @@
 from typing import Any
 from beanie.operators import In
+from dotenv import load_dotenv
 from langchain import hub
 from src.article_evaluator import format_articles
 from src.analyzer_settings import analyzer_settings
@@ -7,14 +8,18 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
 import anthropic
 from langsmith import traceable
-from shared.models import Article
+from shared.models import Article, Topic
 from shared.db import get_client, my_init_beanie
 from beanie import PydanticObjectId
-from src.analyzer_agent.types import TopicBlueprint
-from src.analyzer_agent.utils import responses_to_markdown_with_citations
-from src.analyzer_agent.state import ReportState, StateInput, WriteSectionState
+from src.analyzer_agent.types import TopicBlueprint, TopicsBlueprints
+from src.analyzer_agent.utils import (
+    response_to_markdown,
+    response_to_markdown_with_citations,
+)
+from src.analyzer_agent.state import AgenticTopicsState, StateInput, WriteTopicState
 from langchain_openai import ChatOpenAI
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +30,8 @@ outline_LLM = ChatOpenAI(
 )
 
 client = anthropic.Anthropic()
-ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
-ANTHROPIC_MODEL_FALLBACK = "claude-3-5-haiku-latest"
+# ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
+ANTHROPIC_MODEL = "claude-3-5-haiku-latest"
 
 
 async def get_articles(state: StateInput):
@@ -63,70 +68,76 @@ async def get_articles(state: StateInput):
     return {"articles": articles}
 
 
-async def generate_outline(state: StateInput):
+async def generate_topic_blueprints(state: StateInput):
     logger.info("Generating topics plans")
     assert (articles := state.get("articles"))
 
-    prompt = hub.pull(analyzer_settings.REPORT_OUTLINE_PROMPT_REF)
-    structured_llm = outline_LLM.with_structured_output(ReportOutline)
+    prompt = hub.pull(analyzer_settings.TOPICS_BLUEPRINTS_PROMPT_REF)
+    structured_llm = outline_LLM.with_structured_output(TopicsBlueprints)
 
     chain = (prompt | structured_llm).with_config(
-        run_name="generate_outline",
+        run_name="generate_topic_blueprints",
     )
 
-    outline_result = await chain.ainvoke(
+    blueprints = await chain.ainvoke(
         {
             "articles": format_articles(articles),
             "language": state["language"],
             "workspace_description": state["workspace_description"],
         }
     )
+    assert isinstance(blueprints, TopicsBlueprints)
 
-    logger.info(f"Generated outline with {len(outline_result.sections)} sections")
+    logger.info(f"Generated topic blueprints with {len(blueprints.topics)} topics")
 
-    assert isinstance(outline_result, ReportOutline)
-
-    return {"sections": outline_result.sections}
+    return {"topic_blueprints": blueprints.topics}
 
 
 def article_to_anthropic_document(article: Article) -> dict[str, Any]:
+    assert (
+        article.content or article.body
+    ), "An Anthropic document must have non-empty data, but the article provided had empty content and body"
+
     return {
         "type": "document",
-        "source": {"type": "text", "media_type": "text/plain", "data": article.content},
+        "source": {
+            "type": "text",
+            "media_type": "text/plain",
+            "data": article.content or article.body,
+        },
         "title": article.title,
         "citations": {"enabled": True},
     }
 
 
+def format_topic_blueprint(topic_blueprint: TopicBlueprint):
+    return f"""
+    Title: {topic_blueprint.title}
+    Description: {topic_blueprint.description}
+    Quotes examples:
+    {
+        "\n".join(
+            [
+                f"- {quote.text}" for quote in topic_blueprint.supporting_quotes
+            ]
+        )
+    }
+    """
+
+
 @traceable
-def write_section(state: WriteSectionState):
-    logger.info(f"Writing section {state['section'].title}")
-    prompt = """You are an expert report writer. Your task is to write a section of a report based on a collection of articles that relate to a specific research interest.
-
-The final report will be written in {language}, even if the collected articles are in multiple languages.
-
-The audience is interested in the following research interest : 
-{research_interest}
-
-The sections's title is : 
-{section_title}
-
-The sections's description is : 
-{section_description}
-
-Please write this section only, without the title. If you need to add headers, start with h2.
-Write the section inside <section> tags.
-
-Use concrete details over general statements.""".format(
+def write_topic_body(state: WriteTopicState):
+    logger.info(f"Writing topic body {state['topic_blueprint'].title}")
+    prompt = hub.pull(analyzer_settings.WRITE_TOPIC_PROMPT_REF).format(
+        articles=format_articles(state["articles"]),
         research_interest=state["workspace_description"],
-        section_title=state["section"].title,
-        section_description=state["section"].description,
+        topic_blueprint=format_topic_blueprint(state["topic_blueprint"]),
         language=state["language"],
     )
 
     response = client.messages.create(
         model=ANTHROPIC_MODEL,
-        max_tokens=1024,
+        max_tokens=4096,
         messages=[
             {
                 "role": "user",
@@ -134,6 +145,7 @@ Use concrete details over general statements.""".format(
                     *[
                         article_to_anthropic_document(article)
                         for article in state["articles"]
+                        if article.content or article.body
                     ],  # type: ignore
                     {"type": "text", "text": prompt},
                 ],
@@ -141,63 +153,53 @@ Use concrete details over general statements.""".format(
         ],
     )
 
-    return {"sections_raw_anthropic_responses": [response]}
+    markdown_with_citations, article_ids = response_to_markdown_with_citations(
+        response, state["articles"]
+    )
+
+    markdown = response_to_markdown(response)
+
+    topic = Topic(
+        title=state["topic_blueprint"].title,
+        body=markdown,
+        body_with_links=markdown_with_citations,
+        articles_ids=[article.id for article in article_ids if article.id],
+    )
+
+    return {"topics": [topic]}
 
 
-def continue_to_write_section(state: ReportState):
-    assert all(isinstance(section, TopicBlueprint) for section in state["sections"])
+def continue_to_write_topic_body(state: AgenticTopicsState):
+    assert all(isinstance(topic, TopicBlueprint) for topic in state["topic_blueprints"])
 
     return [
         Send(
-            "write_section",
+            "write_topic_body",
             {
                 "articles": state["articles"],
                 "language": state["language"],
                 "workspace_description": state["workspace_description"],
-                "section": section,
+                "topic_blueprint": topic,
             },
         )
-        for section in state["sections"]
+        for topic in state["topic_blueprints"]
     ]
 
 
-def combine_sections(state: ReportState):
-    logger.info("Combining sections")
-    sections = state["sections"]
-    assert len(sections) == len(state["sections_raw_anthropic_responses"])
-
-    written_sections = responses_to_markdown_with_citations(
-        state["sections_raw_anthropic_responses"], state["articles"]
-    )
-    assert len(sections) == len(written_sections)
-
-    return {
-        "final_report_md": "\n\n".join(
-            [
-                f"# {section.title}\n\n{written_section}"
-                for section, written_section in zip(sections, written_sections)
-            ]
-        )
-    }
-
-
-graph_builder = StateGraph(ReportState, input=StateInput)
+graph_builder = StateGraph(AgenticTopicsState, input=StateInput)
 
 graph_builder.add_node("get_articles", get_articles)
-graph_builder.add_node("generate_sections", generate_outline)
-graph_builder.add_node("write_section", write_section)
-graph_builder.add_node("combine_sections", combine_sections)
-
+graph_builder.add_node("generate_topic_blueprints", generate_topic_blueprints)
+graph_builder.add_node("write_topic_body", write_topic_body)
 
 graph_builder.add_edge(START, "get_articles")
-graph_builder.add_edge("get_articles", "generate_sections")
+graph_builder.add_edge("get_articles", "generate_topic_blueprints")
 graph_builder.add_conditional_edges(
-    "generate_sections",
-    continue_to_write_section,  # type: ignore
-    ["write_section"],
+    "generate_topic_blueprints",
+    continue_to_write_topic_body,  # type: ignore
+    ["write_topic_body"],
 )
-graph_builder.add_edge("write_section", "combine_sections")
-graph_builder.add_edge("combine_sections", END)
+graph_builder.add_edge("write_topic_body", END)
 
 graph = graph_builder.compile()
 

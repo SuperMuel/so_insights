@@ -4,61 +4,80 @@ import anthropic
 from shared.models import Article
 
 
-def responses_to_markdown_with_citations(  # TODO : when two differents citations are sequential, we should merge them. e.g instead of writing [1](url1)[1](url1), we should write [1](url1)
-    responses: list[anthropic.types.Message], articles: list[Article]
-) -> list[str]:
+def response_to_markdown_with_citations(
+    response: anthropic.types.Message, articles: list[Article]
+) -> tuple[str, list[Article]]:
     """
-    Convert a list of Anthropic responses to a list of markdown strings, each containing the section content with markdown links to the citations.
+    Convert a single Anthropic response to a markdown string with citations
+    and return a tuple consisting of the markdown string and the list of cited articles.
 
-    Each link is of the form : [1](https://example.com)
+    Each citation is appended to the markdown as [[link number]](url).
 
     Args:
-        responses: List of Anthropic message objects
+        response: A single Anthropic message object.
+        articles: A list of Article objects.
 
     Returns:
-        List of markdown strings, each containing the section content with markdown links to the citations.
+        A tuple containing:
+            - The markdown string (extracted from within <section> tags).
+            - A list of Article objects that were cited.
     """
-    assert all(
-        content.type == "text" for response in responses for content in response.content
+    assert all(content.type == "text" for content in response.content)
+    markdown_section: str = ""
+    article_num_map: dict[str, int] = {}
+    article_counter: int = 1
+    cited_articles: list[Article] = []
+
+    for content in response.content:
+        if content.type != "text":
+            raise ValueError(f"Content is not a text: {content.type}")
+        markdown_section += content.text
+        if content.citations:
+            for citation in content.citations:
+                article = articles[citation.document_index]
+                if article.url not in article_num_map:
+                    article_num_map[str(article.url)] = article_counter
+                    article_counter += 1
+                    cited_articles.append(article)
+                markdown_section += (
+                    f"[[{article_num_map[str(article.url)]}]]({article.url})"
+                )
+
+    section_match = re.search(
+        r"<section>\s*(.*?)\s*</section>", markdown_section, re.DOTALL
     )
+    if section_match:
+        markdown_section = section_match.group(1).strip()
+    else:
+        raise ValueError("No <section> tags found in response")
 
-    markdown_sections = []
+    return markdown_section, cited_articles
 
-    # map article url to a number
-    article_num_map = {}
-    article_counter = 1
 
-    for response in responses:
-        markdown_section = ""
+def response_to_markdown(response: anthropic.types.Message) -> str:
+    """
+    Convert a single Anthropic response to a markdown string without citations.
 
-        for content in response.content:
-            if content.type != "text":
-                raise ValueError(f"Content is not a text: {content.type}")
+    The markdown content is extracted from within <section> tags of the response.
 
-            markdown_section += content.text
+    Args:
+        response: A single Anthropic message object.
 
-            if content.citations:
-                for citation in content.citations:
-                    article = articles[citation.document_index]
+    Returns:
+        A markdown string extracted from the response.
+    """
+    assert all(content.type == "text" for content in response.content)
+    markdown_section: str = ""
+    for content in response.content:
+        if content.type != "text":
+            raise ValueError(f"Content is not a text: {content.type}")
+        markdown_section += content.text
 
-                    # Map article URL to number if not already mapped
-                    if article.url not in article_num_map:
-                        article_num_map[article.url] = article_counter
-                        article_counter += 1
-
-                    markdown_section += (
-                        f"[[{article_num_map[article.url]}]]({article.url})"
-                    )
-
-        # At this point, we need to only keep what's betewen <section> and </section>
-        section_match = re.search(
-            r"<section>\s*(.*?)\s*</section>", markdown_section, re.DOTALL
-        )
-        if section_match:
-            markdown_section = section_match.group(1).strip()
-        else:
-            raise ValueError("No <section> tags found in response")
-
-        markdown_sections.append(markdown_section)
-
-    return markdown_sections
+    section_match = re.search(
+        r"<section>\s*(.*?)\s*</section>", markdown_section, re.DOTALL
+    )
+    if section_match:
+        markdown_section = section_match.group(1).strip()
+    else:
+        raise ValueError("No <section> tags found in response")
+    return markdown_section

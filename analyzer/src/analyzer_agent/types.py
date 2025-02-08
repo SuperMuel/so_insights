@@ -23,7 +23,7 @@ class TopicBlueprint(BaseModel):
     )
 
 
-# class ReportOutline(BaseModel):
-#     sections: list[TopicPlan] = Field(
-#         description="An ordered list of sections that form the complete outline of the final report"
-#     )
+class TopicsBlueprints(BaseModel):
+    topics: list[TopicBlueprint] = Field(
+        description="A list of topics to be covered in the report."
+    )
