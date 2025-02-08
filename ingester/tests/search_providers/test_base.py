@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from pydantic_core import Url
+from pydantic import HttpUrl
 import pytest
 from unittest.mock import AsyncMock
 from shared.region import Region
@@ -36,7 +36,7 @@ def search_provider():
 def sample_article():
     return BaseArticle(
         title="Test Article",
-        url=Url("https://example.com/article"),
+        url=HttpUrl("https://example.com/article"),
         date=datetime.now(timezone.utc),
         provider="duckduckgo",
         source="Example",
@@ -66,7 +66,7 @@ async def test_batch_search_multiple_queries(search_provider, sample_article):
     article1 = sample_article
     article2 = BaseArticle(
         title="Test Article 2",
-        url=Url("https://example.com/article2"),
+        url=HttpUrl("https://example.com/article2"),
         date=datetime.now(timezone.utc),
         provider="duckduckgo",
     )
@@ -102,7 +102,7 @@ async def test_batch_search_empty_queries(search_provider):
 def generate_sample_article(index: int = 0) -> BaseArticle:
     return BaseArticle(
         title=f"Test Article {index}",
-        url=Url(f"https://example.com/article{index}"),
+        url=HttpUrl(f"https://example.com/article{index}"),
         date=datetime.now(timezone.utc),
         provider="duckduckgo",
     )
@@ -139,10 +139,10 @@ def test_validate_url():
 
     article = BaseArticle(
         title="Test",
-        url=Url("https://www.example.com"),
+        url=HttpUrl("https://www.example.com"),
         date=datetime.now(),
         provider="serperdev",
-        image=Url(url),
+        image=HttpUrl(url),
     )
 
     assert str(article.image) == url

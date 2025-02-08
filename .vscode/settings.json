@@ -7,4 +7,10 @@
         "ingester/tests",
         "shared/tests"
     ],
+    "python.analysis.typeCheckingMode": "basic",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "never"
+    },
+    "python.analysis.diagnosticMode": "workspace"
 }

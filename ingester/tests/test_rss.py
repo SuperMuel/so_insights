@@ -1,4 +1,4 @@
-from pydantic_core import Url
+from pydantic import HttpUrl
 import pytest
 from shared.db import my_init_beanie
 from src.rss import _entry_to_published_date, _convert_to_article
@@ -61,7 +61,7 @@ def test_convert_to_article():
     }
     expected_article = Article(
         title="Test Article",
-        url=Url("http://example.com/test-article"),
+        url=HttpUrl("http://example.com/test-article"),
         body="This is a test article.",
         date=datetime(2023, 10, 1, 12, 0, 0, tzinfo=timezone.utc),
         source="Test Author",

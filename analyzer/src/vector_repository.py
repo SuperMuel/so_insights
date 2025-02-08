@@ -51,8 +51,8 @@ class PineconeVectorRepository:
 
         for batch_ids in batched(ids, BATCH_SIZE):
             response = self.index.fetch(list(batch_ids), namespace=namespace)
-            all_ids.extend([x["id"] for x in response["vectors"].values()])
-            all_vectors.extend([x["values"] for x in response["vectors"].values()])
+            all_ids.extend([x["id"] for x in response["vectors"].values()])  # type: ignore
+            all_vectors.extend([x["values"] for x in response["vectors"].values()])  # type: ignore
 
         # Ensure we've fetched all requested IDs
         assert len(set(all_ids)) == len(set(ids))

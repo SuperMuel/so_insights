@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from pydantic import HttpUrl
 from pydantic_core import Url
 import pytest
 from beanie import PydanticObjectId, init_beanie
@@ -40,7 +41,7 @@ def create_article(
         title=title,
         body=body,
         date=date,
-        url=Url(url),
+        url=HttpUrl(url),
         found_at=datetime.now(),
         provider="duckduckgo",
     )

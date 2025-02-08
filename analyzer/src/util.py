@@ -5,7 +5,6 @@ import logging
 import aiohttp
 from beanie import PydanticObjectId
 from pydantic import HttpUrl, ValidationError
-from pydantic_core import Url
 from shared.content_fetching_models import (
     ArticleContentCleanerOutput,
     ContentFetchingResult,
@@ -21,25 +20,25 @@ logger = logging.getLogger(__name__)
 def create_test_article(
     workspace_id: PydanticObjectId = PydanticObjectId("507f1f77bcf86cd799439011"),
     title: str = "Test Article Title",
-    url: Url = Url("https://example.com/test-article"),
+    url: HttpUrl = HttpUrl("https://example.com/test-article"),
     body: str = "This is a test article body with some content for testing purposes.",
     found_at: datetime = datetime(2024, 1, 1, tzinfo=timezone.utc),
     date: datetime = datetime(2024, 1, 1, tzinfo=timezone.utc),
     region: Region = Region.FRANCE,
-    image: Url = Url("https://example.com/test-image.jpg"),
+    image: HttpUrl | None = HttpUrl("https://example.com/test-image.jpg"),
     source: str = "Test Source",
     content: str = "Full content of the test article goes here.",
     ingestion_run_id: PydanticObjectId = PydanticObjectId("507f1f77bcf86cd799439012"),
     vector_indexed: bool = False,
     provider: SearchProvider = "serperdev",
     content_fetching_result: ContentFetchingResult | None = ContentFetchingResult(
-        url=Url("https://example.com/test-article"),
+        url=HttpUrl("https://example.com/test-article"),
         content_cleaner_output=ArticleContentCleanerOutput(
             title="Test Article Title",
             cleaned_article_content="Full content of the test article goes here.",
         ),
         url_to_markdown_conversion=UrlToMarkdownConversion(
-            url=Url("https://example.com/test-article"),
+            url=HttpUrl("https://example.com/test-article"),
             markdown="# Test Article\n\nTest content",
             extraction_method="firecrawl",
             metadata={
@@ -69,7 +68,7 @@ def create_test_article(
     )
 
 
-def try_get_firecrawl_image(article: Article) -> Url | None:
+def try_get_firecrawl_image(article: Article) -> HttpUrl | None:
     if not article.content_fetching_result:
         return None
 
@@ -82,7 +81,7 @@ def try_get_firecrawl_image(article: Article) -> Url | None:
         return None
 
     try:
-        parsed_url = Url(image_url)
+        parsed_url = HttpUrl(image_url)
     except ValidationError:
         logger.error(f"Error while parsing image URL: {image_url}")
         return None

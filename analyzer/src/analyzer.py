@@ -10,7 +10,7 @@ from shared.models import (
     ClusterEvaluation,
     ClusteringAnalysisResult,
     ClusteringRunEvaluationResult,
-    ReportAnalysisResult,
+    AgenticAnalysisResult,
     Workspace,
 )
 
@@ -214,7 +214,7 @@ class Analyzer:
             ]
             assert len(relevant_articles_ids) == len(relevant_articles)
 
-            result = ReportAnalysisResult(
+            result = AgenticAnalysisResult(
                 report_content=result_dict["final_report_md"],
                 relevant_articles_ids=relevant_articles_ids,
             )

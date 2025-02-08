@@ -1,3 +1,4 @@
+from pydantic import HttpUrl
 import pytest
 from make_it_sync import make_sync
 from mongomock_motor import AsyncMongoMockClient
@@ -34,13 +35,13 @@ def test_try_get_firecrawl_image():
     # Test case 3: Article with empty metadata
     article3 = create_test_article(
         content_fetching_result=ContentFetchingResult(
-            url=Url("https://example.com/test-article"),
+            url=HttpUrl("https://example.com/test-article"),
             content_cleaner_output=ArticleContentCleanerOutput(
                 title="Test Article Title",
                 cleaned_article_content="Test content",
             ),
             url_to_markdown_conversion=UrlToMarkdownConversion(
-                url=Url("https://example.com/test-article"),
+                url=HttpUrl("https://example.com/test-article"),
                 markdown="# Test Article\n\nTest content",
                 extraction_method="firecrawl",
                 metadata={},
@@ -53,13 +54,13 @@ def test_try_get_firecrawl_image():
     # Test case 4: Article with invalid URL
     article4 = create_test_article(
         content_fetching_result=ContentFetchingResult(
-            url=Url("https://example.com/test-article"),
+            url=HttpUrl("https://example.com/test-article"),
             content_cleaner_output=ArticleContentCleanerOutput(
                 title="Test Article Title",
                 cleaned_article_content="Test content",
             ),
             url_to_markdown_conversion=UrlToMarkdownConversion(
-                url=Url("https://example.com/test-article"),
+                url=HttpUrl("https://example.com/test-article"),
                 markdown="# Test Article\n\nTest content",
                 extraction_method="firecrawl",
                 metadata={"og:image": "not_a_valid_url"},

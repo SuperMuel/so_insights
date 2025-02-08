@@ -78,7 +78,7 @@ logger.info(
     f"Setting up VoyageAI embeddings with model '{ingester_settings.EMBEDDING_MODEL}' and batch size {ingester_settings.EMBEDDING_BATCH_SIZE}"
 )
 embeddings = VoyageAIEmbeddings(  # type:ignore # Arguments missing for parameters "_client", "_aclient"
-    voyage_api_key=ingester_settings.VOYAGEAI_API_KEY.get_secret_value(),
+    voyage_api_key=ingester_settings.VOYAGEAI_API_KEY.get_secret_value(),  # type: ignore
     model=ingester_settings.EMBEDDING_MODEL,
     batch_size=ingester_settings.EMBEDDING_BATCH_SIZE,
 )

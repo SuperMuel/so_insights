@@ -6,7 +6,7 @@ from shared.language import Language
 from shared.models import (
     AnalysisRun,
     AnalysisType,
-    ReportAnalysisResult,
+    AgenticAnalysisResult,
     Starters,
     Workspace,
 )
@@ -130,7 +130,7 @@ class ConversationStartersGenerator:
                 )
             case AnalysisType.AGENTIC:
                 assert run.result is not None and isinstance(
-                    run.result, ReportAnalysisResult
+                    run.result, AgenticAnalysisResult
                 )
                 data = run.result.report_content
                 logger.info(
