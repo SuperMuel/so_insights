@@ -106,7 +106,7 @@ def sync_detailed(
 ) -> Response[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
 
-     List all analysis runs for a workspace
+     List all analysis runs for a workspace, in descending order of creation date
 
     Args:
         workspace_id (str):
@@ -146,7 +146,7 @@ def sync(
 ) -> Optional[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
 
-     List all analysis runs for a workspace
+     List all analysis runs for a workspace, in descending order of creation date
 
     Args:
         workspace_id (str):
@@ -181,7 +181,7 @@ async def asyncio_detailed(
 ) -> Response[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
 
-     List all analysis runs for a workspace
+     List all analysis runs for a workspace, in descending order of creation date
 
     Args:
         workspace_id (str):
@@ -219,7 +219,7 @@ async def asyncio(
 ) -> Optional[Union[HTTPValidationError, list["AnalysisRun"]]]:
     """List Analysis Runs
 
-     List all analysis runs for a workspace
+     List all analysis runs for a workspace, in descending order of creation date
 
     Args:
         workspace_id (str):

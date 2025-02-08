@@ -176,7 +176,7 @@ async def _write_topic_body_anthropic(
         }
     ]
 
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
 
     body_with_citations, article_ids = anthropic_response_to_markdown_with_citations(
         response, state["articles"]
@@ -240,6 +240,29 @@ async def write_topic_body(state: WriteTopicState):
         return await _write_topic_body_other(body_llm, state, supporting_articles)
 
 
+async def generate_summary(state: AgenticTopicsState):
+    logger.info("Generating summary")
+
+    prompt = hub.pull(analyzer_settings.BIG_SUMMARY_PROMPT_REF)
+
+    chain = (prompt | body_llm | StrOutputParser()).with_config(
+        run_name="generate_summary",
+    )
+
+    topics_str = ("\n" * 5).join(
+        [f"**{topic.title}**\n{topic.body}" for topic in state["topics"]]
+    )
+
+    response = await chain.ainvoke(
+        {
+            "news_topics": topics_str,
+            "language": state["language"],
+        }
+    )
+
+    return {"summary": response}
+
+
 def continue_to_write_topic_body(state: AgenticTopicsState):
     assert all(isinstance(topic, TopicBlueprint) for topic in state["topic_blueprints"])
 
@@ -262,6 +285,7 @@ graph_builder = StateGraph(AgenticTopicsState, input=StateInput)
 graph_builder.add_node("get_articles", get_articles)
 graph_builder.add_node("generate_topic_blueprints", generate_topic_blueprints)
 graph_builder.add_node("write_topic_body", write_topic_body)
+graph_builder.add_node("generate_summary", generate_summary)
 
 graph_builder.add_edge(START, "get_articles")
 graph_builder.add_edge("get_articles", "generate_topic_blueprints")
@@ -270,7 +294,8 @@ graph_builder.add_conditional_edges(
     continue_to_write_topic_body,  # type: ignore
     ["write_topic_body"],
 )
-graph_builder.add_edge("write_topic_body", END)
+graph_builder.add_edge("write_topic_body", "generate_summary")
+graph_builder.add_edge("generate_summary", END)
 
 graph = graph_builder.compile()
 

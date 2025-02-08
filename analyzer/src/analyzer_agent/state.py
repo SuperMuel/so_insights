@@ -11,7 +11,7 @@ class AgenticTopicsState(TypedDict):
     workspace_description: str
     topic_blueprints: list[TopicBlueprint]
     topics: Annotated[list[Topic], operator.add]
-    # summary: str
+    summary: str
 
 
 class StateInput(TypedDict):

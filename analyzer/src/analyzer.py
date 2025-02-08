@@ -210,6 +210,9 @@ class Analyzer:
             }
 
             result_dict: AgenticTopicsState = await graph.ainvoke(input)  # type: ignore
+            topics = result_dict["topics"]
+
+            # Generate a summary
 
             relevant_articles_ids = [
                 article.id for article in relevant_articles if article.id
@@ -217,12 +220,10 @@ class Analyzer:
             assert len(relevant_articles_ids) == len(relevant_articles)
 
             result = AgenticAnalysisResult(
-                topics=result_dict["topics"],
-                # summary=result_dict["summary"],
-                summary="Test",
+                topics=topics,
+                summary=result_dict["summary"],
                 relevant_articles_ids=relevant_articles_ids,
             )
-            # TODO : generate summary
 
             run.result = result
             run.status = Status.completed
