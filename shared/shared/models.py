@@ -496,7 +496,7 @@ class ClusteringRunEvaluationResult(BaseModel):
     )
 
 
-class Topic(Document):
+class Topic(BaseModel):
     articles_ids: list[PydanticObjectId] = Field(
         ..., description="IDs of articles associated with the topic"
     )

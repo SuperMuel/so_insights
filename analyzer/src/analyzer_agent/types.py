@@ -18,6 +18,9 @@ class TopicBlueprint(BaseModel):
     description: str = Field(
         description="A detailed summary of the main points to be covered in this topic.",
     )
+    supporting_articles_idxs: list[int] = Field(
+        description="""Provide a list of **1-based indices** that point to the articles from the `<articles>` section that are most crucial for understanding and writing about this topic.  Think of this as creating a focused reading list for the writer agent: "To write about *this* topic effectively, the writer *must* consider *these* articles."  Be generous in your selection; it's better to include slightly more articles than to risk omitting key sources.  For example, if articles 1, 3, and 5 are essential, the list should be `[1, 3, 5]`."""
+    )
     supporting_quotes: list[Quote] = Field(
         description="Between 2 and 10 quotes that exemplify key points to be used when writing this section."
     )

@@ -1,7 +1,9 @@
-from typing import Any
 from beanie.operators import In
-from dotenv import load_dotenv
+from langchain_core.output_parsers import StrOutputParser
+from langchain.chat_models.base import BaseChatModel
+from langchain.chat_models import init_chat_model
 from langchain import hub
+from langchain_anthropic import ChatAnthropic
 from src.article_evaluator import format_articles
 from src.analyzer_settings import analyzer_settings
 from langgraph.graph import StateGraph, START, END
@@ -13,8 +15,10 @@ from shared.db import get_client, my_init_beanie
 from beanie import PydanticObjectId
 from src.analyzer_agent.types import TopicBlueprint, TopicsBlueprints
 from src.analyzer_agent.utils import (
-    response_to_markdown,
-    response_to_markdown_with_citations,
+    article_to_anthropic_document,
+    extract_title_and_body,
+    anthropic_response_to_markdown,
+    anthropic_response_to_markdown_with_citations,
 )
 from src.analyzer_agent.state import AgenticTopicsState, StateInput, WriteTopicState
 from langchain_openai import ChatOpenAI
@@ -32,6 +36,8 @@ outline_LLM = ChatOpenAI(
 client = anthropic.Anthropic()
 # ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
 ANTHROPIC_MODEL = "claude-3-5-haiku-latest"
+
+body_llm = init_chat_model("gemini-2.0-flash-001", model_provider="google_genai")
 
 
 async def get_articles(state: StateInput):
@@ -93,23 +99,6 @@ async def generate_topic_blueprints(state: StateInput):
     return {"topic_blueprints": blueprints.topics}
 
 
-def article_to_anthropic_document(article: Article) -> dict[str, Any]:
-    assert (
-        article.content or article.body
-    ), "An Anthropic document must have non-empty data, but the article provided had empty content and body"
-
-    return {
-        "type": "document",
-        "source": {
-            "type": "text",
-            "media_type": "text/plain",
-            "data": article.content or article.body,
-        },
-        "title": article.title,
-        "citations": {"enabled": True},
-    }
-
-
 def format_topic_blueprint(topic_blueprint: TopicBlueprint):
     return f"""
     Title: {topic_blueprint.title}
@@ -125,48 +114,130 @@ def format_topic_blueprint(topic_blueprint: TopicBlueprint):
     """
 
 
-@traceable
-def write_topic_body(state: WriteTopicState):
-    logger.info(f"Writing topic body {state['topic_blueprint'].title}")
-    prompt = hub.pull(analyzer_settings.WRITE_TOPIC_PROMPT_REF).format(
-        articles=format_articles(state["articles"]),
+ANTHROPIC_WRITE_TOPIC_PROMPT = """You are an AI agent tasked with writing a concise, informative, and engaging body for a specific topic based on a collection of articles. Your writing will be part of a system that provides targeted information to clients interested in specific domains. The goal is to create easy-to-read and ultra-targeted content about the latest news, trends, and advancements in the client's domain of interest.
+
+The final report will be written in {language}, even if the collected articles are in multiple languages.
+
+The audience is interested in the following research interest :
+<research_interest>
+{research_interest}
+</research_interest>
+
+Your task is to write the body of the following topic blueprint :
+<topic_blueprint>
+{topic_blueprint}
+</topic_blueprint>
+
+1. Analyze the topic_blueprint, paying close attention to the title, description, and quotes provided.
+
+2. Review the articles and identify the most relevant information related to the topic. 
+
+3. Write a coherent and informative body for the topic, adhering to the following guidelines:
+   - Keep the content focused on the specific topic and relevant to the workspace_description.
+   - Use clear and concise language.
+   - Use specific examples, data points, and details from the articles to support your points. Avoid general statements or vague summaries
+
+4. Style and tone: **Concise and Targeted**
+   - Write in an objective, informative tone.
+   - Write a concise and easy-to-read body for the topic. Aim for impactful summaries rather than lengthy prose.
+   - Do not fear using jargon or technical language: the audience is familiar with their domain.
+   - Do not write introduction, transitions or conclusions.
+   - Use Markdown formatting : bullet points, bold... but no tables.  
+
+5. Output format : 
+    - Write your reasoning under <scratchpad> tags. 
+    - Write the final title for the topic under <title> tags. 
+    - Write the final body for the topic under <body> tags.
+"""
+
+
+async def _write_topic_body_anthropic(
+    state: WriteTopicState, supporting_articles: list[Article]
+):
+    llm = ChatAnthropic(model_name="claude-3-5-haiku-latest")  # type: ignore
+
+    prompt = ANTHROPIC_WRITE_TOPIC_PROMPT.format(
         research_interest=state["workspace_description"],
         topic_blueprint=format_topic_blueprint(state["topic_blueprint"]),
         language=state["language"],
     )
 
-    response = client.messages.create(
-        model=ANTHROPIC_MODEL,
-        max_tokens=4096,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    *[
-                        article_to_anthropic_document(article)
-                        for article in state["articles"]
-                        if article.content or article.body
-                    ],  # type: ignore
-                    {"type": "text", "text": prompt},
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                *[
+                    article_to_anthropic_document(article)
+                    for article in supporting_articles
+                    if article.content or article.body
                 ],
-            }
-        ],
-    )
+                {"type": "text", "text": prompt},
+            ],
+        }
+    ]
 
-    markdown_with_citations, article_ids = response_to_markdown_with_citations(
+    response = llm.invoke(messages)
+
+    body_with_citations, article_ids = anthropic_response_to_markdown_with_citations(
         response, state["articles"]
     )
 
-    markdown = response_to_markdown(response)
+    title, body = anthropic_response_to_markdown(response)
 
     topic = Topic(
-        title=state["topic_blueprint"].title,
-        body=markdown,
-        body_with_links=markdown_with_citations,
-        articles_ids=[article.id for article in article_ids if article.id],
+        title=title,
+        body=body,
+        body_with_links=body_with_citations,
+        articles_ids=[article.id for article in supporting_articles if article.id],
     )
 
     return {"topics": [topic]}
+
+
+async def _write_topic_body_other(
+    llm: BaseChatModel, state: WriteTopicState, supporting_articles: list[Article]
+):
+    prompt = hub.pull(analyzer_settings.WRITE_TOPIC_PROMPT_REF)
+
+    chain = (prompt | llm | StrOutputParser()).with_config(
+        run_name="write_topic_body",
+    )
+
+    response = await chain.ainvoke(
+        {
+            "articles": format_articles(supporting_articles),
+            "language": state["language"],
+            "research_interest": state["workspace_description"],
+            "topic_blueprint": format_topic_blueprint(state["topic_blueprint"]),
+        }
+    )
+
+    title, body = extract_title_and_body(response)
+
+    topic = Topic(
+        title=title,
+        body=body,
+        body_with_links=body,
+        articles_ids=[article.id for article in supporting_articles if article.id],
+    )
+
+    return {"topics": [topic]}
+
+
+@traceable
+async def write_topic_body(state: WriteTopicState):
+    logger.info(f"Writing topic body {state['topic_blueprint'].title}")
+
+    all_articles = state["articles"]
+    supporting_articles = [
+        all_articles[idx - 1]
+        for idx in state["topic_blueprint"].supporting_articles_idxs
+    ]
+
+    if analyzer_settings.USE_ANTHROPIC_CITATIONS:
+        return await _write_topic_body_anthropic(state, supporting_articles)
+    else:
+        return await _write_topic_body_other(body_llm, state, supporting_articles)
 
 
 def continue_to_write_topic_body(state: AgenticTopicsState):

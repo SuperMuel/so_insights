@@ -44,9 +44,13 @@ class AnalyzerSettings(BaseSettings):
     CLUSTER_EVAL_PROMPT_REF: str = "cluster-eval"
     BIG_SUMMARY_PROMPT_REF: str = "big-summary"
     CONVERSATION_STARTERS_PROMPT_REF: str = "conversation-starters"
+
+    # Agentic Analyzer
     ARTICLE_EVAL_PROMPT_REF: str = "article-eval"
     TOPICS_BLUEPRINTS_PROMPT_REF: str = "topics-blueprints"
+    WRITE_TOPIC_PROMPT_REF_ANTHROPIC: str = "write-topic-anthropic"  # Specific to anthropic when we want to use the Citations feature
     WRITE_TOPIC_PROMPT_REF: str = "write-topic"
+    USE_ANTHROPIC_CITATIONS: bool = False
 
 
 analyzer_settings = AnalyzerSettings()

@@ -1,11 +1,57 @@
 import re
 
-import anthropic
+from typing import Any
+
 from shared.models import Article
 
 
-def response_to_markdown_with_citations(
-    response: anthropic.types.Message, articles: list[Article]
+def article_to_anthropic_document(article: Article) -> dict[str, Any]:
+    assert (
+        article.content or article.body
+    ), "An Anthropic document must have non-empty data, but the article provided had empty content and body"
+
+    return {
+        "type": "document",
+        "source": {
+            "type": "text",
+            "media_type": "text/plain",
+            "data": article.content or article.body,
+        },
+        "title": article.title,
+        "citations": {"enabled": True},
+    }
+
+
+def extract_title_and_body(full_text: str) -> tuple[str, str]:
+    """
+    Extract title and body content from text containing <title> and <body> tags.
+
+    Args:
+        full_text: Text containing <title> and <body> tags
+
+    Returns:
+        A tuple containing:
+            - The title string extracted from <title> tags
+            - The body string extracted from <body> tags
+
+    Raises:
+        ValueError: If either <title> or <body> tags are not found
+    """
+    title_match = re.search(r"<title>\s*(.*?)\s*</title>", full_text, re.DOTALL)
+    if not title_match:
+        raise ValueError("No <title> tags found in response")
+    title = title_match.group(1).strip()
+
+    body_match = re.search(r"<body>\s*(.*?)\s*</body>", full_text, re.DOTALL)
+    if not body_match:
+        raise ValueError("No <body> tags found in response")
+    body = body_match.group(1).strip()
+
+    return title, body
+
+
+def anthropic_response_to_markdown_with_citations(
+    response: Any, articles: list[Article]
 ) -> tuple[str, list[Article]]:
     """
     Convert a single Anthropic response to a markdown string with citations
@@ -23,7 +69,7 @@ def response_to_markdown_with_citations(
             - A list of Article objects that were cited.
     """
     assert all(content.type == "text" for content in response.content)
-    markdown_section: str = ""
+    markdown_body: str = ""
     article_num_map: dict[str, int] = {}
     article_counter: int = 1
     cited_articles: list[Article] = []
@@ -31,7 +77,7 @@ def response_to_markdown_with_citations(
     for content in response.content:
         if content.type != "text":
             raise ValueError(f"Content is not a text: {content.type}")
-        markdown_section += content.text
+        markdown_body += content.text
         if content.citations:
             for citation in content.citations:
                 article = articles[citation.document_index]
@@ -39,45 +85,35 @@ def response_to_markdown_with_citations(
                     article_num_map[str(article.url)] = article_counter
                     article_counter += 1
                     cited_articles.append(article)
-                markdown_section += (
+                markdown_body += (
                     f"[[{article_num_map[str(article.url)]}]]({article.url})"
                 )
 
-    section_match = re.search(
-        r"<section>\s*(.*?)\s*</section>", markdown_section, re.DOTALL
-    )
-    if section_match:
-        markdown_section = section_match.group(1).strip()
-    else:
-        raise ValueError("No <section> tags found in response")
+    _, markdown_body = extract_title_and_body(markdown_body)
 
-    return markdown_section, cited_articles
+    return markdown_body, cited_articles
 
 
-def response_to_markdown(response: anthropic.types.Message) -> str:
+def anthropic_response_to_markdown(response: Any) -> tuple[str, str]:
     """
     Convert a single Anthropic response to a markdown string without citations.
 
-    The markdown content is extracted from within <section> tags of the response.
+    The title is extracted from within <title> tags and the markdown content
+    is extracted from within <body> tags of the response.
 
     Args:
         response: A single Anthropic message object.
 
     Returns:
-        A markdown string extracted from the response.
+        A tuple containing:
+            - The title string extracted from <title> tags
+            - The markdown body string extracted from <body> tags
     """
     assert all(content.type == "text" for content in response.content)
-    markdown_section: str = ""
+    full_text: str = ""
     for content in response.content:
         if content.type != "text":
             raise ValueError(f"Content is not a text: {content.type}")
-        markdown_section += content.text
+        full_text += content.text
 
-    section_match = re.search(
-        r"<section>\s*(.*?)\s*</section>", markdown_section, re.DOTALL
-    )
-    if section_match:
-        markdown_section = section_match.group(1).strip()
-    else:
-        raise ValueError("No <section> tags found in response")
-    return markdown_section
+    return extract_title_and_body(full_text)
