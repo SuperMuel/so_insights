@@ -11,19 +11,19 @@ class Quote(BaseModel):
     )
 
 
-class Section(BaseModel):
+class TopicBlueprint(BaseModel):
     title: str = Field(
-        description="A concise title for this section.",
+        description="A concise title for this topic.",
     )
     description: str = Field(
-        description="A detailed summary of the main topics to be covered in this section.",
+        description="A detailed summary of the main points to be covered in this topic.",
     )
     supporting_quotes: list[Quote] = Field(
-        description="A list of quotes that exemplify key points to be used when writing this section."
+        description="Between 2 and 10 quotes that exemplify key points to be used when writing this section."
     )
 
 
-class ReportOutline(BaseModel):
-    sections: list[Section] = Field(
-        description="An ordered list of sections that form the complete outline of the final report"
-    )
+# class ReportOutline(BaseModel):
+#     sections: list[TopicPlan] = Field(
+#         description="An ordered list of sections that form the complete outline of the final report"
+#     )

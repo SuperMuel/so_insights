@@ -10,7 +10,7 @@ from langsmith import traceable
 from shared.models import Article
 from shared.db import get_client, my_init_beanie
 from beanie import PydanticObjectId
-from src.analyzer_agent.types import Section, ReportOutline
+from src.analyzer_agent.types import TopicBlueprint
 from src.analyzer_agent.utils import responses_to_markdown_with_citations
 from src.analyzer_agent.state import ReportState, StateInput, WriteSectionState
 from langchain_openai import ChatOpenAI
@@ -64,7 +64,7 @@ async def get_articles(state: StateInput):
 
 
 async def generate_outline(state: StateInput):
-    logger.info("Generating outline")
+    logger.info("Generating topics plans")
     assert (articles := state.get("articles"))
 
     prompt = hub.pull(analyzer_settings.REPORT_OUTLINE_PROMPT_REF)
@@ -145,7 +145,7 @@ Use concrete details over general statements.""".format(
 
 
 def continue_to_write_section(state: ReportState):
-    assert all(isinstance(section, Section) for section in state["sections"])
+    assert all(isinstance(section, TopicBlueprint) for section in state["sections"])
 
     return [
         Send(

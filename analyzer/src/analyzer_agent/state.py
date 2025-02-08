@@ -2,19 +2,20 @@ from typing import Annotated, NotRequired
 import operator
 from typing_extensions import TypedDict
 import anthropic
-from .types import Section
-from shared.models import Article
+from .types import TopicBlueprint
+from shared.models import Article, Topic
 
 
 class ReportState(TypedDict):
     articles: list[Article]
     language: str
     workspace_description: str
-    sections: list[Section]
+    sections: list[TopicBlueprint]
     sections_raw_anthropic_responses: Annotated[
         list[anthropic.types.Message], operator.add
     ]
     final_report_md: str
+    topics: list[Topic]
 
 
 class StateInput(TypedDict):
@@ -24,8 +25,15 @@ class StateInput(TypedDict):
     workspace_description: str
 
 
+class WriteTopicState(TypedDict):
+    articles: list[Article]
+    language: str
+    workspace_description: str
+    topic: TopicBlueprint
+
+
 class WriteSectionState(TypedDict):
     articles: list[Article]
     language: str
     workspace_description: str
-    section: Section
+    section: TopicBlueprint

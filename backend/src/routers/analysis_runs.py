@@ -65,7 +65,7 @@ async def list_analysis_runs(
     statuses: Annotated[list[Status] | None, Query()] = None,
     analysis_types: Annotated[list[AnalysisType] | None, Query()] = None,
 ):
-    """List all analysis runs for a workspace"""
+    """List all analysis runs for a workspace, in descending order of creation date"""
     runs = AnalysisRun.find(AnalysisRun.workspace_id == workspace.id)
 
     if statuses is not None:
