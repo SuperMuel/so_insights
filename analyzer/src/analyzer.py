@@ -87,7 +87,7 @@ class Analyzer:
             case AnalysisType.CLUSTERING:
                 return await self.handle_clustering_run(run)
             case AnalysisType.AGENTIC:
-                return await self.handle_report_run(run)
+                return await self.handle_agentic_run(run)
 
         raise ValueError(f"Unknown analysis type: {run.analysis_type}")
 
@@ -139,14 +139,14 @@ class Analyzer:
         # Return list with updated articles in original order
         return [article_map[article.id] for article in articles]
 
-    async def handle_report_run(self, run: AnalysisRun) -> AnalysisRun:
+    async def handle_agentic_run(self, run: AnalysisRun) -> AnalysisRun:
         """
-        Processes a report run from start to finish.
+        Processes an agentic run from start to finish.
 
         Performs the following steps:
         1. Validates run type and state
         2. Retrieves workspace and articles
-        3. Generates report using LangGraph
+        3. Generates topics using LangGraph
         4. Updates run status and result
 
         Args:
@@ -159,9 +159,9 @@ class Analyzer:
             ValueError: If the run is not a report run or workspace not found.
         """
         if run.analysis_type != AnalysisType.AGENTIC:
-            raise ValueError(f"Run {run.id} is not a report run")
+            raise ValueError(f"Run {run.id} is not an agentic run")
 
-        logger.info(f"Handling report run '{run.id}'")
+        logger.info(f"Handling agentic run '{run.id}'")
         try:
             assert run.status in [Status.pending, Status.running]
 
@@ -184,7 +184,6 @@ class Analyzer:
 
             logger.info(f"Found {len(articles)} articles.")
 
-            # Evaluate articles if needed
             articles = await self._evaluate_articles_if_needed(articles)
 
             assert all(article.evaluation for article in articles)
@@ -219,8 +218,11 @@ class Analyzer:
 
             result = AgenticAnalysisResult(
                 topics=result_dict["topics"],
-                summary=result_dict["summary"],
+                # summary=result_dict["summary"],
+                summary="Test",
+                relevant_articles_ids=relevant_articles_ids,
             )
+            # TODO : generate summary
 
             run.result = result
             run.status = Status.completed

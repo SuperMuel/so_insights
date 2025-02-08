@@ -1,6 +1,3 @@
-from .types import Quote, TopicBlueprint
-
-
 EXAMPLE_ARTICLES_IDS = [
     "679a0ab01826e4e3526caf57",
     "679a0ab01826e4e3526caf5d",
