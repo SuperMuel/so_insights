@@ -38,7 +38,8 @@ client = anthropic.Anthropic()
 # ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
 ANTHROPIC_MODEL = "claude-3-5-haiku-latest"
 
-body_llm = init_chat_model("gemini-2.0-flash-001", model_provider="google_genai")
+# body_llm = init_chat_model("gemini-2.0-flash-001", model_provider="google_genai")
+body_llm = init_chat_model("gpt-4o-mini", model_provider="openai")
 
 
 async def get_articles(state: StateInput):

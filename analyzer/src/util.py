@@ -80,10 +80,13 @@ def try_get_firecrawl_image(article: Article) -> HttpUrl | None:
     if not image_url:
         return None
 
+    if isinstance(image_url, list | tuple) and len(image_url) >= 1:
+        image_url = image_url[0]
+
     try:
-        parsed_url = HttpUrl(image_url)
+        parsed_url = HttpUrl(image_url)  # type: ignore
     except ValidationError:
-        logger.error(f"Error while parsing image URL: {image_url}")
+        logger.error(f"Error while parsing image URL: {image_url} ({article.id=})")
         return None
 
     return parsed_url
@@ -92,10 +95,12 @@ def try_get_firecrawl_image(article: Article) -> HttpUrl | None:
 async def get_first_valid_image(articles: list[Article]) -> HttpUrl | None:
     """
     Asynchronously retrieves the first valid image URL from a list of articles.
+    It first checks if any article contains a firecrawl image via try_get_firecrawl_image,
+    returning the first valid one. If no valid firecrawl image is found, it then checks
+    the fallback article.image of each article.
 
-    This function iterates through the provided articles and checks each article's
-    image URL for validity. It returns the first URL that successfully responds
-    with an image content type.
+    A valid image URL is one that, when performing an HTTP HEAD request,
+    returns a 200 status code and a Content-Type header that starts with 'image/'.
 
     Args:
         articles (list[Article]): A list of Article objects to check for valid image URLs.
@@ -106,25 +111,30 @@ async def get_first_valid_image(articles: list[Article]) -> HttpUrl | None:
     timeout = aiohttp.ClientTimeout(total=5)  # 5 seconds timeout for the entire request
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        for article in articles:
-            # first try to get the image we got from Firecrawl since it's often better quality.
-            image_url = try_get_firecrawl_image(article) or article.image
 
-            if not image_url:
-                continue
-
+        async def is_valid_image(image: HttpUrl) -> bool:
             try:
-                async with session.head(str(image_url)) as response:
+                async with session.head(str(image)) as response:
                     if response.status == 200:
                         content_type = response.headers.get("Content-Type", "")
-                        if content_type.startswith("image/"):
-                            return image_url
-
+                        return content_type.startswith("image/")
             except aiohttp.ClientError:
-                continue
+                return False
             except asyncio.TimeoutError:
-                continue
+                return False
             except Exception as e:
                 logger.error(f"Error while fetching image: {e}")
-                continue
+                return False
+            return False
+
+        # First pass: check for valid firecrawl images
+        for article in articles:
+            firecrawl_img = try_get_firecrawl_image(article)
+            if firecrawl_img and await is_valid_image(firecrawl_img):
+                return firecrawl_img
+
+        # Second pass: check for valid fallback images
+        for article in articles:
+            if article.image and await is_valid_image(article.image):
+                return article.image
     return None
