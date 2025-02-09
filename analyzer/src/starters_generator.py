@@ -6,7 +6,7 @@ from shared.language import Language
 from shared.models import (
     AnalysisRun,
     AnalysisType,
-    ReportAnalysisResult,
+    AgenticAnalysisResult,
     Starters,
     Workspace,
 )
@@ -128,13 +128,17 @@ class ConversationStartersGenerator:
                 logger.info(
                     f"Using {len(overviews)} overviews of {len(clusters)} clusters for starters generation"
                 )
-            case AnalysisType.REPORT:
+            # TODO : de-deplicate code
+            case AnalysisType.AGENTIC:
                 assert run.result is not None and isinstance(
-                    run.result, ReportAnalysisResult
+                    run.result, AgenticAnalysisResult
                 )
-                data = run.result.report_content
+                data = "\n\n".join(
+                    [f"**{t.title}**\n{t.body}" for t in run.result.topics]
+                )
+
                 logger.info(
-                    f"Using {len(data)} characters of report content for starters generation"
+                    f"Using {len(run.result.topics)} topics for starters generation"
                 )
 
         input = ConversationStartersGenerationInput(

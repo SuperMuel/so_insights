@@ -3,8 +3,7 @@ from datetime import datetime
 
 import dateparser
 import httpx
-from pydantic import SecretStr
-from pydantic_core import Url
+from pydantic import HttpUrl, SecretStr
 
 from shared.models import TimeLimit
 from shared.region import Region
@@ -64,8 +63,8 @@ def serper_result_to_base_article(article: dict[str, str]) -> BaseArticle:
         body=article["snippet"] if "snippet" in article else "",
         date=serper_date_to_datetime(article["date"]),
         source=article["source"] if "source" in article else None,
-        url=Url(article["link"]),
-        image=Url(article["imageUrl"]) if "imageUrl" in article else None,
+        url=HttpUrl(article["link"]),
+        image=HttpUrl(article["imageUrl"]) if "imageUrl" in article else None,
         provider="serperdev",
     )
 

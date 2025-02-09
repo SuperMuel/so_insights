@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic_core import Url
+from pydantic import HttpUrl
 import pytest
 from dateutil.relativedelta import relativedelta
 from shared.region import Region
@@ -90,10 +90,10 @@ def test_time_limit_to_serper_none():
                 body="A judge in Delaware has for the second time struck down a compensation package for Elon Musk after a Tesla shareholder filed suit.",
                 date=serper_date_to_datetime("5 days ago"),
                 source="NPR",
-                url=Url(
+                url=HttpUrl(
                     "https://www.npr.org/2024/12/03/nx-s1-5214484/elon-musk-tesla-compensation"
                 ),
-                image=Url(
+                image=HttpUrl(
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQf84qexVuKvXDn8R2_LIkKrvUv-UFIMOHMjXzIPAjqMUTmnIyaWvFoEnd8og&s"
                 ),
                 provider="serperdev",

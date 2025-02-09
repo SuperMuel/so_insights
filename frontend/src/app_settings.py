@@ -13,7 +13,7 @@ class AppSettings(BaseSettings):
 
     SO_INSIGHTS_API_URL: str = Field(
         default=... if os.getenv("DYNO") else "http://localhost:8000"
-    )
+    )  # type: ignore
 
     VOYAGEAI_API_KEY: SecretStr = Field(default=...)
     EMBEDDING_MODEL: str = "voyage-3"

@@ -77,20 +77,23 @@ class FirecrawlUrlToMarkdown(UrlToMarkdownConverter):
 
             if not scrape_result or not isinstance(scrape_result, dict):
                 raise UrlToMarkdownConversionError(
-                    f"Unexpected response type from Firecrawl API: {type(scrape_result)}"
+                    f"Unexpected response type from Firecrawl API: {type(scrape_result)}. "
+                    f"Response: {scrape_result}"
                 )
 
             markdown_content = scrape_result.get("markdown")
 
             if not markdown_content:
                 raise UrlToMarkdownConversionError(
-                    f"Markdown content not found in Firecrawl API response for URL: {url}"
+                    f"Markdown content not found in Firecrawl API response for URL: {url}. "
+                    f"Response: {scrape_result}"
                 )
 
             if metadata := scrape_result.get("metadata", {}):
                 if not isinstance(metadata, dict):
                     raise UrlToMarkdownConversionError(
-                        f"Metadata must be a dictionary, got {type(metadata)}"
+                        f"Metadata must be a dictionary, got {type(metadata)}. "
+                        f"Response: {scrape_result}"
                     )
 
             return UrlToMarkdownConversion(
@@ -106,12 +109,13 @@ class FirecrawlUrlToMarkdown(UrlToMarkdownConverter):
             if e.response.status_code in (429, 408):
                 raise  # Will trigger retry
             raise UrlToMarkdownConversionError(
-                f"Error converting URL to Markdown using Firecrawl API: {e}"
+                f"Error converting URL {url} to Markdown using Firecrawl API: {e}. "
+                f"Response: {e.response.text}"
             ) from e
 
         except Exception as e:
             raise UrlToMarkdownConversionError(
-                f"Error converting URL to Markdown using Firecrawl API: {e}"
+                f"Error converting URL {url} to Markdown using Firecrawl API: {e}. "
             ) from e
 
     async def convert_urls(self, urls: list[HttpUrl]) -> list[UrlToMarkdownConversion]:

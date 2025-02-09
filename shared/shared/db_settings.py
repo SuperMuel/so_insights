@@ -19,6 +19,7 @@ class DBSettings(BaseSettings):
     mongodb_starters_collection: str = "starters"
     mongodb_ingestion_configs_collection: str = "ingestion_configs"
     mongodb_organizations_collection: str = "organizations"
+    mongodb_topics_collection: str = "topics"
 
 
 db_settings = DBSettings()

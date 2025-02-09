@@ -1,5 +1,7 @@
 """Contains all the data models used in inputs/outputs"""
 
+from .agentic_analysis_params import AgenticAnalysisParams
+from .agentic_analysis_result import AgenticAnalysisResult
 from .analysis_run import AnalysisRun
 from .analysis_run_create import AnalysisRunCreate
 from .analysis_type import AnalysisType
@@ -32,8 +34,6 @@ from .organization import Organization
 from .paginated_response_article import PaginatedResponseArticle
 from .region import Region
 from .relevancy_filter import RelevancyFilter
-from .report_analysis_params import ReportAnalysisParams
-from .report_analysis_result import ReportAnalysisResult
 from .rss_ingestion_config import RssIngestionConfig
 from .rss_ingestion_config_create import RssIngestionConfigCreate
 from .rss_ingestion_config_update import RssIngestionConfigUpdate
@@ -43,6 +43,8 @@ from .search_ingestion_config_update import SearchIngestionConfigUpdate
 from .search_provider import SearchProvider
 from .status import Status
 from .time_limit import TimeLimit
+from .topic import Topic
+from .topic_with_articles import TopicWithArticles
 from .url_to_markdown_conversion import UrlToMarkdownConversion
 from .url_to_markdown_conversion_metadata import UrlToMarkdownConversionMetadata
 from .validation_error import ValidationError
@@ -51,6 +53,8 @@ from .workspace_create import WorkspaceCreate
 from .workspace_update import WorkspaceUpdate
 
 __all__ = (
+    "AgenticAnalysisParams",
+    "AgenticAnalysisResult",
     "AnalysisRun",
     "AnalysisRunCreate",
     "AnalysisType",
@@ -81,8 +85,6 @@ __all__ = (
     "PaginatedResponseArticle",
     "Region",
     "RelevancyFilter",
-    "ReportAnalysisParams",
-    "ReportAnalysisResult",
     "RssIngestionConfig",
     "RssIngestionConfigCreate",
     "RssIngestionConfigUpdate",
@@ -92,6 +94,8 @@ __all__ = (
     "SearchProvider",
     "Status",
     "TimeLimit",
+    "Topic",
+    "TopicWithArticles",
     "UrlToMarkdownConversion",
     "UrlToMarkdownConversionMetadata",
     "ValidationError",

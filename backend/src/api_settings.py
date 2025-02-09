@@ -17,7 +17,7 @@ class APISettings(BaseSettings):
         Field(  # If generating client sdk on github_action, ignore the uri
             default="mongodb://localhost:27017" if os.getenv("GITHUB_ACTIONS") else ...
         )
-    )
+    )  # type: ignore
     PORT: int = Field(default=8000)
 
 

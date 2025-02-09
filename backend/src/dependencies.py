@@ -135,15 +135,17 @@ async def get_clustering_run(
 ExistingClusteringRun = Annotated[AnalysisRun, Depends(get_clustering_run)]
 
 
-async def get_report_run(
+async def get_agentic_run(
     analysis_run: ExistingAnalysisRun,
 ) -> AnalysisRun:
-    if analysis_run.analysis_type != AnalysisType.REPORT:
-        raise HTTPException(status_code=404, detail="Analysis run is not a report run")
+    if analysis_run.analysis_type != AnalysisType.AGENTIC:
+        raise HTTPException(
+            status_code=404, detail="Analysis run is not an agentic run"
+        )
     return analysis_run
 
 
-ExistingReportRun = Annotated[AnalysisRun, Depends(get_report_run)]
+ExistingAgenticRun = Annotated[AnalysisRun, Depends(get_agentic_run)]
 
 
 async def get_cluster(

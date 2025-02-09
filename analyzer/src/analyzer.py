@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any
 
 from src.article_evaluator import ArticleEvaluator
 from src.analyzer_agent.graph import graph
@@ -10,11 +11,11 @@ from shared.models import (
     ClusterEvaluation,
     ClusteringAnalysisResult,
     ClusteringRunEvaluationResult,
-    ReportAnalysisResult,
+    AgenticAnalysisResult,
     Workspace,
 )
 
-from src.analyzer_agent.state import ReportState, StateInput
+from src.analyzer_agent.state import AgenticTopicsState, StateInput
 from src.analyzer_settings import analyzer_settings
 from datetime import datetime
 
@@ -86,8 +87,8 @@ class Analyzer:
         match run.analysis_type:
             case AnalysisType.CLUSTERING:
                 return await self.handle_clustering_run(run)
-            case AnalysisType.REPORT:
-                return await self.handle_report_run(run)
+            case AnalysisType.AGENTIC:
+                return await self.handle_agentic_run(run)
 
         raise ValueError(f"Unknown analysis type: {run.analysis_type}")
 
@@ -139,14 +140,50 @@ class Analyzer:
         # Return list with updated articles in original order
         return [article_map[article.id] for article in articles]
 
-    async def handle_report_run(self, run: AnalysisRun) -> AnalysisRun:
+    async def _assign_first_images_to_topics(
+        self, topics: list[Any], relevant_articles: list[Article]
+    ) -> None:
         """
-        Processes a report run from start to finish.
+        Given a list of topics and relevant articles, concurrently fetches the first valid image for
+        each topic based on the articles associated to it and assigns it to the topic.
+
+        Args:
+            topics: List of topics each having an `articles_ids` attribute.
+            relevant_articles: List of articles to search for a valid image.
+        """
+        logger.info(f"Assigning first images to {len(topics)} topics")
+        topics_with_no_image = [topic for topic in topics if not topic.first_image]
+        logger.info(f"Assigning first images to {len(topics_with_no_image)} topics")
+
+        image_tasks = [
+            get_first_valid_image(
+                [
+                    article
+                    for article in relevant_articles
+                    if article.id in topic.articles_ids
+                ]
+            )
+            for topic in topics_with_no_image
+        ]
+        first_images = await asyncio.gather(*image_tasks)
+
+        for topic, first_image in zip(topics_with_no_image, first_images):
+            if first_image:
+                topic.first_image = first_image
+
+        found_images = [
+            first_image for first_image in first_images if first_image is not None
+        ]
+        logger.info(f"Found {len(found_images)} images")
+
+    async def handle_agentic_run(self, run: AnalysisRun) -> AnalysisRun:
+        """
+        Processes an agentic run from start to finish.
 
         Performs the following steps:
         1. Validates run type and state
         2. Retrieves workspace and articles
-        3. Generates report using LangGraph
+        3. Generates topics using LangGraph
         4. Updates run status and result
 
         Args:
@@ -158,10 +195,10 @@ class Analyzer:
         Raises:
             ValueError: If the run is not a report run or workspace not found.
         """
-        if run.analysis_type != AnalysisType.REPORT:
-            raise ValueError(f"Run {run.id} is not a report run")
+        if run.analysis_type != AnalysisType.AGENTIC:
+            raise ValueError(f"Run {run.id} is not an agentic run")
 
-        logger.info(f"Handling report run '{run.id}'")
+        logger.info(f"Handling agentic run '{run.id}'")
         try:
             assert run.status in [Status.pending, Status.running]
 
@@ -184,7 +221,6 @@ class Analyzer:
 
             logger.info(f"Found {len(articles)} articles.")
 
-            # Evaluate articles if needed
             articles = await self._evaluate_articles_if_needed(articles)
 
             assert all(article.evaluation for article in articles)
@@ -193,7 +229,10 @@ class Analyzer:
                 article
                 for article in articles
                 if article.evaluation
-                and article.evaluation.relevance_level == "relevant"
+                and (
+                    article.evaluation.relevance_level == "relevant"
+                    or article.evaluation.relevance_level == "somewhat_relevant"
+                )
             ]
 
             if not relevant_articles:
@@ -203,19 +242,27 @@ class Analyzer:
 
             input: StateInput = {
                 "articles": relevant_articles,
+                "articles_ids": [
+                    str(article.id) for article in relevant_articles if article.id
+                ],
                 "workspace_description": workspace.description,
                 "language": workspace.language,
             }
 
-            result_dict: ReportState = await graph.ainvoke(input)  # type: ignore
+            result_dict: AgenticTopicsState = await graph.ainvoke(input)  # type: ignore
+            topics = result_dict["topics"]
 
+            await self._assign_first_images_to_topics(topics, relevant_articles)
+
+            # Generate a summary
             relevant_articles_ids = [
                 article.id for article in relevant_articles if article.id
             ]
             assert len(relevant_articles_ids) == len(relevant_articles)
 
-            result = ReportAnalysisResult(
-                report_content=result_dict["final_report_md"],
+            result = AgenticAnalysisResult(
+                topics=topics,
+                summary=result_dict["summary"],
                 relevant_articles_ids=relevant_articles_ids,
             )
 
