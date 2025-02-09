@@ -8,8 +8,8 @@ from ..models.analysis_type import AnalysisType
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.agentic_analysis_params import AgenticAnalysisParams
     from ..models.clustering_analysis_params import ClusteringAnalysisParams
-    from ..models.report_analysis_params import ReportAnalysisParams
 
 
 T = TypeVar("T", bound="AnalysisRunCreate")
@@ -22,18 +22,18 @@ class AnalysisRunCreate:
         data_start (datetime.datetime):
         data_end (datetime.datetime):
         analysis_type (AnalysisType):
-        params (Union['ClusteringAnalysisParams', 'ReportAnalysisParams', None, Unset]): Parameters for the analysis. If
-            None, default parameters for the workspace will be used.
+        params (Union['AgenticAnalysisParams', 'ClusteringAnalysisParams', None, Unset]): Parameters for the analysis.
+            If None, default parameters for the workspace will be used.
     """
 
     data_start: datetime.datetime
     data_end: datetime.datetime
     analysis_type: AnalysisType
-    params: Union["ClusteringAnalysisParams", "ReportAnalysisParams", None, Unset] = UNSET
+    params: Union["AgenticAnalysisParams", "ClusteringAnalysisParams", None, Unset] = UNSET
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.agentic_analysis_params import AgenticAnalysisParams
         from ..models.clustering_analysis_params import ClusteringAnalysisParams
-        from ..models.report_analysis_params import ReportAnalysisParams
 
         data_start = self.data_start.isoformat()
 
@@ -46,7 +46,7 @@ class AnalysisRunCreate:
             params = UNSET
         elif isinstance(self.params, ClusteringAnalysisParams):
             params = self.params.to_dict()
-        elif isinstance(self.params, ReportAnalysisParams):
+        elif isinstance(self.params, AgenticAnalysisParams):
             params = self.params.to_dict()
         else:
             params = self.params
@@ -66,8 +66,8 @@ class AnalysisRunCreate:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
+        from ..models.agentic_analysis_params import AgenticAnalysisParams
         from ..models.clustering_analysis_params import ClusteringAnalysisParams
-        from ..models.report_analysis_params import ReportAnalysisParams
 
         d = src_dict.copy()
         data_start = isoparse(d.pop("data_start"))
@@ -76,7 +76,7 @@ class AnalysisRunCreate:
 
         analysis_type = AnalysisType(d.pop("analysis_type"))
 
-        def _parse_params(data: object) -> Union["ClusteringAnalysisParams", "ReportAnalysisParams", None, Unset]:
+        def _parse_params(data: object) -> Union["AgenticAnalysisParams", "ClusteringAnalysisParams", None, Unset]:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -92,12 +92,12 @@ class AnalysisRunCreate:
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                params_type_1 = ReportAnalysisParams.from_dict(data)
+                params_type_1 = AgenticAnalysisParams.from_dict(data)
 
                 return params_type_1
             except:  # noqa: E722
                 pass
-            return cast(Union["ClusteringAnalysisParams", "ReportAnalysisParams", None, Unset], data)
+            return cast(Union["AgenticAnalysisParams", "ClusteringAnalysisParams", None, Unset], data)
 
         params = _parse_params(d.pop("params", UNSET))
 

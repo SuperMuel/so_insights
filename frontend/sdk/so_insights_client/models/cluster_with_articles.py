@@ -19,7 +19,7 @@ class ClusterWithArticles:
     Attributes:
         id (str):
         workspace_id (str):
-        session_id (str):
+        run_id (str):
         articles_count (int):
         articles (list['ArticlePreview']):
         title (Union[None, Unset, str]):
@@ -31,7 +31,7 @@ class ClusterWithArticles:
 
     id: str
     workspace_id: str
-    session_id: str
+    run_id: str
     articles_count: int
     articles: list["ArticlePreview"]
     title: Union[None, Unset, str] = UNSET
@@ -48,7 +48,7 @@ class ClusterWithArticles:
 
         workspace_id = self.workspace_id
 
-        session_id = self.session_id
+        run_id = self.run_id
 
         articles_count = self.articles_count
 
@@ -95,7 +95,7 @@ class ClusterWithArticles:
             {
                 "id": id,
                 "workspace_id": workspace_id,
-                "session_id": session_id,
+                "run_id": run_id,
                 "articles_count": articles_count,
                 "articles": articles,
             }
@@ -123,7 +123,7 @@ class ClusterWithArticles:
 
         workspace_id = d.pop("workspace_id")
 
-        session_id = d.pop("session_id")
+        run_id = d.pop("run_id")
 
         articles_count = d.pop("articles_count")
 
@@ -190,7 +190,7 @@ class ClusterWithArticles:
         cluster_with_articles = cls(
             id=id,
             workspace_id=workspace_id,
-            session_id=session_id,
+            run_id=run_id,
             articles_count=articles_count,
             articles=articles,
             title=title,

@@ -16,9 +16,11 @@ from shared.models import (
     AgenticAnalysisParams,
     Status,
     Workspace,
+    AgenticAnalysisResult,
 )
 from shared.set_of_unique_articles import SetOfUniqueArticles
 from src.dependencies import (
+    ExistingAgenticRun,
     ExistingAnalysisRun,
     ExistingCluster,
     ExistingClusteringRun,
@@ -27,6 +29,7 @@ from src.dependencies import (
 from src.schemas import (
     AnalysisRunCreate,
     ArticlePreview,
+    TopicWithArticles,
     ClusterWithArticles,
 )
 
@@ -176,6 +179,52 @@ async def list_clusters_with_articles(
     return result
 
 
+@router.get(
+    "/{analysis_run_id}/topics-with-articles",
+    response_model=list[TopicWithArticles],
+    operation_id="list_topics_with_articles_for_agentic_run",
+)
+async def list_topics_with_articles(
+    analysis_run: ExistingAgenticRun,
+) -> list[TopicWithArticles]:
+    """List all topics with their articles for a specific agentic analysis run.
+
+    Only works for analysis runs of type AGENTIC.
+    Raises HTTPException if the run is not an agentic analysis or has no result.
+    """
+    assert analysis_run.analysis_type == AnalysisType.AGENTIC
+    assert analysis_run.result is None or isinstance(
+        analysis_run.result, AgenticAnalysisResult
+    )
+
+    if not analysis_run.result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Analysis run {analysis_run.id} has no result",
+        )
+
+    result: list[TopicWithArticles] = []
+    for topic in analysis_run.result.topics:
+        articles = await Article.find(In(Article.id, topic.articles_ids)).to_list()
+
+        article_previews = [
+            ArticlePreview(
+                id=str(article.id),
+                title=article.title,
+                url=article.url,
+                body=article.body,
+                date=article.date,
+                source=article.source,
+            )
+            for article in articles
+        ]
+
+        topic_with_articles = TopicWithArticles.from_topic(topic, article_previews)
+        result.append(topic_with_articles)
+
+    return result
+
+
 @router.put(
     "/clusters/{cluster_id}/feedback",
     response_model=Cluster,
@@ -239,7 +288,7 @@ async def create_analysis_run(
 
     params = (
         _get_default_analysis_params(workspace, run_create.analysis_type)
-        if run_create.params is None
+        if not run_create.params
         else run_create.params
     )
 

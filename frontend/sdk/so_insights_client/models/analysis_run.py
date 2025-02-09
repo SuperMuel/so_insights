@@ -9,10 +9,10 @@ from ..models.analysis_type import AnalysisType
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.agentic_analysis_params import AgenticAnalysisParams
+    from ..models.agentic_analysis_result import AgenticAnalysisResult
     from ..models.clustering_analysis_params import ClusteringAnalysisParams
     from ..models.clustering_analysis_result import ClusteringAnalysisResult
-    from ..models.report_analysis_params import ReportAnalysisParams
-    from ..models.report_analysis_result import ReportAnalysisResult
 
 
 T = TypeVar("T", bound="AnalysisRun")
@@ -26,34 +26,34 @@ class AnalysisRun:
         analysis_type (AnalysisType):
         data_start (datetime.datetime): Start date of the data range used for analysis
         data_end (datetime.datetime): End date of the data range used for analysis
-        params (Union['ClusteringAnalysisParams', 'ReportAnalysisParams']):
+        params (Union['AgenticAnalysisParams', 'ClusteringAnalysisParams']):
         field_id (Union[None, Unset, str]): MongoDB document ObjectID
         created_at (Union[Unset, datetime.datetime]): Timestamp when the run was created
         status (Union[Unset, Any]): Current status of the analysis run Default: 'pending'.
         error (Union[None, Unset, str]): Error message if the run failed
         session_start (Union[None, Unset, datetime.datetime]): Timestamp when the session started
         session_end (Union[None, Unset, datetime.datetime]): Timestamp when the session ended
-        result (Union['ClusteringAnalysisResult', 'ReportAnalysisResult', None, Unset]): Result of the analysis
+        result (Union['AgenticAnalysisResult', 'ClusteringAnalysisResult', None, Unset]): Result of the analysis
     """
 
     workspace_id: str
     analysis_type: AnalysisType
     data_start: datetime.datetime
     data_end: datetime.datetime
-    params: Union["ClusteringAnalysisParams", "ReportAnalysisParams"]
+    params: Union["AgenticAnalysisParams", "ClusteringAnalysisParams"]
     field_id: Union[None, Unset, str] = UNSET
     created_at: Union[Unset, datetime.datetime] = UNSET
     status: Union[Unset, Any] = "pending"
     error: Union[None, Unset, str] = UNSET
     session_start: Union[None, Unset, datetime.datetime] = UNSET
     session_end: Union[None, Unset, datetime.datetime] = UNSET
-    result: Union["ClusteringAnalysisResult", "ReportAnalysisResult", None, Unset] = UNSET
+    result: Union["AgenticAnalysisResult", "ClusteringAnalysisResult", None, Unset] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.agentic_analysis_result import AgenticAnalysisResult
         from ..models.clustering_analysis_params import ClusteringAnalysisParams
         from ..models.clustering_analysis_result import ClusteringAnalysisResult
-        from ..models.report_analysis_result import ReportAnalysisResult
 
         workspace_id = self.workspace_id
 
@@ -108,7 +108,7 @@ class AnalysisRun:
             result = UNSET
         elif isinstance(self.result, ClusteringAnalysisResult):
             result = self.result.to_dict()
-        elif isinstance(self.result, ReportAnalysisResult):
+        elif isinstance(self.result, AgenticAnalysisResult):
             result = self.result.to_dict()
         else:
             result = self.result
@@ -143,10 +143,10 @@ class AnalysisRun:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
+        from ..models.agentic_analysis_params import AgenticAnalysisParams
+        from ..models.agentic_analysis_result import AgenticAnalysisResult
         from ..models.clustering_analysis_params import ClusteringAnalysisParams
         from ..models.clustering_analysis_result import ClusteringAnalysisResult
-        from ..models.report_analysis_params import ReportAnalysisParams
-        from ..models.report_analysis_result import ReportAnalysisResult
 
         d = src_dict.copy()
         workspace_id = d.pop("workspace_id")
@@ -157,7 +157,7 @@ class AnalysisRun:
 
         data_end = isoparse(d.pop("data_end"))
 
-        def _parse_params(data: object) -> Union["ClusteringAnalysisParams", "ReportAnalysisParams"]:
+        def _parse_params(data: object) -> Union["AgenticAnalysisParams", "ClusteringAnalysisParams"]:
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
@@ -168,7 +168,7 @@ class AnalysisRun:
                 pass
             if not isinstance(data, dict):
                 raise TypeError()
-            params_type_1 = ReportAnalysisParams.from_dict(data)
+            params_type_1 = AgenticAnalysisParams.from_dict(data)
 
             return params_type_1
 
@@ -235,7 +235,7 @@ class AnalysisRun:
 
         session_end = _parse_session_end(d.pop("session_end", UNSET))
 
-        def _parse_result(data: object) -> Union["ClusteringAnalysisResult", "ReportAnalysisResult", None, Unset]:
+        def _parse_result(data: object) -> Union["AgenticAnalysisResult", "ClusteringAnalysisResult", None, Unset]:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -251,12 +251,12 @@ class AnalysisRun:
             try:
                 if not isinstance(data, dict):
                     raise TypeError()
-                result_type_1 = ReportAnalysisResult.from_dict(data)
+                result_type_1 = AgenticAnalysisResult.from_dict(data)
 
                 return result_type_1
             except:  # noqa: E722
                 pass
-            return cast(Union["ClusteringAnalysisResult", "ReportAnalysisResult", None, Unset], data)
+            return cast(Union["AgenticAnalysisResult", "ClusteringAnalysisResult", None, Unset], data)
 
         result = _parse_result(d.pop("result", UNSET))
 

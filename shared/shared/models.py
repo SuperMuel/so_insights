@@ -455,11 +455,20 @@ class Article(Document):
 RelevanceLevel = Literal["highly_relevant", "somewhat_relevant", "not_relevant"]
 
 
+class AnalysisType(str, Enum):
+    CLUSTERING = "clustering"
+    AGENTIC = "agentic"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
 class ClusteringAnalysisParams(BaseModel):
     """Parameters specific to clustering analysis."""
 
+    analysis_type: AnalysisType = AnalysisType.CLUSTERING
+
     hdbscan_settings: HdbscanSettings = Field(
-        default_factory=HdbscanSettings,
         description="HDBSCAN algorithm settings for clustering",
     )
 
@@ -467,18 +476,7 @@ class ClusteringAnalysisParams(BaseModel):
 class AgenticAnalysisParams(BaseModel):
     """Parameters specific to agentic analysis."""
 
-    # Just an example for now
-    # custom_instructions: str | None = Field(
-    #     None, description="Custom instructions to pass to the agent"
-    # )
-
-
-class AnalysisType(str, Enum):
-    CLUSTERING = "clustering"
-    AGENTIC = "agentic"
-
-    def __str__(self) -> str:
-        return str(self.value)
+    analysis_type: AnalysisType = AnalysisType.AGENTIC
 
 
 AnalysisParams = ClusteringAnalysisParams | AgenticAnalysisParams

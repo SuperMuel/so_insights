@@ -16,6 +16,7 @@ from beanie import PydanticObjectId
 from src.analyzer_agent.types import TopicBlueprint, TopicsBlueprints
 from src.analyzer_agent.utils import (
     article_to_anthropic_document,
+    extract_body_with_citations,
     extract_title_and_body,
     anthropic_response_to_markdown,
     anthropic_response_to_markdown_with_citations,
@@ -213,11 +214,12 @@ async def _write_topic_body_other(
     )
 
     title, body = extract_title_and_body(response)
+    body_with_citations = extract_body_with_citations(response)
 
     topic = Topic(
         title=title,
         body=body,
-        body_with_links=body,
+        body_with_links=body_with_citations,
         articles_ids=[article.id for article in supporting_articles if article.id],
     )
 

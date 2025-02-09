@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -6,40 +6,28 @@ from attrs import field as _attrs_field
 from ..models.analysis_type import AnalysisType
 from ..types import UNSET, Unset
 
-if TYPE_CHECKING:
-    from ..models.hdbscan_settings import HdbscanSettings
-
-
-T = TypeVar("T", bound="ClusteringAnalysisParams")
+T = TypeVar("T", bound="AgenticAnalysisParams")
 
 
 @_attrs_define
-class ClusteringAnalysisParams:
-    """Parameters specific to clustering analysis.
+class AgenticAnalysisParams:
+    """Parameters specific to agentic analysis.
 
     Attributes:
-        hdbscan_settings (HdbscanSettings):
         analysis_type (Union[Unset, AnalysisType]):
     """
 
-    hdbscan_settings: "HdbscanSettings"
     analysis_type: Union[Unset, AnalysisType] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        hdbscan_settings = self.hdbscan_settings.to_dict()
-
         analysis_type: Union[Unset, str] = UNSET
         if not isinstance(self.analysis_type, Unset):
             analysis_type = self.analysis_type.value
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
-        field_dict.update(
-            {
-                "hdbscan_settings": hdbscan_settings,
-            }
-        )
+        field_dict.update({})
         if analysis_type is not UNSET:
             field_dict["analysis_type"] = analysis_type
 
@@ -47,11 +35,7 @@ class ClusteringAnalysisParams:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
-        from ..models.hdbscan_settings import HdbscanSettings
-
         d = src_dict.copy()
-        hdbscan_settings = HdbscanSettings.from_dict(d.pop("hdbscan_settings"))
-
         _analysis_type = d.pop("analysis_type", UNSET)
         analysis_type: Union[Unset, AnalysisType]
         if isinstance(_analysis_type, Unset):
@@ -59,13 +43,12 @@ class ClusteringAnalysisParams:
         else:
             analysis_type = AnalysisType(_analysis_type)
 
-        clustering_analysis_params = cls(
-            hdbscan_settings=hdbscan_settings,
+        agentic_analysis_params = cls(
             analysis_type=analysis_type,
         )
 
-        clustering_analysis_params.additional_properties = d
-        return clustering_analysis_params
+        agentic_analysis_params.additional_properties = d
+        return agentic_analysis_params
 
     @property
     def additional_keys(self) -> list[str]:

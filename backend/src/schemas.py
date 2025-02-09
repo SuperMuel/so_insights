@@ -20,6 +20,7 @@ from shared.models import (
     ModelDescription,
     ModelTitle,
     TimeLimit,
+    Topic,
 )
 from shared.region import Region
 
@@ -115,10 +116,30 @@ class ArticlePreview(BaseModel):
     source: str | None = None
 
 
+class TopicWithArticles(BaseModel):
+    articles_count: int
+    title: str
+    summary: str
+    summary_with_links: str | None = None
+    first_image: HttpUrl | None = None
+    articles: list[ArticlePreview]
+
+    @classmethod
+    def from_topic(cls, topic: Topic, previews: list[ArticlePreview]):
+        return cls(
+            title=topic.title,
+            summary=topic.body,
+            summary_with_links=topic.body_with_links,
+            first_image=topic.first_image,
+            articles_count=len(topic.articles_ids),
+            articles=previews,
+        )
+
+
 class ClusterWithArticles(BaseModel):
     id: str
     workspace_id: str
-    session_id: str
+    run_id: str
     articles_count: int
     title: str | None = None
     summary: str | None = None
@@ -132,7 +153,7 @@ class ClusterWithArticles(BaseModel):
         return cls(
             id=str(cluster.id),
             workspace_id=str(cluster.workspace_id),
-            session_id=str(cluster.session_id),
+            run_id=str(cluster.session_id),
             articles_count=cluster.articles_count,
             title=cluster.overview.title if cluster.overview else None,
             summary=cluster.overview.summary if cluster.overview else None,

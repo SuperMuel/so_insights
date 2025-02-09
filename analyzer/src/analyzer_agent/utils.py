@@ -1,8 +1,12 @@
+import logging
 import re
 
 from typing import Any
 
 from shared.models import Article
+
+
+logger = logging.getLogger(__name__)
 
 
 def article_to_anthropic_document(article: Article) -> dict[str, Any]:
@@ -48,6 +52,32 @@ def extract_title_and_body(full_text: str) -> tuple[str, str]:
     body = body_match.group(1).strip()
 
     return title, body
+
+
+def extract_body_with_citations(full_text: str) -> str | None:
+    """
+    Extract body content with citations from text containing <body_with_citations> tags.
+    Returns None if the tags are not found or if there's an error in extraction.
+
+    Args:
+        full_text: Text containing <body_with_citations> tags
+
+    Returns:
+        The body string extracted from <body_with_citations> tags, or None if not found/error
+    """
+    try:
+        body_match = re.search(
+            r"<body_with_citations>\s*(.*?)\s*</body_with_citations>",
+            full_text,
+            re.DOTALL,
+        )
+        if not body_match:
+            logger.warning("No <body_with_citations> tags found in text.")
+            return None
+        return body_match.group(1).strip()
+    except Exception:
+        logger.error("Error extracting body with citations from text.")
+        return None
 
 
 def anthropic_response_to_markdown_with_citations(

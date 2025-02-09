@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any
 
 from src.article_evaluator import ArticleEvaluator
 from src.analyzer_agent.graph import graph
@@ -139,6 +140,42 @@ class Analyzer:
         # Return list with updated articles in original order
         return [article_map[article.id] for article in articles]
 
+    async def _assign_first_images_to_topics(
+        self, topics: list[Any], relevant_articles: list[Article]
+    ) -> None:
+        """
+        Given a list of topics and relevant articles, concurrently fetches the first valid image for
+        each topic based on the articles associated to it and assigns it to the topic.
+
+        Args:
+            topics: List of topics each having an `articles_ids` attribute.
+            relevant_articles: List of articles to search for a valid image.
+        """
+        logger.info(f"Assigning first images to {len(topics)} topics")
+        topics_with_no_image = [topic for topic in topics if not topic.first_image]
+        logger.info(f"Assigning first images to {len(topics_with_no_image)} topics")
+
+        image_tasks = [
+            get_first_valid_image(
+                [
+                    article
+                    for article in relevant_articles
+                    if article.id in topic.articles_ids
+                ]
+            )
+            for topic in topics_with_no_image
+        ]
+        first_images = await asyncio.gather(*image_tasks)
+
+        for topic, first_image in zip(topics_with_no_image, first_images):
+            if first_image:
+                topic.first_image = first_image
+
+        found_images = [
+            first_image for first_image in first_images if first_image is not None
+        ]
+        logger.info(f"Found {len(found_images)} images")
+
     async def handle_agentic_run(self, run: AnalysisRun) -> AnalysisRun:
         """
         Processes an agentic run from start to finish.
@@ -192,7 +229,10 @@ class Analyzer:
                 article
                 for article in articles
                 if article.evaluation
-                and article.evaluation.relevance_level == "relevant"
+                and (
+                    article.evaluation.relevance_level == "relevant"
+                    or article.evaluation.relevance_level == "somewhat_relevant"
+                )
             ]
 
             if not relevant_articles:
@@ -212,8 +252,9 @@ class Analyzer:
             result_dict: AgenticTopicsState = await graph.ainvoke(input)  # type: ignore
             topics = result_dict["topics"]
 
-            # Generate a summary
+            await self._assign_first_images_to_topics(topics, relevant_articles)
 
+            # Generate a summary
             relevant_articles_ids = [
                 article.id for article in relevant_articles if article.id
             ]
