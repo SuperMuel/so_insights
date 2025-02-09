@@ -39,7 +39,9 @@ class UrlToMarkdownConverter(ABC):
         pass
 
     @abstractmethod
-    async def convert_urls(self, urls: list[HttpUrl]) -> list[UrlToMarkdownConversion]:
+    async def convert_urls(
+        self, urls: list[HttpUrl]
+    ) -> list[UrlToMarkdownConversion | UrlToMarkdownConversionError]:
         """
         Converts the content of the given URLs to Markdown.
 

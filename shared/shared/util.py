@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from urllib.parse import urlparse
+from pydantic import HttpUrl
 from pydantic_core import Url
 
 
@@ -8,7 +9,7 @@ def utc_datetime_factory():
     return datetime.now(UTC)
 
 
-def validate_url(url: str | Url | None) -> str | None:
+def validate_url(url: str | Url | HttpUrl | None) -> HttpUrl | None:
     """
     Validates the given URL.
 
@@ -21,10 +22,11 @@ def validate_url(url: str | Url | None) -> str | None:
     if not url:
         return None
 
-    if isinstance(url, Url):
-        url = str(url)
+    if isinstance(url, Url | HttpUrl):
+        return HttpUrl(str(url))
 
-    parsed_url = urlparse(url)
-    if parsed_url.scheme and parsed_url.netloc:
+    try:
+        url = HttpUrl(url)
         return url
-    return None
+    except Exception:
+        pass

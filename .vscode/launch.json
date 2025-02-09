@@ -46,7 +46,23 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "watch"
+                "watch",
+                "-i",
+                "1"
+            ]
+        },
+        {
+            "name": "Run Ingester",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "cwd": "${workspaceFolder}/ingester",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "watch",
+                "-i",
+                "1"
             ]
         }
     ],

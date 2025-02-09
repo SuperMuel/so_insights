@@ -1,7 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import dateparser
+from dateparser.conf import Settings
 import httpx
 from pydantic import HttpUrl, SecretStr
 
@@ -29,16 +30,24 @@ def serper_date_to_datetime(date: str) -> datetime:
         date (str): A date string in Serper.dev format (e.g. "2 days ago")
 
     Returns:
-        datetime: The parsed datetime object
+        datetime: The parsed datetime object in UTC timezone
 
     Raises:
         ValueError: If the date string cannot be parsed
 
     Example:
         >>> serper_date_to_datetime("2 days ago")
-        datetime(2024, 3, 20, 14, 30, 0)  # if today is March 22
+        datetime(2024, 3, 20, 14, 30, 0, tzinfo=timezone.utc)  # if today is March 22
     """
-    dt = dateparser.parse(date)
+    dt = dateparser.parse(
+        date,
+        settings={
+            "TIMEZONE": "UTC",
+            "RETURN_AS_TIMEZONE_AWARE": True,
+            "TO_TIMEZONE": "UTC",
+            "RELATIVE_BASE": datetime.now(timezone.utc),
+        },
+    )
     if dt is None:
         raise ValueError(f"Could not parse date: {date}")
 

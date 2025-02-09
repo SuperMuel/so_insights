@@ -118,9 +118,11 @@ class FirecrawlUrlToMarkdown(UrlToMarkdownConverter):
                 f"Error converting URL {url} to Markdown using Firecrawl API: {e}. "
             ) from e
 
-    async def convert_urls(self, urls: list[HttpUrl]) -> list[UrlToMarkdownConversion]:
+    async def convert_urls(
+        self, urls: list[HttpUrl]
+    ) -> list[UrlToMarkdownConversion | UrlToMarkdownConversionError]:
         """
-        Converts the content of the given URLs to Markdown using the Firecrawl API.
+        Converts the content of the given URLs to Markdown using Firecrawl Batch API.
         Rate limited to avoid overwhelming the API.
 
         Args:
@@ -128,4 +130,105 @@ class FirecrawlUrlToMarkdown(UrlToMarkdownConverter):
 
         Returns: list[UrlToMarkdownConversion]
         """
-        return await asyncio.gather(*[self.convert_url(url) for url in urls])
+        return await self._convert_batch_urls(urls)
+
+    @retry(
+        stop=stop_after_attempt(3),  # Reduced retries for batch as it's more efficient
+        wait=wait_exponential(multiplier=3, min=4, max=60),
+        retry=retry_if_exception_type((HTTPError)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        # If all retries fail get the original error (HTTPError)
+        retry_error_callback=lambda retry_state: retry_state.outcome.result(),  # type: ignore
+    )
+    async def _convert_batch_urls(
+        self, urls: list[HttpUrl]
+    ) -> list[UrlToMarkdownConversion | UrlToMarkdownConversionError]:
+        logger.info(
+            f"Converting {len(urls)} URLs to Markdown using Firecrawl Batch API"
+        )
+
+        try:
+            # # Scrape multiple websites:
+            batch_scrape_result = self.app.batch_scrape_urls(
+                [str(url) for url in urls],
+                {
+                    "formats": ["markdown"],
+                    "ignoreInvalidURLs": True,
+                    "removeBase64Images": True,
+                },
+            )
+        except HTTPError as e:
+            # Retry on:
+            # - 429: Rate limit exceeded, need to wait before retrying
+            # - 408: Request timeout, temporary network/server issue
+            if e.response.status_code in (429, 408):
+                raise  # Will trigger retry
+            raise UrlToMarkdownConversionError(
+                f"Error converting URLs to Markdown using Firecrawl Batch API: {e}. "
+                f"Response: {e.response.text}"
+            ) from e
+        except Exception as e:
+            raise UrlToMarkdownConversionError(
+                f"Error converting URLs to Markdown using Firecrawl Batch API: {e}. "
+            ) from e
+
+        if not batch_scrape_result.get("success"):
+            raise UrlToMarkdownConversionError(
+                f"Error converting URLs to Markdown using Firecrawl Batch API: {batch_scrape_result}. "
+            )
+
+        if batch_scrape_result.get("status") != "completed":
+            raise ValueError(
+                f"Firecrawl batch scrape job did not complete successfully. Status: {batch_scrape_result['status']}. Job ID: {batch_scrape_result['id']}"
+            )
+
+        logger.info(
+            f"Number of unprocessed URLs: {len(urls) - batch_scrape_result['completed']}"
+        )
+
+        # Just to be sure that the result is not paginated. But pagination should be handled by the SDK
+        if "next" in batch_scrape_result:
+            raise ValueError(
+                f"Unhandled 'next' key in Firecrawl Batch API response: {batch_scrape_result}. "
+            )
+
+        # url to result mapping
+        url_to_result_mapping = {
+            item["metadata"]["sourceURL"]: item for item in batch_scrape_result["data"]
+        }
+
+        results = []
+        for url in urls:
+            item = url_to_result_mapping.get(str(url))
+            if not item:
+                results.append(
+                    UrlToMarkdownConversionError(
+                        f"URL not found in Firecrawl API response: {url}"
+                    )
+                )
+                continue
+
+            markdown_content = item.get("markdown")
+            metadata = item.get("metadata", {})
+
+            if not markdown_content:
+                logger.warning(
+                    f"Markdown content not found in Firecrawl API response for URL: {item.get('metadata', {}).get('sourceURL') if metadata else 'N/A'}. Response: {item}"
+                )
+                results.append(
+                    UrlToMarkdownConversionError(
+                        f"Markdown content not found in Firecrawl API response for URL: {url}"
+                    )
+                )
+                continue  # Skip this URL and proceed to the next one
+
+            results.append(
+                UrlToMarkdownConversion(
+                    url=url,
+                    markdown=markdown_content,
+                    metadata=metadata,
+                    extraction_method=self.extraction_method,
+                )
+            )
+
+        return results

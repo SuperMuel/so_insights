@@ -246,17 +246,24 @@ async def handle_ingestion_run(
                 )
                 assert len(to_fetch) == len(results)
                 for article, result in zip(to_fetch, results):
-                    article.content = (
-                        result.content_cleaner_output.cleaned_article_content
-                    )
-                    article.content_cleaning_error = result.content_cleaner_output.error
-                    article.content_fetching_result = result
+                    if isinstance(result, Exception):
+                        article.content_cleaning_error = str(result)
+                    else:
+                        article.content = (
+                            result.content_cleaner_output.cleaned_article_content
+                        )
+                        article.content_cleaning_error = (
+                            result.content_cleaner_output.error
+                        )
+                        article.content_fetching_result = result
 
                 logger.info("Content fetching complete.")
             else:
                 logger.info("No articles to fetch content for.")
         except Exception as e:
-            logger.error(f"Error while fetching article content: {e}")
+            logger.error(
+                f"Error while fetching article content: ({e.__class__.__name__}): {str(e)}"
+            )
             return await run.mark_as_finished(Status.failed, error=str(e))
 
     run.n_inserted = await insert_articles_in_mongodb(articles)

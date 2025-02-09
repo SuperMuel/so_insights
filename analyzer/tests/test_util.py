@@ -24,7 +24,7 @@ def test_try_get_firecrawl_image():
     # Test case 1: Article with valid og:image
     article1 = create_test_article()
     result1 = try_get_firecrawl_image(article1)
-    assert isinstance(result1, Url)
+    assert isinstance(result1, HttpUrl)
     assert str(result1) == "https://example.com/og-image.jpg"
 
     # Test case 2: Article without content_fetching_result
