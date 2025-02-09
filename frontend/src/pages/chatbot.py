@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from langchain_core.runnables.config import RunnableConfig
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Iterable, Sequence
 from uuid import uuid4
 from pydantic import HttpUrl
@@ -239,7 +239,7 @@ def create_chain(retriever: VectorStoreRetriever):
             context=_create_history_aware_retriever(retriever)
             | fetch_docs
             | format_docs,
-            date=RunnableLambda(lambda _: datetime.now().strftime("%Y-%m-%d")),
+            date=RunnableLambda(lambda _: datetime.now().strftime("%Y-%m-%d")),  # noqa: DTZ005
         )
         | _fetch_qa_prompt()
         | llm
@@ -259,7 +259,9 @@ search_kwargs = {
     # Filter by date
     "filter": {
         "date": {
-            "$gte": (datetime.now() - timedelta(days=time_limit_days)).timestamp()
+            "$gte": (
+                datetime.now(tz=timezone.utc) - timedelta(days=time_limit_days)
+            ).timestamp()
         },
     }
     if time_limit_days != -1

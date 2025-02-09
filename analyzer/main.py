@@ -4,7 +4,7 @@ from beanie.odm.queries.update import (
     UpdateResponse,
 )
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from beanie.operators import Set
 
 from fastapi import FastAPI
@@ -118,8 +118,8 @@ def create_clustering_analysis_tasks(
                 assert workspace.id
                 run = await AnalysisRun(
                     workspace_id=workspace.id,
-                    data_start=datetime.now() - timedelta(days=days),
-                    data_end=datetime.now(),
+                    data_start=datetime.now(tz=timezone.utc) - timedelta(days=days),
+                    data_end=datetime.now(tz=timezone.utc),
                     analysis_type=AnalysisType.CLUSTERING,
                     params=ClusteringAnalysisParams(
                         hdbscan_settings=workspace.hdbscan_settings,
@@ -437,11 +437,13 @@ def watch(
         mongo_client, analyzer = await setup()
 
         logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
-        start_time = datetime.now()
+        start_time = datetime.now(tz=timezone.utc)
 
         server_task = asyncio.create_task(run_server())
         try:
-            while (datetime.now() - start_time).total_seconds() < max_runtime:
+            while (
+                datetime.now(tz=timezone.utc) - start_time
+            ).total_seconds() < max_runtime:
                 logger.info("Checking for pending runs")
                 run = await AnalysisRun.find_one(
                     AnalysisRun.status == Status.pending
@@ -454,7 +456,9 @@ def watch(
 
                 if not run:
                     await asyncio.sleep(interval)
-                    if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                    if (
+                        datetime.now(tz=timezone.utc) - start_time
+                    ).total_seconds() >= max_runtime:
                         logger.info("Reached maximum runtime. Exiting.")
                         break
                     continue
@@ -464,7 +468,9 @@ def watch(
                 updated_run = await analyzer.handle_run(run)
                 logger.info(f"Completed run {updated_run.id}")
 
-                if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                if (
+                    datetime.now(tz=timezone.utc) - start_time
+                ).total_seconds() >= max_runtime:
                     logger.info("Reached maximum runtime. Exiting.")
                     break
 

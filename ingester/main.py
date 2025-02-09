@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import typer
@@ -502,10 +502,12 @@ def watch(
 
         logger.info(f"Starting watch loop. Will run for up to {max_runtime} seconds.")
         logger.info(ingester_settings.model_dump())
-        start_time = datetime.now()
+        start_time = datetime.now(tz=timezone.utc)
 
         try:
-            while (datetime.now() - start_time).total_seconds() < max_runtime:
+            while (
+                datetime.now(tz=timezone.utc) - start_time
+            ).total_seconds() < max_runtime:
                 logger.info("Checking for pending ingestion runs")
                 pending_run = await IngestionRun.find_one(
                     IngestionRun.status == Status.pending
@@ -530,7 +532,9 @@ def watch(
                     content_fetcher=content_fetcher,
                 )
 
-                if (datetime.now() - start_time).total_seconds() >= max_runtime:
+                if (
+                    datetime.now(tz=timezone.utc) - start_time
+                ).total_seconds() >= max_runtime:
                     logger.info("Reached maximum runtime. Exiting.")
                     break
         finally:

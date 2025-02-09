@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 from babel import Locale
 from sdk.so_insights_client.api.analysis_runs import list_analysis_runs
@@ -53,7 +53,7 @@ def create_toast(text: str, icon: str = "🚀") -> None:
 
     This function is a workaround for showing toasts when st.rerun() is used immediately after.
     """
-    created_at = datetime.now()
+    created_at = datetime.now(tz=timezone.utc)
     st.session_state.toasts = st.session_state.get("toasts", []) + [
         {"text": text, "icon": icon, "created_at": created_at}
     ]
@@ -74,7 +74,7 @@ def show_all_toasts():
     TOAST_DURATION = timedelta(seconds=5)
     to_delete = []
     for toast in toasts:
-        if datetime.now() - toast["created_at"] > TOAST_DURATION:
+        if datetime.now(tz=timezone.utc) - toast["created_at"] > TOAST_DURATION:
             to_delete.append(toast)
             continue
         text, icon = toast["text"], toast["icon"]

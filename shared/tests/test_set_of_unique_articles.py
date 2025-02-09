@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import HttpUrl
 from pydantic_core import Url
 import pytest
@@ -42,7 +42,7 @@ def create_article(
         body=body,
         date=date,
         url=HttpUrl(url),
-        found_at=datetime.now(),
+        found_at=datetime.now(tz=timezone.utc),
         provider="duckduckgo",
     )
 

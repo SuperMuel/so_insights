@@ -17,7 +17,7 @@ from shared.models import (
 
 from src.analyzer_agent.state import AgenticTopicsState, StateInput
 from src.analyzer_settings import analyzer_settings
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 from beanie import BulkWriter, PydanticObjectId
@@ -205,7 +205,7 @@ class Analyzer:
             if run.status == Status.pending:
                 run.status = Status.running
 
-            run.session_start = datetime.now()
+            run.session_start = datetime.now(tz=timezone.utc)
             await run.save()
 
             workspace = await Workspace.get(run.workspace_id)
@@ -268,7 +268,7 @@ class Analyzer:
 
             run.result = result
             run.status = Status.completed
-            run.session_end = datetime.now()
+            run.session_end = datetime.now(tz=timezone.utc)
             await run.save()
 
             logger.info(f"Report run '{run.id}' finished successfully.")
@@ -287,7 +287,7 @@ class Analyzer:
             logger.exception(f"Error handling report run: {e}")
             run.status = Status.failed
             run.error = str(e)
-            run.session_end = datetime.now()
+            run.session_end = datetime.now(tz=timezone.utc)
             await run.save()
 
         return run
@@ -327,7 +327,7 @@ class Analyzer:
             if run.status == Status.pending:
                 run.status = Status.running
 
-            run.session_start = datetime.now()
+            run.session_start = datetime.now(tz=timezone.utc)
 
             await run.save()
 
@@ -359,7 +359,9 @@ class Analyzer:
                 namespace=id_to_str(run.workspace_id),
             )
 
-            data_loading_time_s = (datetime.now() - run.session_start).total_seconds()
+            data_loading_time_s = (
+                datetime.now(tz=timezone.utc) - run.session_start
+            ).total_seconds()
 
             logger.info(f"Fetched {len(vectors)} vectors.")
 
@@ -438,14 +440,14 @@ class Analyzer:
             )
 
             run.status = Status.completed
-            run.session_end = datetime.now()
+            run.session_end = datetime.now(tz=timezone.utc)
             await run.save()
 
         except Exception as e:
             logger.exception(f"Error handling clustering run: {e}")
             run.status = Status.failed
             run.error = str(e)
-            run.session_end = datetime.now()
+            run.session_end = datetime.now(tz=timezone.utc)
             await run.save()
 
         return run

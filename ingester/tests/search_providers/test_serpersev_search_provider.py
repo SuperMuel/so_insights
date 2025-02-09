@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import HttpUrl
 import pytest
@@ -29,7 +29,7 @@ from shared.models import TimeLimit
     ],
 )
 def test_serper_date_to_datetime_relative(input_date, expected_diff):
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     result = serper_date_to_datetime(input_date)
 
     # Apply the expected difference to the current time

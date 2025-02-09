@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -26,7 +26,7 @@ def test_duckduckgo_result_to_base_article_minimum_fields():
     result.pop("image")
     result.pop("source")
 
-    found_at = datetime.now()
+    found_at = datetime.now(tz=timezone.utc)
 
     # Act
     article = duckduckgo_result_to_base_article(result, found_at=found_at)
@@ -44,7 +44,7 @@ def test_duckduckgo_result_to_base_article_minimum_fields():
 def test_duckduckgo_result_to_base_article_all_fields():
     # Arrange
     result = get_result()
-    found_at = datetime.now()
+    found_at = datetime.now(tz=timezone.utc)
 
     # Act
     article = duckduckgo_result_to_base_article(result, found_at=found_at)

@@ -140,7 +140,7 @@ def test_validate_url():
     article = BaseArticle(
         title="Test",
         url=HttpUrl("https://www.example.com"),
-        date=datetime.now(),
+        date=datetime.now(tz=timezone.utc),
         provider="serperdev",
         image=HttpUrl(url),
     )
