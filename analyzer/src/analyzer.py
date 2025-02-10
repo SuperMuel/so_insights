@@ -140,6 +140,39 @@ class Analyzer:
         # Return list with updated articles in original order
         return [article_map[article.id] for article in articles]
 
+    def _get_relevant_articles(
+        self, articles: list[Article], min_articles: int = 5
+    ) -> list[Article]:
+        """
+        Get relevant articles with fallback to somewhat_relevant if needed.
+
+        Args:
+            articles: List of articles to filter
+            min_articles: Minimum number of articles needed before falling back to somewhat relevant
+
+        Returns:
+            List of relevant articles, potentially including somewhat relevant ones if needed
+        """
+        # First get highly relevant articles
+        relevant_articles = [
+            article
+            for article in articles
+            if article.evaluation and article.evaluation.relevance_level == "relevant"
+        ]
+
+        # If we don't have enough articles, include somewhat relevant ones
+        if len(relevant_articles) < min_articles:
+            relevant_articles.extend(
+                [
+                    article
+                    for article in articles
+                    if article.evaluation
+                    and article.evaluation.relevance_level == "somewhat_relevant"
+                ]
+            )
+
+        return relevant_articles[:80]
+
     async def _assign_first_images_to_topics(
         self, topics: list[Any], relevant_articles: list[Article]
     ) -> None:
@@ -225,15 +258,7 @@ class Analyzer:
 
             assert all(article.evaluation for article in articles)
 
-            relevant_articles = [
-                article
-                for article in articles
-                if article.evaluation
-                and (
-                    article.evaluation.relevance_level == "relevant"
-                    or article.evaluation.relevance_level == "somewhat_relevant"
-                )
-            ]
+            relevant_articles = self._get_relevant_articles(articles)
 
             if not relevant_articles:
                 raise ValueError("No relevant articles found")
