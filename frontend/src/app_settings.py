@@ -48,6 +48,9 @@ class AppSettings(BaseSettings):
     CONTEXTUALIZE_PROMPT_REF: str = "contextualize"
     QA_RAG_PROMPT_REF: str = "qa-rag"
 
+    # Pages
+    CONTENT_STUDIO_PAGE_ENABLED: bool = False
+
 
 app_settings = AppSettings()
 

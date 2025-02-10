@@ -173,10 +173,15 @@ if __name__ == "__main__":
             settings_page,
             explorer_page,
             analysis_page,
-            content_studio_page,
+            *(
+                [content_studio_page]
+                if app_settings.CONTENT_STUDIO_PAGE_ENABLED
+                else []
+            ),
             chatbot_page,
         ]
     )
+
     st.session_state.current_page = pg
 
     def _on_workspace_change():
