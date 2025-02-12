@@ -105,14 +105,6 @@ def format_topic_blueprint(topic_blueprint: TopicBlueprint):
     return f"""
     Title: {topic_blueprint.title}
     Description: {topic_blueprint.description}
-    Quotes examples:
-    {
-        "\n".join(
-            [
-                f"- {quote.text}" for quote in topic_blueprint.supporting_quotes
-            ]
-        )
-    }
     """
 
 

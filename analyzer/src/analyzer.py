@@ -279,7 +279,6 @@ class Analyzer:
 
             await self._assign_first_images_to_topics(topics, relevant_articles)
 
-            # Generate a summary
             relevant_articles_ids = [
                 article.id for article in relevant_articles if article.id
             ]

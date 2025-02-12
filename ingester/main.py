@@ -235,17 +235,28 @@ async def handle_ingestion_run(
 
     if organization.content_analysis_enabled:
         try:
-            # Skip articles that already have content, for instance if the content
-            # was included in an RSS feed entry
-            to_fetch = [article for article in articles if not article.content]
+            # First check which articles are new by trying to find existing ones with same workspace_id and url
+            existing_articles = await Article.find(
+                {
+                    "workspace_id": workspace.id,
+                    "url": {"$in": [article.url for article in articles]},
+                }
+            ).to_list()
 
-            if to_fetch:
-                logger.info(f"Fetching content for {len(to_fetch)} articles...")
+            logger.info(f"Found {len(existing_articles)} existing articles")
+
+            existing_urls = {article.url for article in existing_articles}
+            new_articles = [
+                article for article in articles if article.url not in existing_urls
+            ]
+
+            if new_articles:
+                logger.info(f"Fetching content for {len(new_articles)} new articles...")
                 results = await content_fetcher.abatch_convert_and_clean(
-                    urls=[article.url for article in to_fetch]
+                    urls=[article.url for article in new_articles]
                 )
-                assert len(to_fetch) == len(results)
-                for article, result in zip(to_fetch, results):
+                assert len(new_articles) == len(results)
+                for article, result in zip(new_articles, results):
                     if isinstance(result, Exception):
                         article.content_cleaning_error = str(result)
                     else:
@@ -259,7 +270,7 @@ async def handle_ingestion_run(
 
                 logger.info("Content fetching complete.")
             else:
-                logger.info("No articles to fetch content for.")
+                logger.info("No new articles to fetch content for.")
         except Exception as e:
             logger.error(
                 f"Error while fetching article content: ({e.__class__.__name__}): {str(e)}"
