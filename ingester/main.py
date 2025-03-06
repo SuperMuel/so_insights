@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 import typer
 import uvicorn
-from beanie import UpdateResponse
+from beanie import UpdateResponse, PydanticObjectId
 from beanie.odm.operators.update.general import Set
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -565,6 +565,120 @@ def watch(
             mongo_client.close()
 
     asyncio.run(_watch())
+
+
+@app.command()
+def timeout_stalled_runs(
+    timeout_hours: float = typer.Option(
+        2.0,
+        "--timeout-hours",
+        "-t",
+        help="Number of hours after which an in-progress run should be marked as failed (default: 2.0)",
+    ),
+    workspace_id: Optional[str] = typer.Option(
+        None,
+        "-w",
+        "--workspace-id",
+        help="To timeout runs for a specific workspace. If not provided, runs from all workspaces will be checked.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-d",
+        help="Show which runs would be marked as failed without actually updating them.",
+    ),
+):
+    """
+    Checks for ingestion runs that have been in progress for too long and marks them as failed.
+
+    This is useful for handling runs that might have crashed or stalled without properly updating their status.
+    The default timeout is 2 hours, but can be customized.
+
+    Use --dry-run to preview which runs would be affected without making any changes.
+    """
+
+    async def _timeout_stalled_runs():
+        mongo_client, _, _ = await setup()
+
+        timeout_datetime = datetime.now(tz=timezone.utc) - timedelta(
+            hours=timeout_hours
+        )
+
+        # Find all runs that are still in progress and started before the timeout threshold
+        # First find runs with status "running" and make sure start_at exists
+        find_query = IngestionRun.find(
+            IngestionRun.status == Status.running,
+            IngestionRun.start_at != None,
+            IngestionRun.start_at < timeout_datetime,  # type: ignore
+        )
+
+        if workspace_id:
+            # Filter by workspace_id if provided
+            find_query = find_query.find(
+                IngestionRun.workspace_id == PydanticObjectId(workspace_id)
+            )
+
+        stalled_runs = await find_query.to_list()
+
+        if dry_run:
+            typer.echo("DRY RUN MODE: No runs will actually be updated")
+
+        if not stalled_runs:
+            typer.echo(
+                f"No stalled ingestion runs found (timeout: {timeout_hours} hours)"
+            )
+            return
+
+        typer.echo(
+            f"Found {len(stalled_runs)} stalled ingestion runs (timeout: {timeout_hours} hours)"
+        )
+
+        # Fetch workspaces for all runs for display purposes
+        workspace_ids = {run.workspace_id for run in stalled_runs if run.workspace_id}
+        workspaces = {
+            workspace.id: workspace
+            for workspace in await Workspace.find(
+                {"_id": {"$in": list(workspace_ids)}}
+            ).to_list()
+        }
+
+        for run in stalled_runs:
+            assert run.start_at is not None  # We've already filtered these out
+
+            # Get workspace name for better logging
+            workspace_name = "Unknown"
+            if run.workspace_id and run.workspace_id in workspaces:
+                workspace_name = workspaces[run.workspace_id].name
+
+            # Handle timezone conversion properly
+            if run.start_at.tzinfo is None:
+                # If naive datetime, assume it's in UTC
+                start_at_with_tz = run.start_at.replace(tzinfo=timezone.utc)
+            else:
+                # If datetime already has timezone, ensure it's in UTC
+                start_at_with_tz = run.start_at.astimezone(timezone.utc)
+
+            duration = datetime.now(tz=timezone.utc) - start_at_with_tz
+            duration_hours = duration.total_seconds() / 3600
+
+            if dry_run:
+                typer.echo(
+                    f"Would mark run {run.id} ({workspace_name}) as failed (in progress for {duration_hours:.2f} hours)"
+                )
+            else:
+                typer.echo(
+                    f"Marking run {run.id} ({workspace_name}) as failed (in progress for {duration_hours:.2f} hours)"
+                )
+
+                # Mark the run as failed
+                await run.mark_as_finished(
+                    Status.failed,
+                    error=f"Timeout. Automatically marked as failed after being in progress for {duration_hours:.2f} hours",
+                )
+
+        mongo_client.close()
+
+    asyncio.run(_timeout_stalled_runs())
 
 
 if __name__ == "__main__":
