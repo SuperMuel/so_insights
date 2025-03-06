@@ -93,13 +93,14 @@ class Analyzer:
         raise ValueError(f"Unknown analysis type: {run.analysis_type}")
 
     async def _evaluate_articles_if_needed(
-        self, articles: list[Article]
+        self, articles: list[Article], batch_size: int = 50
     ) -> list[Article]:
         """
         Evaluates articles that don't have an evaluation yet. Saves the evaluations in the database and returns the updated articles.
 
         Args:
             articles: List of articles to evaluate if needed
+            batch_size: Number of articles to process in each batch
 
         Returns:
             The input list of articles, with evaluations added where needed
@@ -120,22 +121,41 @@ class Analyzer:
 
         logger.info(f"Evaluating {len(not_evaluated)} articles")
 
-        evaluations = await self.article_evaluator.evaluate_articles(
-            not_evaluated, workspace.description
-        )
+        # Process articles in batches to prevent data loss in case of failure
+        updated_articles = []
 
-        # Update articles with their evaluations
-        async with BulkWriter() as bulk_writer:
-            for article, evaluation in zip(not_evaluated, evaluations):
-                article.evaluation = evaluation
-                await article.save(bulk_writer=bulk_writer)
+        for i in range(0, len(not_evaluated), batch_size):
+            batch = not_evaluated[i : i + batch_size]
+            logger.info(
+                f"Processing batch {i // batch_size + 1}/{(len(not_evaluated) + batch_size - 1) // batch_size}: {len(batch)} articles"
+            )
+
+            try:
+                # Evaluate the current batch
+                batch_evaluations = await self.article_evaluator.evaluate_articles(
+                    batch, workspace.description
+                )
+
+                # Update articles with their evaluations and save immediately
+                async with BulkWriter() as bulk_writer:
+                    for article, evaluation in zip(batch, batch_evaluations):
+                        article.evaluation = evaluation
+                        await article.save(bulk_writer=bulk_writer)
+
+                updated_articles.extend(batch)
+                logger.info(
+                    f"Successfully saved evaluations for batch {i // batch_size + 1}"
+                )
+            except Exception as e:
+                logger.error(f"Error processing batch {i // batch_size + 1}: {str(e)}")
+                # Continue with the next batch instead of failing completely
 
         # Create a mapping of updated articles
         article_map = {article.id: article for article in articles}
-        for article in not_evaluated:
+        for article in updated_articles:
             article_map[article.id] = article
 
-        logger.info(f"Updated {len(not_evaluated)} articles with evaluations")
+        logger.info(f"Updated {len(updated_articles)} articles with evaluations")
 
         # Return list with updated articles in original order
         return [article_map[article.id] for article in articles]
