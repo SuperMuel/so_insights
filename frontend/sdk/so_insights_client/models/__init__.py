@@ -46,6 +46,7 @@ from .time_limit import TimeLimit
 from .topic import Topic
 from .topic_with_articles import TopicWithArticles
 from .url_to_markdown_conversion import UrlToMarkdownConversion
+from .url_to_markdown_conversion_extraction_method import UrlToMarkdownConversionExtractionMethod
 from .url_to_markdown_conversion_metadata import UrlToMarkdownConversionMetadata
 from .validation_error import ValidationError
 from .workspace import Workspace
@@ -97,6 +98,7 @@ __all__ = (
     "Topic",
     "TopicWithArticles",
     "UrlToMarkdownConversion",
+    "UrlToMarkdownConversionExtractionMethod",
     "UrlToMarkdownConversionMetadata",
     "ValidationError",
     "Workspace",

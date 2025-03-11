@@ -5,6 +5,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 from dateutil.parser import isoparse
 
+from ..models.url_to_markdown_conversion_extraction_method import UrlToMarkdownConversionExtractionMethod
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -21,14 +22,14 @@ class UrlToMarkdownConversion:
     Attributes:
         url (str):
         markdown (str):
-        extraction_method (str): e.g Firecrawl, Jina...
+        extraction_method (UrlToMarkdownConversionExtractionMethod): e.g Firecrawl, Jina...
         extracted_at (Union[Unset, datetime.datetime]):
         metadata (Union[Unset, UrlToMarkdownConversionMetadata]): Metadata returned by the extraction method
     """
 
     url: str
     markdown: str
-    extraction_method: str
+    extraction_method: UrlToMarkdownConversionExtractionMethod
     extracted_at: Union[Unset, datetime.datetime] = UNSET
     metadata: Union[Unset, "UrlToMarkdownConversionMetadata"] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -38,7 +39,7 @@ class UrlToMarkdownConversion:
 
         markdown = self.markdown
 
-        extraction_method = self.extraction_method
+        extraction_method = self.extraction_method.value
 
         extracted_at: Union[Unset, str] = UNSET
         if not isinstance(self.extracted_at, Unset):
@@ -73,7 +74,7 @@ class UrlToMarkdownConversion:
 
         markdown = d.pop("markdown")
 
-        extraction_method = d.pop("extraction_method")
+        extraction_method = UrlToMarkdownConversionExtractionMethod(d.pop("extraction_method"))
 
         _extracted_at = d.pop("extracted_at", UNSET)
         extracted_at: Union[Unset, datetime.datetime]

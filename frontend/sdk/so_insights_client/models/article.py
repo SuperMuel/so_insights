@@ -29,7 +29,6 @@ class Article:
             title (str): Title of the article
             url (str): URL where the article was found
             date (datetime.datetime): Publication date of the article
-            provider (SearchProvider):
             field_id (Union[None, Unset, str]): MongoDB document ObjectID
             body (Union[Unset, str]): Short excerpt or meta_description of the article Default: ''.
             found_at (Union[Unset, datetime.datetime]): Timestamp when the article was found
@@ -41,6 +40,7 @@ class Article:
             ingestion_run_id (Union[None, Unset, str]): ID of the ingestion run that found this article
             vector_indexed (Union[Unset, bool]): Whether this article has been indexed in the vector database Default:
                 False.
+            provider (Union[None, SearchProvider, Unset]): The provider that found the article
             content_fetching_result (Union['ContentFetchingResult', None, Unset]): The result of fetching and cleaning the
                 article content
             evaluation (Union['ArticleEvaluation', None, Unset]):
@@ -50,7 +50,6 @@ class Article:
     title: str
     url: str
     date: datetime.datetime
-    provider: SearchProvider
     field_id: Union[None, Unset, str] = UNSET
     body: Union[Unset, str] = ""
     found_at: Union[Unset, datetime.datetime] = UNSET
@@ -61,6 +60,7 @@ class Article:
     content_cleaning_error: Union[None, Unset, str] = UNSET
     ingestion_run_id: Union[None, Unset, str] = UNSET
     vector_indexed: Union[Unset, bool] = False
+    provider: Union[None, SearchProvider, Unset] = UNSET
     content_fetching_result: Union["ContentFetchingResult", None, Unset] = UNSET
     evaluation: Union["ArticleEvaluation", None, Unset] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -76,8 +76,6 @@ class Article:
         url = self.url
 
         date = self.date.isoformat()
-
-        provider = self.provider.value
 
         field_id: Union[None, Unset, str]
         if isinstance(self.field_id, Unset):
@@ -127,6 +125,14 @@ class Article:
 
         vector_indexed = self.vector_indexed
 
+        provider: Union[None, Unset, str]
+        if isinstance(self.provider, Unset):
+            provider = UNSET
+        elif isinstance(self.provider, SearchProvider):
+            provider = self.provider.value
+        else:
+            provider = self.provider
+
         content_fetching_result: Union[None, Unset, dict[str, Any]]
         if isinstance(self.content_fetching_result, Unset):
             content_fetching_result = UNSET
@@ -151,7 +157,6 @@ class Article:
                 "title": title,
                 "url": url,
                 "date": date,
-                "provider": provider,
             }
         )
         if field_id is not UNSET:
@@ -174,6 +179,8 @@ class Article:
             field_dict["ingestion_run_id"] = ingestion_run_id
         if vector_indexed is not UNSET:
             field_dict["vector_indexed"] = vector_indexed
+        if provider is not UNSET:
+            field_dict["provider"] = provider
         if content_fetching_result is not UNSET:
             field_dict["content_fetching_result"] = content_fetching_result
         if evaluation is not UNSET:
@@ -194,8 +201,6 @@ class Article:
         url = d.pop("url")
 
         date = isoparse(d.pop("date"))
-
-        provider = SearchProvider(d.pop("provider"))
 
         def _parse_field_id(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -272,6 +277,23 @@ class Article:
 
         vector_indexed = d.pop("vector_indexed", UNSET)
 
+        def _parse_provider(data: object) -> Union[None, SearchProvider, Unset]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                provider_type_0 = SearchProvider(data)
+
+                return provider_type_0
+            except:  # noqa: E722
+                pass
+            return cast(Union[None, SearchProvider, Unset], data)
+
+        provider = _parse_provider(d.pop("provider", UNSET))
+
         def _parse_content_fetching_result(data: object) -> Union["ContentFetchingResult", None, Unset]:
             if data is None:
                 return data
@@ -311,7 +333,6 @@ class Article:
             title=title,
             url=url,
             date=date,
-            provider=provider,
             field_id=field_id,
             body=body,
             found_at=found_at,
@@ -322,6 +343,7 @@ class Article:
             content_cleaning_error=content_cleaning_error,
             ingestion_run_id=ingestion_run_id,
             vector_indexed=vector_indexed,
+            provider=provider,
             content_fetching_result=content_fetching_result,
             evaluation=evaluation,
         )
