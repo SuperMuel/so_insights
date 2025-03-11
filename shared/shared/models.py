@@ -4,6 +4,7 @@ from typing import Annotated, Any, Dict, Literal, Self
 
 from beanie import Document, Indexed, PydanticObjectId
 from beanie.odm.queries.find import FindMany
+from beanie.odm.operators.find.comparison import In
 from beanie.operators import Exists
 from pydantic import (
     BaseModel,
@@ -156,8 +157,22 @@ class Workspace(Document):
         )
 
     @classmethod
-    def get_active_workspaces(cls) -> FindMany["Workspace"]:
-        return Workspace.find(Workspace.enabled == True)  # noqa: E712
+    def get_active_workspaces(
+        cls, from_orgs: list[Organization] | None = None
+    ) -> FindMany["Workspace"]:
+        filter_conditions = []
+
+        if from_orgs:
+            assert all(
+                [org.id for org in from_orgs]
+            ), "All organizations must have an ID"
+            filter_conditions.append(
+                In(Workspace.organization_id, [org.id for org in from_orgs])
+            )
+        else:
+            filter_conditions.append(Workspace.enabled == True)
+
+        return Workspace.find(*filter_conditions)
 
 
 class IngestionConfigType(str, Enum):
@@ -404,8 +419,8 @@ class Article(Document):
         description="Whether this article has been indexed in the vector database",
     )
 
-    provider: SearchProvider = Field(
-        ..., description="The provider that found the article"
+    provider: SearchProvider | None = Field(
+        default=None, description="The provider that found the article"
     )
 
     content_fetching_result: ContentFetchingResult | None = Field(

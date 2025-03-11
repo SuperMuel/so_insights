@@ -8,6 +8,7 @@ from pydantic import HttpUrl, SecretStr
 
 from shared.models import TimeLimit
 from shared.region import Region
+from shared.util import validate_url
 from src.search_providers.base import BaseArticle, BaseSearchProvider
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ def serper_result_to_base_article(article: dict[str, str]) -> BaseArticle:
         date=serper_date_to_datetime(article["date"]),
         source=article["source"] if "source" in article else None,
         url=HttpUrl(article["link"]),
-        image=HttpUrl(article["imageUrl"]) if "imageUrl" in article else None,
+        image=validate_url(article["imageUrl"]) if "imageUrl" in article else None,
         provider="serperdev",
     )
 

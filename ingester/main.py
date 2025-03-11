@@ -1,11 +1,14 @@
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import typer
 import uvicorn
-from beanie import UpdateResponse, PydanticObjectId
+from beanie import BulkWriter, PydanticObjectId, UpdateResponse
+from beanie.odm.operators.find.element import Exists
+from beanie.odm.operators.find.comparison import In
+from beanie.odm.operators.find.logical import Or
 from beanie.odm.operators.update.general import Set
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -171,6 +174,73 @@ async def handle_rss_ingestion_run(
     return await ingest_rss_feed(config, ingestion_run_id=run.id)
 
 
+async def _fetch_content_and_update_articles(
+    articles: list[Article],
+    content_fetcher: ContentFetcher,
+    batch_size: int = 20,
+) -> None:
+    """
+    Fetches content for articles and updates them in the database.
+
+    Only articles without content will be processed to avoid redundant fetching.
+    Processes articles in batches to prevent timeouts for large numbers of articles.
+
+    Args:
+        run (IngestionRun): The current ingestion run.
+        content_fetcher (ContentFetcher): The content fetcher to use.
+        batch_size (int, optional): Number of articles to process in each batch. Defaults to 20.
+    """
+    if not articles:
+        logger.info("No articles found. Skipping content fetching.")
+        return
+
+    total_articles = len(articles)
+    logger.info(
+        f"Found {total_articles} articles without content. Processing in batches of {batch_size}..."
+    )
+
+    # Process articles in batches
+    total_updated = 0
+    for i in range(0, total_articles, batch_size):
+        batch = articles[i : i + batch_size]
+        batch_num = i // batch_size + 1
+        total_batches = (total_articles + batch_size - 1) // batch_size
+
+        logger.info(
+            f"Processing batch {batch_num}/{total_batches} ({len(batch)} articles)..."
+        )
+
+        # Fetch content for the current batch
+        urls = [article.url for article in batch]
+        results = await content_fetcher.abatch_convert_and_clean(urls=urls)
+
+        assert len(batch) == len(results)
+
+        # Update articles with content
+        async with BulkWriter() as bulk_writer:
+            for article, result in zip(batch, results):
+                if isinstance(result, Exception):
+                    article.content_cleaning_error = str(result)
+                else:
+                    article.content = (
+                        result.content_cleaner_output.cleaned_article_content
+                    )
+                    article.content_cleaning_error = result.content_cleaner_output.error
+                    article.content_fetching_result = result
+
+                # Update the article in the database
+                await article.save(bulk_writer=bulk_writer)
+
+        total_updated += len(batch)
+        logger.info(
+            f"Batch {batch_num}/{total_batches} complete. {total_updated}/{total_articles} articles updated so far."
+        )
+
+    logger.info(
+        f"Content fetching complete. Updated {total_updated} articles with content across {total_batches} batches."
+    )
+
+
 async def handle_ingestion_run(
     run: IngestionRun,
     *,
@@ -186,6 +256,7 @@ async def handle_ingestion_run(
     Args:
         run (IngestionRun): The ingestion run to be processed.
         search_provider (BaseSearchProvider): The search provider to be used for search-based ingestion.
+        content_fetcher (ContentFetcher): The content fetcher to be used for content retrieval.
     """
     assert run.status in [Status.pending, Status.running]
 
@@ -226,6 +297,11 @@ async def handle_ingestion_run(
         [article.provider for article in articles]
     ), "Some articles have no provider"
 
+    # First insert articles into MongoDB to ensure they're saved even if subsequent content fetching fails
+    run.n_inserted = await insert_articles_in_mongodb(articles)
+    await run.save()
+    logger.info(f"Saved {run.n_inserted} articles to MongoDB.")
+
     ### Fetching article contents, if enabled
     workspace = await Workspace.get(run.workspace_id)
     assert workspace and workspace.id
@@ -235,49 +311,31 @@ async def handle_ingestion_run(
 
     if organization.content_analysis_enabled:
         try:
-            # First check which articles are new by trying to find existing ones with same workspace_id and url
-            existing_articles = await Article.find(
-                {
-                    "workspace_id": workspace.id,
-                    "url": {"$in": [article.url for article in articles]},
-                }
+            logger.info(f"Fetching content for these new articles")
+            articles_without_content = await Article.find(
+                Article.workspace_id == workspace.id,
+                Article.ingestion_run_id == run.id,
+                Or(
+                    Article.content == None,
+                    Article.content == "",
+                    Exists(Article.content, False),
+                ),
             ).to_list()
 
-            logger.info(f"Found {len(existing_articles)} existing articles")
-
-            existing_urls = {article.url for article in existing_articles}
-            new_articles = [
-                article for article in articles if article.url not in existing_urls
-            ]
-
-            if new_articles:
-                logger.info(f"Fetching content for {len(new_articles)} new articles...")
-                results = await content_fetcher.abatch_convert_and_clean(
-                    urls=[article.url for article in new_articles]
-                )
-                assert len(new_articles) == len(results)
-                for article, result in zip(new_articles, results):
-                    if isinstance(result, Exception):
-                        article.content_cleaning_error = str(result)
-                    else:
-                        article.content = (
-                            result.content_cleaner_output.cleaned_article_content
-                        )
-                        article.content_cleaning_error = (
-                            result.content_cleaner_output.error
-                        )
-                        article.content_fetching_result = result
-
-                logger.info("Content fetching complete.")
-            else:
-                logger.info("No new articles to fetch content for.")
-        except Exception as e:
-            logger.error(
-                f"Error while fetching article content: ({e.__class__.__name__}): {str(e)}"
+            logger.info(
+                f"Found {len(articles_without_content)} articles without content"
             )
-            return await run.mark_as_finished(Status.failed, error=str(e))
 
-    run.n_inserted = await insert_articles_in_mongodb(articles)
+            await _fetch_content_and_update_articles(
+                articles_without_content,
+                content_fetcher,
+            )
+        except Exception as e:
+            logger.error(f"Error while fetching article content: {e}")
+            # Don't mark the run as failed since articles are already saved
+            logger.warning(
+                "Continuing with ingestion run despite content fetching error"
+            )
 
     await run.mark_as_finished(Status.completed)
 
@@ -679,6 +737,137 @@ def timeout_stalled_runs(
         mongo_client.close()
 
     asyncio.run(_timeout_stalled_runs())
+
+
+@app.command()
+def fetch_missing_content(
+    workspace_id: Optional[str] = typer.Option(
+        None,
+        "-w",
+        "--workspace-id",
+        help="To fetch content for articles in a specific workspace.",
+    ),
+    ingestion_run_id: Optional[str] = typer.Option(
+        None,
+        "-r",
+        "--ingestion-run-id",
+        help="To fetch content for articles from a specific ingestion run.",
+    ),
+    days_old: int = typer.Option(
+        7,
+        "--days-old",
+        "-d",
+        help="Fetch content for articles from the last N days.",
+    ),
+    batch_size: int = typer.Option(
+        20,
+        "--batch-size",
+        "-b",
+        help="Number of articles to process in each batch.",
+    ),
+    limit: Optional[int] = typer.Option(
+        None,
+        "--limit",
+        "-l",
+        help="Maximum number of articles to process.",
+    ),
+):
+    """
+    Fetch content for articles that are missing content or had content fetching errors.
+
+    This command is useful for recovering from failed content fetching attempts
+    or processing articles that were initially ingested without content analysis.
+    """
+
+    async def _fetch_missing_content():
+        mongo_client, _, content_fetcher = await setup()
+
+        # Build the filter conditions
+        filter_conditions = []
+
+        if days_old:
+            typer.echo(f"Fetching content for articles from the last {days_old} days")
+            filter_conditions.append(
+                Article.found_at
+                > datetime.now(tz=timezone.utc) - timedelta(days=days_old)
+            )
+
+        # 1. Filter by workspace_id if provided
+        if workspace_id:
+            try:
+                workspace = await Workspace.get(workspace_id)
+                if not workspace:
+                    typer.echo(f"Workspace with ID {workspace_id} not found.")
+                    return
+                filter_conditions.append(
+                    Article.workspace_id == PydanticObjectId(workspace_id)
+                )
+            except Exception as e:
+                typer.echo(f"Invalid workspace ID: {e}")
+                return
+        else:
+            typer.echo(
+                "No workspace ID provided. Fetching content for all active workspaces with content_analysis enabled"
+            )
+            orgs = await Organization.find(
+                Organization.content_analysis_enabled == True
+            ).to_list()
+            workspaces = await Workspace.get_active_workspaces(from_orgs=orgs).to_list()
+            filter_conditions.append(
+                In(Article.workspace_id, [workspace.id for workspace in workspaces])
+            )
+
+        # 2. Filter by ingestion_run_id if provided
+        if ingestion_run_id:
+            try:
+                run = await IngestionRun.get(ingestion_run_id)
+                if not run:
+                    typer.echo(f"Ingestion run with ID {ingestion_run_id} not found.")
+                    return
+                filter_conditions.append(
+                    Article.ingestion_run_id == PydanticObjectId(ingestion_run_id)
+                )
+            except Exception as e:
+                typer.echo(f"Invalid ingestion run ID: {e}")
+                return
+
+        # 3. Filter by content status
+        filter_conditions.append(
+            Or(
+                Article.content == None,
+                Article.content == "",
+                Exists(Article.content, False),
+            ),
+        )
+
+        # Find articles matching our criteria
+        query = Article.find(*filter_conditions)
+
+        # Apply limit if provided
+        if limit:
+            query = query.limit(limit)
+
+        articles_to_process = await query.to_list()
+
+        if not articles_to_process:
+            typer.echo("No articles found matching the specified criteria.")
+            return
+
+        total_articles = len(articles_to_process)
+        typer.echo(f"Found {total_articles} articles to process.")
+
+        await _fetch_content_and_update_articles(
+            articles_to_process,
+            content_fetcher,
+            batch_size=batch_size,
+        )
+
+        typer.echo(
+            f"Content fetching complete. Updated {total_articles} articles in total."
+        )
+        mongo_client.close()
+
+    asyncio.run(_fetch_missing_content())
 
 
 if __name__ == "__main__":

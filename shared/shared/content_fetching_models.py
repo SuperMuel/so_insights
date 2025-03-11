@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 from pydantic import BaseModel, Field, HttpUrl, PastDatetime, field_validator
 from shared.util import utc_datetime_factory
 
@@ -11,7 +11,9 @@ class UrlToMarkdownConversion(BaseModel):
     url: HttpUrl
     markdown: str
     extracted_at: PastDatetime = Field(default_factory=utc_datetime_factory)
-    extraction_method: str = Field(..., description="e.g Firecrawl, Jina...")
+    extraction_method: Literal["firecrawl", "jina"] = Field(
+        ..., description="e.g Firecrawl, Jina..."
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Metadata returned by the extraction method"
     )

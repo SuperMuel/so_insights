@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Literal
 
 from aiolimiter import AsyncLimiter
 from firecrawl import FirecrawlApp  # Assuming this is the correct import from the SDK
@@ -42,7 +43,7 @@ class FirecrawlUrlToMarkdown(UrlToMarkdownConverter):
         self._rate_limiter = AsyncLimiter(max_rate=8, time_period=60)
 
     @property
-    def extraction_method(self) -> str:
+    def extraction_method(self) -> Literal["firecrawl", "jina"]:
         return "firecrawl"
 
     async def convert_url(self, url: HttpUrl) -> UrlToMarkdownConversion:
@@ -123,7 +124,6 @@ class FirecrawlUrlToMarkdown(UrlToMarkdownConverter):
     ) -> list[UrlToMarkdownConversion | UrlToMarkdownConversionError]:
         """
         Converts the content of the given URLs to Markdown using Firecrawl Batch API.
-        Rate limited to avoid overwhelming the API.
 
         Args:
             urls: The URLs of the web pages to convert.
