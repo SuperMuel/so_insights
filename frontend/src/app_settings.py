@@ -27,12 +27,8 @@ class AppSettings(BaseSettings):
     OPENAI_API_KEY: SecretStr = Field(default=...)
     ANTHROPIC_API_KEY: SecretStr = Field(default=...)
 
-    GETIMG_API_KEY: SecretStr = Field(default=...)
-
     LOGO_LIGHT_URL: str | None = None
     LOGO_DARK_URL: str | None = None
-
-    IMAGE_PROMPT_LLM: str = "gpt-4o-mini"
 
     CLUSTERS_PER_PAGE: int = 30
 
@@ -44,12 +40,8 @@ class AppSettings(BaseSettings):
 
     # Prompts references to Langsmith Hub
     SIMPLE_CONTENT_GEN_PROMPT_REF: str = "simple-content-gen"
-    IMAGE_GEN_PROMPT_REF: str = "img-gen"
     CONTEXTUALIZE_PROMPT_REF: str = "contextualize"
     QA_RAG_PROMPT_REF: str = "qa-rag"
-
-    # Pages
-    CONTENT_STUDIO_PAGE_ENABLED: bool = False
 
 
 app_settings = AppSettings()
