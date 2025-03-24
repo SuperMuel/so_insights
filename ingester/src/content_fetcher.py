@@ -30,7 +30,7 @@ class ContentFetcher:
         cleaned_markdown = await self.cleaner.clean_article_content(
             url_to_markdown.markdown,
             metadata={
-                # "url": str(url),
+                "url": str(url),
                 "extraction_method": url_to_markdown.extraction_method,
             },
         )
@@ -87,7 +87,7 @@ class ContentFetcher:
             cleaned_markdown = await self.cleaner.clean_article_content(
                 conv_result.markdown,
                 metadata={
-                    # "url": str(url),
+                    "url": str(url),
                     "extraction_method": conv_result.extraction_method,
                 },
             )
