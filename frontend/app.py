@@ -15,9 +15,6 @@ explorer_page = st.Page("src/pages/explorer.py", title="My Data", icon="💾")
 analysis_page = st.Page(
     "src/pages/analysis.py", title="Analysis", icon="🔎", default=True
 )
-content_studio_page = st.Page(
-    "src/pages/content_studio.py", title="Content Studio", icon="✍️"
-)
 chatbot_page = st.Page("src/pages/chatbot.py", title="Chatbot", icon="💬")
 
 
